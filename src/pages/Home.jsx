@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Search } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
 import { useDj } from '@/lib/DjContext';
 import SongUploader from '@/components/dj/SongUploader';
+import SpotifySearchModal from '@/components/dj/SpotifySearchModal';
 import SongLibrary from '@/components/dj/SongLibrary';
 import Queue from '@/components/dj/Queue';
 import Player from '@/components/dj/Player';
@@ -16,6 +19,7 @@ export default function Home() {
   const [filter, setFilter] = useState('');
   const [activeTag, setActiveTag] = useState('All');
   const [editorSong, setEditorSong] = useState(null);
+  const [spotifyOpen, setSpotifyOpen] = useState(false);
 
   const fetchSongs = useCallback(async () => {
     setLoading(true);
@@ -70,7 +74,16 @@ export default function Home() {
             <h1 className="text-2xl font-semibold tracking-tight">Music Library</h1>
             <p className="text-sm text-slate-400">{songs.length} tracks · cue, edit, and fade for game day</p>
           </div>
-          <SongUploader onUploaded={handleUploaded} />
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setSpotifyOpen(true)}
+              className="border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800 hover:text-cyan-300"
+            >
+              <Search className="w-4 h-4" /> Search Spotify
+            </Button>
+            <SongUploader onUploaded={handleUploaded} />
+          </div>
         </header>
 
         <QuickAccess songs={quickSongs} onPlay={dj.playNow} />
@@ -112,6 +125,12 @@ export default function Home() {
           onSave={handleUpdated}
         />
       )}
+
+      <SpotifySearchModal
+        open={spotifyOpen}
+        onClose={() => setSpotifyOpen(false)}
+        onImported={handleUploaded}
+      />
     </div>
   );
 }
