@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Loader2, Plus, Play, Pause, ExternalLink, Music2 } from 'lucide-react';
+import { Search, Loader2, Plus, Play, Pause, Music2 } from 'lucide-react';
 import { formatTime } from '@/lib/audio';
 
-export default function SpotifySearchModal({ open, onClose, onImported }) {
+export default function MusicSearchModal({ open, onClose, onImported }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -18,7 +18,7 @@ export default function SpotifySearchModal({ open, onClose, onImported }) {
   const [previewId, setPreviewId] = useState(null);
   const [previewAudio, setPreviewAudio] = useState(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!open) {
       if (previewAudio) previewAudio.pause();
       setPreviewId(null);
@@ -36,8 +36,10 @@ export default function SpotifySearchModal({ open, onClose, onImported }) {
     setLoading(true);
     setError('');
     setResults([]);
+    if (previewAudio) previewAudio.pause();
+    setPreviewId(null);
     try {
-      const res = await base44.functions.invoke('SpotifySearch', { query: q, limit: 20 });
+      const res = await base44.functions.invoke('ITunesSearch', { query: q, limit: 25 });
       setResults(res.data.results || []);
       if (!res.data.results?.length) setError('No tracks found. Try another search.');
     } catch (err) {
@@ -48,7 +50,7 @@ export default function SpotifySearchModal({ open, onClose, onImported }) {
   };
 
   const togglePreview = (track) => {
-    if (previewId === track.spotify_id && previewAudio && !previewAudio.paused) {
+    if (previewId === track.itunes_id && previewAudio && !previewAudio.paused) {
       previewAudio.pause();
       setPreviewId(null);
       return;
@@ -59,14 +61,14 @@ export default function SpotifySearchModal({ open, onClose, onImported }) {
     audio.play().catch(() => {});
     audio.onended = () => setPreviewId(null);
     setPreviewAudio(audio);
-    setPreviewId(track.spotify_id);
+    setPreviewId(track.itunes_id);
   };
 
   const importTrack = async (track) => {
-    setImportingId(track.spotify_id);
+    setImportingId(track.itunes_id);
     try {
-      const res = await base44.functions.invoke('SpotifyImport', { track, tags: [] });
-      setImportedIds((prev) => new Set(prev).add(track.spotify_id));
+      const res = await base44.functions.invoke('ITunesImport', { track, tags: [] });
+      setImportedIds((prev) => new Set(prev).add(track.itunes_id));
       onImported?.(res.data.song);
     } catch (err) {
       setError(err?.response?.data?.error || err?.message || 'Import failed');
@@ -80,10 +82,10 @@ export default function SpotifySearchModal({ open, onClose, onImported }) {
       <DialogContent className="max-w-2xl bg-slate-900 border-slate-800 text-slate-100">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-slate-100">
-            <Music2 className="w-5 h-5 text-cyan-400" /> Search Spotify
+            <Music2 className="w-5 h-5 text-cyan-400" /> Search Music
           </DialogTitle>
           <DialogDescription className="text-slate-400">
-            Find tracks and import them into your library. Where available, a 30-second preview is saved.
+            Search the iTunes catalog and import tracks with a 30-second preview into your library.
           </DialogDescription>
         </DialogHeader>
 
@@ -108,11 +110,11 @@ export default function SpotifySearchModal({ open, onClose, onImported }) {
 
         <div className="max-h-[50vh] overflow-y-auto space-y-2 pr-1">
           {results.map((t) => {
-            const imported = importedIds.has(t.spotify_id);
-            const importing = importingId === t.spotify_id;
-            const isPreviewing = previewId === t.spotify_id;
+            const imported = importedIds.has(t.itunes_id);
+            const importing = importingId === t.itunes_id;
+            const isPreviewing = previewId === t.itunes_id;
             return (
-              <div key={t.spotify_id} className="flex items-center gap-3 p-2 rounded-lg bg-slate-950/60 border border-slate-800 hover:border-slate-700 transition">
+              <div key={t.itunes_id} className="flex items-center gap-3 p-2 rounded-lg bg-slate-950/60 border border-slate-800 hover:border-slate-700 transition">
                 <div className="w-12 h-12 shrink-0 rounded overflow-hidden bg-slate-800 flex items-center justify-center">
                   {t.album_art ? (
                     <img src={t.album_art} alt={t.album} className="w-full h-full object-cover" />
@@ -123,7 +125,7 @@ export default function SpotifySearchModal({ open, onClose, onImported }) {
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium truncate">{t.title}</p>
                   <p className="text-xs text-slate-400 truncate">{t.artist}{t.album ? ` · ${t.album}` : ''}</p>
-                  <p className="text-[11px] text-slate-500">{formatTime(t.duration)}{t.preview_url ? ' · preview available' : ' · no preview'}</p>
+                  <p className="text-[11px] text-slate-500">{formatTime(t.duration)} · 30s preview</p>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   <Button
@@ -155,13 +157,9 @@ export default function SpotifySearchModal({ open, onClose, onImported }) {
             );
           })}
           {!loading && !results.length && !error && (
-            <p className="text-sm text-slate-500 text-center py-8">Search the Spotify catalog to import tracks.</p>
+            <p className="text-sm text-slate-500 text-center py-8">Search the catalog to import tracks.</p>
           )}
         </div>
-
-        <p className="text-[11px] text-slate-500 flex items-center gap-1">
-          <ExternalLink className="w-3 h-3" /> Imports use Spotify’s catalog metadata. Full-track playback requires a Spotify Premium account; previews play where Spotify provides them.
-        </p>
       </DialogContent>
     </Dialog>
   );

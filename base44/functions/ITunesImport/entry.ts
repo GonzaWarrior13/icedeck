@@ -8,7 +8,7 @@ export default async function(req) {
 
     const body = await req.json().catch(() => ({}));
     const t = body.track;
-    if (!t || !t.spotify_id || !t.title) {
+    if (!t || !t.itunes_id || !t.title) {
       return Response.json({ error: 'Invalid track data' }, { status: 400 });
     }
     const duration = Number.isFinite(t.duration) ? Math.max(0, Math.round(t.duration)) : null;
@@ -18,8 +18,8 @@ export default async function(req) {
       title: String(t.title).slice(0, 300),
       artist: String(t.artist || "").slice(0, 300),
       duration: duration,
-      source: "spotify",
-      spotify_id: String(t.spotify_id),
+      source: "itunes",
+      spotify_id: String(t.itunes_id),
       preview_url: t.preview_url || "",
       start_point: 0,
       tags: tags

@@ -18,7 +18,8 @@
       "type": "string",
       "enum": [
         "local",
-        "spotify"
+        "spotify",
+        "itunes"
       ],
       "default": "local"
     },
