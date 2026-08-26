@@ -1,0 +1,64 @@
+{
+  "name": "Song",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "artist": {
+      "type": "string"
+    },
+    "duration": {
+      "type": "number"
+    },
+    "file_url": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "local",
+        "spotify"
+      ],
+      "default": "local"
+    },
+    "spotify_id": {
+      "type": "string"
+    },
+    "preview_url": {
+      "type": "string"
+    },
+    "start_point": {
+      "type": "number",
+      "default": 0
+    },
+    "end_point": {
+      "type": "number"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "category": {
+      "type": "string"
+    },
+    "energy_level": {
+      "type": "number"
+    },
+    "bpm": {
+      "type": "number"
+    },
+    "volume": {
+      "type": "number",
+      "default": 100
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "title"
+  ]
+}
