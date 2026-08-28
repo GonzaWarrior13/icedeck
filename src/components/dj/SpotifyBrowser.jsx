@@ -45,10 +45,10 @@ export default function SpotifyBrowser({ open, onOpenChange, onImported }) {
     try {
       const track = {
         title: item.title || 'Spotify Track',
-        artist: '',
+        artist: item.artist || '',
         spotify_id: item.spotify_id,
-        preview_url: '',
-        duration: null
+        preview_url: item.preview_url || '',
+        duration: item.duration ?? null
       };
       const res = await base44.functions.invoke('SpotifyImport', { track, tags: [] });
       setImportedIds((prev) => new Set(prev).add(item.spotify_id));
