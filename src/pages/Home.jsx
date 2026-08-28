@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
 import { useDj } from '@/lib/DjContext';
 import SongUploader from '@/components/dj/SongUploader';
-import MusicSearchModal from '@/components/dj/MusicSearchModal';
+import SpotifyBrowser from '@/components/dj/SpotifyBrowser';
 import SongLibrary from '@/components/dj/SongLibrary';
 import Queue from '@/components/dj/Queue';
 import Player from '@/components/dj/Player';
@@ -80,11 +80,13 @@ export default function Home() {
               onClick={() => setMusicOpen(true)}
               className="border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800 hover:text-cyan-300"
             >
-              <Search className="w-4 h-4" /> Search Music
+              <Search className="w-4 h-4" /> Browse Spotify
             </Button>
             <SongUploader onUploaded={handleUploaded} />
           </div>
         </header>
+
+        <SpotifyBrowser open={musicOpen} onOpenChange={setMusicOpen} onImported={handleUploaded} />
 
         <QuickAccess songs={quickSongs} onPlay={dj.playNow} />
 
@@ -126,11 +128,7 @@ export default function Home() {
         />
       )}
 
-      <MusicSearchModal
-        open={musicOpen}
-        onClose={() => setMusicOpen(false)}
-        onImported={handleUploaded}
-      />
+
     </div>
   );
 }
