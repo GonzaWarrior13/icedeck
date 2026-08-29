@@ -67,8 +67,8 @@ export default function Home() {
   const currentSongId = dj.currentSong?.id;
 
   return (
-    <div className="flex flex-col h-screen">
-      <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-5 pb-4">
+    <div className="flex flex-col h-screen overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6 space-y-5 pb-4">
         <header className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">Music Library</h1>
