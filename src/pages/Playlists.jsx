@@ -3,9 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useDj } from '@/lib/DjContext';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { ListMusic, Plus, Trash2, Play, Save, X } from 'lucide-react';
+import { ListMusic, Plus, Trash2, Play, Pencil } from 'lucide-react';
+import SetlistEditor from '@/components/dj/SetlistEditor';
 
 export default function Playlists() {
   const navigate = useNavigate();
@@ -13,9 +12,7 @@ export default function Playlists() {
   const [playlists, setPlaylists] = useState([]);
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
-  const [name, setName] = useState('');
-  const [selected, setSelected] = useState([]);
+  const [editor, setEditor] = useState(null);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -33,16 +30,19 @@ export default function Playlists() {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  const createPlaylist = async () => {
-    if (!name.trim()) return;
-    const created = await base44.entities.Playlist.create({
-      name: name.trim(),
-      song_ids: selected,
-    });
-    setPlaylists((prev) => [created, ...prev]);
-    setName('');
-    setSelected([]);
-    setCreating(false);
+  const openCreate = () => setEditor({ id: null, name: '', songIds: [] });
+  const openEdit = (pl) => setEditor({ id: pl.id, name: pl.name, songIds: [...(pl.song_ids || [])] });
+
+  const handleSave = async (name, songIds) => {
+    if (!name) return;
+    if (editor.id) {
+      const updated = await base44.entities.Playlist.update(editor.id, { name, song_ids: songIds });
+      setPlaylists((prev) => prev.map((p) => (p.id === editor.id ? updated : p)));
+    } else {
+      const created = await base44.entities.Playlist.create({ name, song_ids: songIds });
+      setPlaylists((prev) => [created, ...prev]);
+    }
+    setEditor(null);
   };
 
   const deletePlaylist = async (pl) => {
@@ -60,10 +60,6 @@ export default function Playlists() {
     navigate('/');
   };
 
-  const toggleSelect = (id) => {
-    setSelected((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
-  };
-
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-4xl">
       <header className="flex items-center justify-between gap-3">
@@ -71,42 +67,19 @@ export default function Playlists() {
           <h1 className="text-2xl font-semibold tracking-tight">Setlists</h1>
           <p className="text-sm text-slate-400">Save and reuse queues for intermissions, warmups, and celebrations</p>
         </div>
-        <Button onClick={() => setCreating((c) => !c)} className="bg-cyan-400 text-slate-950 hover:bg-cyan-300">
+        <Button onClick={openCreate} className="bg-cyan-400 text-slate-950 hover:bg-cyan-300">
           <Plus className="w-4 h-4 mr-1" /> New setlist
         </Button>
       </header>
 
-      {creating && (
-        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 space-y-3">
-          <div className="flex items-end gap-3">
-            <div className="flex-1">
-              <Label className="text-xs text-slate-400">Setlist name</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Warmup mix" className="bg-slate-950 border-slate-700" />
-            </div>
-            <Button onClick={createPlaylist} disabled={!name.trim()} className="bg-cyan-400 text-slate-950 hover:bg-cyan-300">
-              <Save className="w-4 h-4 mr-1" /> Save
-            </Button>
-            <Button variant="outline" onClick={() => setCreating(false)} className="bg-transparent border-slate-700 text-slate-200 hover:bg-slate-800">
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
-          <p className="text-xs text-slate-400">{selected.length} tracks selected</p>
-          <div className="max-h-64 overflow-y-auto space-y-1.5 pr-1">
-            {songs.map((s) => {
-              const on = selected.includes(s.id);
-              return (
-                <button
-                  key={s.id}
-                  onClick={() => toggleSelect(s.id)}
-                  className={`w-full flex items-center justify-between p-2.5 rounded-lg border text-left text-sm ${on ? 'bg-cyan-400/10 border-cyan-400/40' : 'bg-slate-950/60 border-slate-800 hover:border-slate-700'}`}
-                >
-                  <span className="truncate">{s.title} <span className="text-slate-500">· {s.artist || 'Unknown'}</span></span>
-                  <span className={`text-xs ${on ? 'text-cyan-300' : 'text-slate-600'}`}>{on ? '✓' : '+'}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+      {editor && (
+        <SetlistEditor
+          initialName={editor.name}
+          initialSongIds={editor.songIds}
+          songs={songs}
+          onCancel={() => setEditor(null)}
+          onSave={handleSave}
+        />
       )}
 
       {loading ? (
@@ -128,7 +101,10 @@ export default function Playlists() {
                   <p className="font-medium truncate">{pl.name}</p>
                   <p className="text-xs text-slate-500">{count} tracks</p>
                 </div>
-                <button onClick={() => deletePlaylist(pl)} className="p-2 rounded-lg text-slate-500 hover:text-rose-300">
+                <button onClick={() => openEdit(pl)} className="p-2 rounded-lg text-slate-400 hover:text-cyan-300" title="Edit setlist">
+                  <Pencil className="w-4 h-4" />
+                </button>
+                <button onClick={() => deletePlaylist(pl)} className="p-2 rounded-lg text-slate-500 hover:text-rose-300" title="Delete setlist">
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>

@@ -117,6 +117,27 @@ export function DjProvider({ children }) {
   }, [audio]);
 
   useEffect(() => {
+    const onKey = (e) => {
+      const t = e.target;
+      const tag = (t?.tagName || '').toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || t?.isContentEditable) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.code === 'Space' || e.key === ' ') {
+        if (!audio) return;
+        e.preventDefault();
+        if (audio.paused) audio.play().catch(() => {});
+        else audio.pause();
+      } else if (e.key === 'ArrowRight') {
+        next();
+      } else if (e.key === 'ArrowLeft') {
+        prev();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [audio, next, prev]);
+
+  useEffect(() => {
     if (!audio) return;
     const onTime = () => {
       setCurrentTime(audio.currentTime);
