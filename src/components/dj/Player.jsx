@@ -1,7 +1,7 @@
 import React from 'react';
 import { useDj } from '@/lib/DjContext';
 import { formatTime } from '@/lib/audio';
-import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Waves } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Waves, Siren } from 'lucide-react';
 
 export default function Player() {
   const dj = useDj();
@@ -67,12 +67,19 @@ export default function Player() {
 
         <div className="flex items-center gap-2">
           <button
-            onClick={() => dj.fadeOut(2, true)}
+            onClick={() => dj.fadeOut(2, false)}
             disabled={dj.isFading || !dj.isPlaying}
             className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 disabled:opacity-40"
-            title="Fade out & next"
+            title="Fade out & pause"
           >
             <Waves className="w-3.5 h-3.5" /> Fade
+          </button>
+          <button
+            onClick={dj.triggerGoal}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500 text-slate-950 hover:bg-amber-400 transition shadow"
+            title="Goal! Play the goal horn and music"
+          >
+            <Siren className="w-3.5 h-3.5" /> Goal
           </button>
           <button
             onClick={() => dj.setMasterVolume(dj.masterVolume > 0 ? 0 : 1)}

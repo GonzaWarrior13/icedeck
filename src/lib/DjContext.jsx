@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useRef, useState, useEffect, useCallback } from 'react';
+import { playGoalHorn } from '@/lib/goalHorn';
 
 const DjContext = createContext(null);
 export const useDj = () => useContext(DjContext);
@@ -91,6 +92,14 @@ export function DjProvider({ children }) {
     requestAnimationFrame(step);
   }, [audio, isFading, next]);
 
+  // Fire the goal horn over the deck, and (re)start the loaded track as the goal music.
+  const triggerGoal = useCallback(() => {
+    playGoalHorn(2.6);
+    const q = queueRef.current;
+    if (indexRef.current >= 0) playIndex(indexRef.current);
+    else if (q.length) playIndex(0);
+  }, [playIndex]);
+
   useEffect(() => {
     if (!audio) return;
     const onTime = () => {
@@ -147,7 +156,7 @@ export function DjProvider({ children }) {
   const value = {
     queue, currentIndex, currentSong, isPlaying, currentTime, duration,
     masterVolume, isFading, audio,
-    play, pause, next, prev, seek, setMasterVolume, fadeOut,
+    play, pause, next, prev, seek, setMasterVolume, fadeOut, triggerGoal,
     addToQueue, addManyToQueue, removeFromQueue, reorderQueue, clearQueue, playNow, playQueueFrom,
   };
   return <DjContext.Provider value={value}>{children}</DjContext.Provider>;
