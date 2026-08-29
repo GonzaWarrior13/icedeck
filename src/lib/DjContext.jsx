@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useRef, useState, useEffect, useCallback } from 'react';
-import { playGoalHorn } from '@/lib/goalHorn';
+const GOAL_HORN_URL = 'https://media.base44.com/files/public/6a8f48cd9a055819d8b79b87/01968e6a6_toronto-maple-leafs-2019-goal-horn-1.mp3';
 
 const defaultDj = {
   queue: [], currentIndex: -1, currentSong: null, isPlaying: false,
@@ -18,6 +18,7 @@ export function DjProvider({ children }) {
     audioRef.current = new Audio();
   }
   const audio = audioRef.current;
+  const goalAudioRef = useRef(null);
 
   const [queue, setQueue] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(-1);
@@ -100,13 +101,20 @@ export function DjProvider({ children }) {
     requestAnimationFrame(step);
   }, [audio, isFading, next]);
 
-  // Fire the goal horn over the deck, and (re)start the loaded track as the goal music.
+  // Fire the goal horn (the uploaded clip, which already includes the music) — and only that.
   const triggerGoal = useCallback(() => {
-    playGoalHorn(2.6);
-    const q = queueRef.current;
-    if (indexRef.current >= 0) playIndex(indexRef.current);
-    else if (q.length) playIndex(0);
-  }, [playIndex]);
+    audio?.pause();
+    setIsPlaying(false);
+    let ga = goalAudioRef.current;
+    if (!ga) {
+      ga = typeof Audio !== 'undefined' ? new Audio(GOAL_HORN_URL) : null;
+      if (ga) { ga.volume = 1; goalAudioRef.current = ga; }
+    }
+    if (ga) {
+      try { ga.currentTime = 0; } catch (_) {}
+      ga.play().catch(() => {});
+    }
+  }, [audio]);
 
   useEffect(() => {
     if (!audio) return;
