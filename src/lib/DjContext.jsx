@@ -1,7 +1,15 @@
 import React, { createContext, useContext, useRef, useState, useEffect, useCallback } from 'react';
 import { playGoalHorn } from '@/lib/goalHorn';
 
-const DjContext = createContext(null);
+const defaultDj = {
+  queue: [], currentIndex: -1, currentSong: null, isPlaying: false,
+  currentTime: 0, duration: 0, masterVolume: 1, isFading: false, audio: null,
+  play() {}, pause() {}, next() {}, prev() {}, seek() {}, setMasterVolume() {},
+  fadeOut() {}, triggerGoal() {},
+  addToQueue() {}, addManyToQueue() {}, removeFromQueue() {}, reorderQueue() {},
+  clearQueue() {}, playNow() {}, playQueueFrom() {},
+};
+const DjContext = createContext(defaultDj);
 export const useDj = () => useContext(DjContext);
 
 export function DjProvider({ children }) {
