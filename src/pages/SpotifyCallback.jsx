@@ -1,22 +1,30 @@
 import React, { useEffect, useState } from 'react';
-import { useDj } from '@/lib/DjContext';
-import { handleCallback } from '@/lib/spotifyAuth';
+import { exchangeCode } from '@/lib/spotifyAuth';
 import { Loader2, AlertCircle } from 'lucide-react';
 
 export default function SpotifyCallback() {
-  const dj = useDj();
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    const err = params.get('error');
+
+    // Popup case: hand the code to the opener window and close this tab.
+    if (window.opener && !err) {
+      window.opener.postMessage({ type: 'icedeck_spotify_code', code }, '*');
+      setTimeout(() => window.close(), 100);
+      return;
+    }
+
+    // Direct-open fallback: exchange here, then go home.
     let done = false;
     (async () => {
       try {
-        const data = await handleCallback();
+        if (err) throw new Error(err);
+        await exchangeCode(code);
         if (done) return;
-        dj.applySpotifySession(data);
-        const next = sessionStorage.getItem('icedeck_spotify_return') || '/';
-        sessionStorage.removeItem('icedeck_spotify_return');
-        window.location.href = next;
+        window.location.href = '/';
       } catch (e) {
         if (done) return;
         setError(e.message || 'Spotify connection failed');

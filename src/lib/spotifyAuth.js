@@ -20,8 +20,14 @@ async function sha256Base64Url(plain) {
   return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
+let REDIRECT_BASE = 'https://icedeck-arena-audio.base44.app';
+
+export function setRedirectBase(url) {
+  REDIRECT_BASE = (url || '').replace(/\/$/, '');
+}
+
 export function redirectUri() {
-  return window.location.origin + '/spotify-callback';
+  return REDIRECT_BASE + '/spotify-callback';
 }
 
 export async function startAuth(remember) {
@@ -37,7 +43,37 @@ export async function startAuth(remember) {
   url.searchParams.set('code_challenge_method', 'S256');
   url.searchParams.set('code_challenge', code_challenge);
   url.searchParams.set('scope', scopes);
-  window.location.href = url.toString();
+  const w = 480, h = 720;
+  const left = window.screenX + Math.max(0, (window.outerWidth - w) / 2);
+  const top = window.screenY + Math.max(0, (window.outerHeight - h) / 2);
+  return window.open(url.toString(), 'icedeck_spotify_auth', `width=${w},height=${h},left=${left},top=${top}`);
+}
+
+export function waitForAuthCode() {
+  return new Promise((resolve) => {
+    const expectedOrigin = new URL(REDIRECT_BASE).origin;
+    function onMsg(e) {
+      if (e.origin !== expectedOrigin) return;
+      if (e.data && e.data.type === 'icedeck_spotify_code') {
+        window.removeEventListener('message', onMsg);
+        resolve(e.data.code);
+      }
+    }
+    window.addEventListener('message', onMsg);
+  });
+}
+
+export async function exchangeCode(code) {
+  const stored = JSON.parse(sessionStorage.getItem(PKCE_KEY) || '{}');
+  sessionStorage.removeItem(PKCE_KEY);
+  const res = await base44.functions.invoke('SpotifyAuth', {
+    action: 'exchange',
+    code,
+    code_verifier: stored.code_verifier,
+    redirect_uri: redirectUri(),
+    remember: !!stored.remember
+  });
+  return res.data;
 }
 
 export async function handleCallback() {

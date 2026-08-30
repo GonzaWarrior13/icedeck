@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useRef, useState, useEffect, useCallback } from 'react';
 import { SpotifyEngine } from '@/lib/spotifyPlayer';
-import { startAuth, restoreSession, refreshWith, disconnectSession } from '@/lib/spotifyAuth';
+import { startAuth, waitForAuthCode, exchangeCode, restoreSession, refreshWith, disconnectSession } from '@/lib/spotifyAuth';
 
 const GOAL_HORN_URL = 'https://media.base44.com/files/public/6a8f48cd9a055819d8b79b87/01968e6a6_toronto-maple-leafs-2019-goal-horn-1.mp3';
 
@@ -93,10 +93,14 @@ export function DjProvider({ children }) {
     }
   }, [applySpotifySession]);
 
-  const connectSpotify = useCallback((remember) => {
-    sessionStorage.setItem('icedeck_spotify_return', window.location.pathname);
-    startAuth(remember);
-  }, []);
+  const connectSpotify = useCallback(async (remember) => {
+    const popup = await startAuth(remember);
+    if (!popup) return; // popup blocked — user should allow popups for this site
+    const code = await waitForAuthCode();
+    try { popup.close(); } catch (_) {}
+    const data = await exchangeCode(code);
+    applySpotifySession(data);
+  }, [applySpotifySession]);
 
   const disconnectSpotify = useCallback(async () => {
     try { await disconnectSession(); } catch (_) {}
