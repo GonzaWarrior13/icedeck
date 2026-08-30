@@ -1,0 +1,44 @@
+{
+  "name": "SpotifyToken",
+  "type": "object",
+  "properties": {
+    "refresh_token": {
+      "type": "string"
+    },
+    "spotify_user_id": {
+      "type": "string"
+    },
+    "spotify_display_name": {
+      "type": "string"
+    },
+    "is_premium": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "refresh_token"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "update": {
+      "created_by_id": "{{user.id}}"
+    },
+    "delete": {
+      "created_by_id": "{{user.id}}"
+    }
+  }
+}
