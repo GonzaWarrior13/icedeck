@@ -5,7 +5,7 @@ const defaultDj = {
   queue: [], currentIndex: -1, currentSong: null, isPlaying: false,
   currentTime: 0, duration: 0, masterVolume: 1, isFading: false, audio: null,
   play() {}, pause() {}, next() {}, prev() {}, seek() {}, setMasterVolume() {},
-  fadeOut() {}, triggerGoal() {},
+  fadeOut() {}, triggerGoal() {}, stopGoal() {}, goalPlaying: false,
   addToQueue() {}, addManyToQueue() {}, removeFromQueue() {}, reorderQueue() {},
   clearQueue() {}, playNow() {}, playQueueFrom() {},
 };
@@ -27,6 +27,7 @@ export function DjProvider({ children }) {
   const [duration, setDuration] = useState(0);
   const [masterVolume, setMasterVolumeState] = useState(1);
   const [isFading, setIsFading] = useState(false);
+  const [goalPlaying, setGoalPlaying] = useState(false);
 
   const queueRef = useRef([]);
   const indexRef = useRef(-1);
@@ -111,10 +112,32 @@ export function DjProvider({ children }) {
       if (ga) { ga.volume = 1; goalAudioRef.current = ga; }
     }
     if (ga) {
+      if (!ga._wired) {
+        ga.addEventListener('ended', () => setGoalPlaying(false));
+        ga.addEventListener('pause', () => setGoalPlaying(false));
+        ga._wired = true;
+      }
       try { ga.currentTime = 0; } catch (_) {}
+      ga.volume = 1;
       ga.play().catch(() => {});
+      setGoalPlaying(true);
     }
   }, [audio]);
+
+  // Fade out and stop the goal horn (so the Fade button can end a celebration).
+  const stopGoal = useCallback((sec = 1.5) => {
+    const ga = goalAudioRef.current;
+    if (!ga || ga.paused) return;
+    const startVol = ga.volume || 1;
+    const t0 = performance.now();
+    const step = () => {
+      const frac = Math.min(1, (performance.now() - t0) / (sec * 1000));
+      ga.volume = startVol * (1 - frac);
+      if (frac < 1) requestAnimationFrame(step);
+      else { ga.pause(); try { ga.currentTime = 0; } catch (_) {} ga.volume = startVol; setGoalPlaying(false); }
+    };
+    requestAnimationFrame(step);
+  }, []);
 
   useEffect(() => {
     const onKey = (e) => {
@@ -192,8 +215,8 @@ export function DjProvider({ children }) {
 
   const value = {
     queue, currentIndex, currentSong, isPlaying, currentTime, duration,
-    masterVolume, isFading, audio,
-    play, pause, next, prev, seek, setMasterVolume, fadeOut, triggerGoal,
+    masterVolume, isFading, audio, goalPlaying,
+    play, pause, next, prev, seek, setMasterVolume, fadeOut, triggerGoal, stopGoal,
     addToQueue, addManyToQueue, removeFromQueue, reorderQueue, clearQueue, playNow, playQueueFrom,
   };
   return <DjContext.Provider value={value}>{children}</DjContext.Provider>;

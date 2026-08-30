@@ -67,10 +67,10 @@ export default function Player() {
 
         <div className="flex items-center gap-2">
           <button
-            onClick={() => dj.fadeOut(2, false)}
-            disabled={dj.isFading || !dj.isPlaying}
+            onClick={() => (dj.goalPlaying ? dj.stopGoal() : dj.fadeOut(2, false))}
+            disabled={dj.isFading || (!dj.isPlaying && !dj.goalPlaying)}
             className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 disabled:opacity-40"
-            title="Fade out & pause"
+            title={dj.goalPlaying ? 'Fade out goal horn' : 'Fade out & pause'}
           >
             <Waves className="w-3.5 h-3.5" /> Fade
           </button>
