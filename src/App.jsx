@@ -47,9 +47,9 @@ const AuthenticatedApp = () => {
         <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
           <Route path="/" element={<Home />} />
           <Route path="/playlists" element={<Playlists />} />
-          <Route path="/spotify-callback" element={<SpotifyCallback />} />
         </Route>
       </Route>
+      <Route path="/spotify-callback" element={<SpotifyCallback />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
