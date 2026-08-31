@@ -27,7 +27,7 @@ export function setRedirectBase(url) {
 }
 
 export function redirectUri() {
-  return REDIRECT_BASE + '/spotify-callback';
+  return window.location.origin + '/spotify-callback';
 }
 
 export async function startAuth(remember) {
@@ -43,10 +43,7 @@ export async function startAuth(remember) {
   url.searchParams.set('code_challenge_method', 'S256');
   url.searchParams.set('code_challenge', code_challenge);
   url.searchParams.set('scope', scopes);
-  const w = 480, h = 720;
-  const left = window.screenX + Math.max(0, (window.outerWidth - w) / 2);
-  const top = window.screenY + Math.max(0, (window.outerHeight - h) / 2);
-  return window.open(url.toString(), 'icedeck_spotify_auth', `width=${w},height=${h},left=${left},top=${top}`);
+  window.location.href = url.toString();
 }
 
 export function waitForAuthCode() {

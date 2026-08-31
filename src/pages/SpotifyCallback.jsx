@@ -10,18 +10,11 @@ export default function SpotifyCallback() {
     const code = params.get('code');
     const err = params.get('error');
 
-    // Popup case: hand the code to the opener window and close this tab.
-    if (window.opener && !err) {
-      window.opener.postMessage({ type: 'icedeck_spotify_code', code }, '*');
-      setTimeout(() => window.close(), 100);
-      return;
-    }
-
-    // Direct-open fallback: exchange here, then go home.
     let done = false;
     (async () => {
       try {
         if (err) throw new Error(err);
+        if (!code) throw new Error('Spotify did not return an authorization code');
         await exchangeCode(code);
         if (done) return;
         window.location.href = '/';

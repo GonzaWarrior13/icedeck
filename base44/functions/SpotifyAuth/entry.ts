@@ -72,9 +72,7 @@ export default async function(req) {
       if (res.error) return Response.json(res, { status: 502 });
       const td = res.data;
       const profile = await getProfile(td.access_token);
-      if (remember) {
-        await upsertToken(base44, user, { refresh_token: td.refresh_token, ...profile });
-      }
+      await upsertToken(base44, user, { refresh_token: td.refresh_token, ...profile });
       return Response.json({
         access_token: td.access_token,
         refresh_token: td.refresh_token,
