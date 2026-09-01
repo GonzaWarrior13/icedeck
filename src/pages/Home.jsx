@@ -9,6 +9,7 @@ import Player from '@/components/dj/Player';
 import StartPointEditor from '@/components/dj/StartPointEditor';
 import TagFilter from '@/components/dj/TagFilter';
 import QuickAccess from '@/components/dj/QuickAccess';
+import YouTubeImportButton from '@/components/dj/YouTubeImportButton';
 
 export default function Home() {
   const dj = useDj();
@@ -73,6 +74,7 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-2">
             <SongUploader onUploaded={handleUploaded} />
+            <YouTubeImportButton onUploaded={handleUploaded} />
           </div>
         </header>
 

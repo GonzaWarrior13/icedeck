@@ -18,7 +18,8 @@
       "type": "string",
       "enum": [
         "local",
-        "itunes"
+        "itunes",
+        "youtube"
       ],
       "default": "local"
     },
