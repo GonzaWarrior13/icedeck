@@ -19,7 +19,6 @@ export default async function(req) {
       artist: String(t.artist || "").slice(0, 300),
       duration: duration,
       source: "itunes",
-      spotify_id: String(t.itunes_id),
       preview_url: t.preview_url || "",
       start_point: 0,
       tags: tags

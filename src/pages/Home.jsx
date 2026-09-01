@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
 import { useDj } from '@/lib/DjContext';
 import SongUploader from '@/components/dj/SongUploader';
-import SpotifyBrowser from '@/components/dj/SpotifyBrowser';
 import SongLibrary from '@/components/dj/SongLibrary';
 import Queue from '@/components/dj/Queue';
 import Player from '@/components/dj/Player';
@@ -19,7 +17,6 @@ export default function Home() {
   const [filter, setFilter] = useState('');
   const [activeTag, setActiveTag] = useState('All');
   const [editorSong, setEditorSong] = useState(null);
-  const [musicOpen, setMusicOpen] = useState(false);
 
   const fetchSongs = useCallback(async () => {
     setLoading(true);
@@ -75,18 +72,9 @@ export default function Home() {
             <p className="text-sm text-slate-400">{songs.length} tracks · cue, edit, and fade for game day</p>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setMusicOpen(true)}
-              className="border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800 hover:text-cyan-300"
-            >
-              <Search className="w-4 h-4" /> Browse Spotify
-            </Button>
             <SongUploader onUploaded={handleUploaded} />
           </div>
         </header>
-
-        <SpotifyBrowser open={musicOpen} onOpenChange={setMusicOpen} onImported={handleUploaded} />
 
         <QuickAccess songs={quickSongs} onPlay={dj.playNow} />
 

@@ -1,8 +1,7 @@
 import React from 'react';
 import { useDj } from '@/lib/DjContext';
 import { formatTime } from '@/lib/audio';
-import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Waves, Siren, LogIn } from 'lucide-react';
-import SpotifyConnectButton from '@/components/dj/SpotifyConnectButton';
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Waves, Siren } from 'lucide-react';
 
 export default function Player() {
   const dj = useDj();
@@ -23,15 +22,6 @@ export default function Player() {
 
   return (
     <div className="sticky bottom-0 z-20 border-t border-slate-800 bg-slate-900/90 backdrop-blur px-4 py-3">
-      {dj.playingPreview && (
-        <button
-          onClick={() => dj.connectSpotify(true)}
-          className="w-full mb-2 flex items-center justify-center gap-1.5 text-xs text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-lg py-1.5 hover:bg-amber-500/20 transition"
-          title="Connect Spotify for full playback"
-        >
-          <LogIn className="w-3.5 h-3.5" /> Log in to Spotify to hear the full song
-        </button>
-      )}
       <div className="flex items-center gap-4">
         <div className="hidden sm:block min-w-0 w-48">
           <p className="truncate font-medium text-sm">{song.title}</p>
@@ -76,7 +66,6 @@ export default function Player() {
         </div>
 
         <div className="flex items-center gap-2">
-          <SpotifyConnectButton />
           <button
             onClick={() => (dj.goalPlaying ? dj.stopGoal() : dj.fadeOut(2, false))}
             disabled={dj.isFading || (!dj.isPlaying && !dj.goalPlaying)}

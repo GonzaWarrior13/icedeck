@@ -18,13 +18,9 @@
       "type": "string",
       "enum": [
         "local",
-        "spotify",
         "itunes"
       ],
       "default": "local"
-    },
-    "spotify_id": {
-      "type": "string"
     },
     "preview_url": {
       "type": "string"

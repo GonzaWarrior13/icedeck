@@ -15,7 +15,6 @@ import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
-import SpotifyCallback from '@/pages/SpotifyCallback';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -49,7 +48,6 @@ const AuthenticatedApp = () => {
           <Route path="/playlists" element={<Playlists />} />
         </Route>
       </Route>
-      <Route path="/spotify-callback" element={<SpotifyCallback />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
