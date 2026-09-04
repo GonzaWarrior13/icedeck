@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useDj } from '@/lib/DjContext';
 import { Button } from '@/components/ui/button';
-import { ListMusic, Plus, Trash2, Play, Pencil } from 'lucide-react';
+import { ListMusic, Plus, Trash2, Play, Pencil, Shuffle } from 'lucide-react';
 import SetlistEditor from '@/components/dj/SetlistEditor';
 
 export default function Playlists() {
@@ -51,13 +51,19 @@ export default function Playlists() {
     setPlaylists((prev) => prev.filter((p) => p.id !== pl.id));
   };
 
-  const loadPlaylist = (pl) => {
+  const loadPlaylist = (pl, startIndex = 0) => {
     const ordered = (pl.song_ids || [])
       .map((id) => songs.find((s) => s.id === id))
       .filter(Boolean);
     if (!ordered.length) return;
-    dj.playQueueFrom(ordered, 0);
+    dj.playQueueFrom(ordered, startIndex);
     navigate('/');
+  };
+
+  const shufflePlaylist = (pl) => {
+    const count = (pl.song_ids || []).length;
+    if (!count) return;
+    loadPlaylist(pl, Math.floor(Math.random() * count));
   };
 
   return (
@@ -94,8 +100,11 @@ export default function Playlists() {
             const count = (pl.song_ids || []).length;
             return (
               <div key={pl.id} className="flex items-center gap-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-                <button onClick={() => loadPlaylist(pl)} className="w-10 h-10 rounded-full bg-cyan-400 text-slate-950 flex items-center justify-center hover:bg-cyan-300">
+                <button onClick={() => loadPlaylist(pl)} className="w-10 h-10 rounded-full bg-cyan-400 text-slate-950 flex items-center justify-center hover:bg-cyan-300" title="Play setlist">
                   <Play className="w-4 h-4 fill-current" />
+                </button>
+                <button onClick={() => shufflePlaylist(pl)} className="w-10 h-10 rounded-full bg-slate-800 text-cyan-300 flex items-center justify-center hover:bg-slate-700 transition" title="Shuffle setlist">
+                  <Shuffle className="w-4 h-4" />
                 </button>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium truncate">{pl.name}</p>
