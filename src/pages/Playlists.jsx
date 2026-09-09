@@ -5,6 +5,7 @@ import { useDj } from '@/lib/DjContext';
 import { Button } from '@/components/ui/button';
 import { ListMusic, Plus, Trash2, Play, Pencil, Shuffle } from 'lucide-react';
 import SetlistEditor from '@/components/dj/SetlistEditor';
+import Player from '@/components/dj/Player';
 
 export default function Playlists() {
   const navigate = useNavigate();
@@ -121,6 +122,7 @@ export default function Playlists() {
           })}
         </div>
       )}
+      <Player />
     </div>
   );
 }
