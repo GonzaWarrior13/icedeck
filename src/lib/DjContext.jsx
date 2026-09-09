@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useRef, useState, useEffect, useCallback } from 'react';
 
-const GOAL_HORN_URL = 'https://media.base44.com/files/public/6a8f48cd9a055819d8b79b87/01968e6a6_toronto-maple-leafs-2019-goal-horn-1.mp3';
+const GOAL_HORN_URL = 'https://media.base44.com/files/public/6a8f48cd9a055819d8b79b87/d73c0e5ef_TorontoMapleLeafsGoalHornNoSong.mp3';
 
 const defaultDj = {
   queue: [], currentIndex: -1, currentSong: null, isPlaying: false,
