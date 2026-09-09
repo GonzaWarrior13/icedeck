@@ -36,6 +36,9 @@ export function DjProvider({ children }) {
   useEffect(() => { queueRef.current = queue; }, [queue]);
   useEffect(() => { indexRef.current = currentIndex; }, [currentIndex]);
 
+  const goalSongsRef = useRef([]);
+  const playQueueFromRef = useRef(() => {});
+
   const currentSong = currentIndex >= 0 ? queue[currentIndex] : null;
 
   const applyVolume = useCallback(() => {
@@ -119,7 +122,14 @@ export function DjProvider({ children }) {
     }
     if (ga) {
       if (!ga._wired) {
-        ga.addEventListener('ended', () => setGoalPlaying(false));
+        ga.addEventListener('ended', () => {
+          setGoalPlaying(false);
+          const songs = goalSongsRef.current;
+          if (songs && songs.length) {
+            const shuffled = [...songs].sort(() => Math.random() - 0.5);
+            playQueueFromRef.current(shuffled, 0);
+          }
+        });
         ga.addEventListener('pause', () => setGoalPlaying(false));
         ga._wired = true;
       }
@@ -220,12 +230,15 @@ export function DjProvider({ children }) {
     setCurrentIndex(-1);
     playIndex(idx);
   }, [playIndex]);
+  playQueueFromRef.current = playQueueFrom;
+  const setGoalPlaylist = useCallback((songs) => { goalSongsRef.current = songs || []; }, []);
 
   const value = {
     queue, currentIndex, currentSong, isPlaying, currentTime, duration,
     masterVolume, isFading, audio, goalPlaying,
     play, pause, next, prev, seek, setMasterVolume, fadeOut, triggerGoal, stopGoal,
     addToQueue, addManyToQueue, removeFromQueue, reorderQueue, clearQueue, playNow, playQueueFrom,
+    setGoalPlaylist,
   };
   return <DjContext.Provider value={value}>{children}</DjContext.Provider>;
 }
