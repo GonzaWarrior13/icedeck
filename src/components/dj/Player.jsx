@@ -2,7 +2,6 @@ import React from 'react';
 import { useDj } from '@/lib/DjContext';
 import { formatTime } from '@/lib/audio';
 import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Waves, Siren } from 'lucide-react';
-import GoalPlaylistPicker from '@/components/dj/GoalPlaylistPicker';
 
 export default function Player() {
   const dj = useDj();
@@ -75,9 +74,6 @@ export default function Player() {
           >
             <Waves className="w-3.5 h-3.5" /> Fade
           </button>
-          <div className="hidden md:block">
-            <GoalPlaylistPicker />
-          </div>
           <button
             onClick={dj.triggerGoal}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500 text-slate-950 hover:bg-amber-400 transition shadow"
