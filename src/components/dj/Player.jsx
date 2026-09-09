@@ -1,10 +1,32 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { base44 } from '@/api/base44Client';
 import { useDj } from '@/lib/DjContext';
 import { formatTime } from '@/lib/audio';
 import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Waves, Siren } from 'lucide-react';
 
 export default function Player() {
   const dj = useDj();
+  const [playlists, setPlaylists] = useState([]);
+  const [librarySongs, setLibrarySongs] = useState([]);
+  const [goalMenuOpen, setGoalMenuOpen] = useState(false);
+
+  useEffect(() => {
+    base44.entities.Playlist.list('-updated_date', 100).then(setPlaylists).catch(() => {});
+    base44.entities.Song.list('-updated_date', 200).then(setLibrarySongs).catch(() => {});
+  }, []);
+
+  const goalWithPlaylist = (pl) => {
+    setGoalMenuOpen(false);
+    const songs = (pl.song_ids || []).map((id) => librarySongs.find((s) => s.id === id)).filter(Boolean);
+    const startIdx = songs.length ? Math.floor(Math.random() * songs.length) : 0;
+    dj.triggerGoal(songs, startIdx);
+  };
+
+  const goalOnly = () => {
+    setGoalMenuOpen(false);
+    dj.triggerGoal();
+  };
+
   const song = dj.currentSong;
 
   if (!song) {
@@ -74,13 +96,34 @@ export default function Player() {
           >
             <Waves className="w-3.5 h-3.5" /> Fade
           </button>
-          <button
-            onClick={dj.triggerGoal}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500 text-slate-950 hover:bg-amber-400 transition shadow"
-            title="Goal! Play the goal horn and music"
-          >
-            <Siren className="w-3.5 h-3.5" /> Goal
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setGoalMenuOpen((o) => !o)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500 text-slate-950 hover:bg-amber-400 transition shadow"
+              title="Goal! Play the goal horn, then shuffle a setlist"
+            >
+              <Siren className="w-3.5 h-3.5" /> Goal
+            </button>
+            {goalMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setGoalMenuOpen(false)} />
+                <div className="absolute bottom-full mb-2 right-0 w-56 max-h-72 overflow-y-auto bg-slate-800 border border-slate-700 rounded-lg shadow-xl py-1 z-50">
+                  <button onClick={goalOnly} className="w-full text-left px-3 py-2 text-sm text-slate-200 hover:bg-slate-700">Horn only</button>
+                  {playlists.length > 0 && (
+                    <div className="px-3 pt-2 pb-1 text-[11px] uppercase tracking-wide text-slate-500">Shuffle after horn</div>
+                  )}
+                  {playlists.map((pl) => (
+                    <button key={pl.id} onClick={() => goalWithPlaylist(pl)} className="w-full text-left px-3 py-2 text-sm text-slate-200 hover:bg-slate-700 truncate">
+                      {pl.name}
+                    </button>
+                  ))}
+                  {playlists.length === 0 && (
+                    <div className="px-3 py-2 text-xs text-slate-500">No setlists yet</div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
           <button
             onClick={() => dj.setMasterVolume(dj.masterVolume > 0 ? 0 : 1)}
             className="p-2 rounded-full hover:bg-slate-800 text-slate-300"

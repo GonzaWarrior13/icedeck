@@ -33,6 +33,8 @@ export function DjProvider({ children }) {
 
   const queueRef = useRef([]);
   const indexRef = useRef(-1);
+  const postGoalRef = useRef(null);
+  const playQueueFromRef = useRef(() => {});
   useEffect(() => { queueRef.current = queue; }, [queue]);
   useEffect(() => { indexRef.current = currentIndex; }, [currentIndex]);
 
@@ -109,9 +111,14 @@ export function DjProvider({ children }) {
     requestAnimationFrame(step);
   }, [audio, currentSong, isFading, masterVolume, next]);
 
-  const triggerGoal = useCallback(() => {
+  const triggerGoal = useCallback((queueSongs, startIndex) => {
     audio?.pause();
     setIsPlaying(false);
+    if (queueSongs && queueSongs.length) {
+      postGoalRef.current = { songs: queueSongs, startIndex: startIndex ?? 0 };
+    } else {
+      postGoalRef.current = null;
+    }
     let ga = goalAudioRef.current;
     if (!ga) {
       ga = typeof Audio !== 'undefined' ? new Audio(GOAL_HORN_URL) : null;
@@ -119,7 +126,12 @@ export function DjProvider({ children }) {
     }
     if (ga) {
       if (!ga._wired) {
-        ga.addEventListener('ended', () => setGoalPlaying(false));
+        ga.addEventListener('ended', () => {
+          setGoalPlaying(false);
+          const post = postGoalRef.current;
+          postGoalRef.current = null;
+          if (post) playQueueFromRef.current(post.songs, post.startIndex);
+        });
         ga.addEventListener('pause', () => setGoalPlaying(false));
         ga._wired = true;
       }
@@ -139,7 +151,7 @@ export function DjProvider({ children }) {
       const frac = Math.min(1, (performance.now() - t0) / (sec * 1000));
       ga.volume = startVol * (1 - frac);
       if (frac < 1) requestAnimationFrame(step);
-      else { ga.pause(); try { ga.currentTime = 0; } catch (_) {} ga.volume = startVol; setGoalPlaying(false); }
+      else { ga.pause(); try { ga.currentTime = 0; } catch (_) {} ga.volume = startVol; postGoalRef.current = null; setGoalPlaying(false); }
     };
     requestAnimationFrame(step);
   }, []);
@@ -220,6 +232,7 @@ export function DjProvider({ children }) {
     setCurrentIndex(-1);
     playIndex(idx);
   }, [playIndex]);
+  playQueueFromRef.current = playQueueFrom;
 
   const value = {
     queue, currentIndex, currentSong, isPlaying, currentTime, duration,
