@@ -35,6 +35,7 @@ export function DjProvider({ children }) {
   const indexRef = useRef(-1);
   const postGoalRef = useRef(null);
   const playQueueFromRef = useRef(() => {});
+  const fadeOutRef = useRef(() => {});
   useEffect(() => { queueRef.current = queue; }, [queue]);
   useEffect(() => { indexRef.current = currentIndex; }, [currentIndex]);
 
@@ -81,7 +82,7 @@ export function DjProvider({ children }) {
   };
 
   const play = useCallback(() => { audio?.play().catch(() => {}); }, [audio]);
-  const pause = useCallback(() => { audio?.pause(); }, [audio]);
+  const pause = useCallback(() => { fadeOutRef.current(2, false); }, []);
   const next = useCallback(() => nextRef.current(), []);
   const prev = useCallback(() => {
     const pi = indexRef.current - 1;
@@ -110,6 +111,7 @@ export function DjProvider({ children }) {
     };
     requestAnimationFrame(step);
   }, [audio, currentSong, isFading, masterVolume, next]);
+  fadeOutRef.current = fadeOut;
 
   const triggerGoal = useCallback((queueSongs, startIndex) => {
     audio?.pause();
