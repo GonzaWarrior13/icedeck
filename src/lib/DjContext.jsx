@@ -33,7 +33,7 @@ export function DjProvider({ children }) {
 
   const queueRef = useRef([]);
   const indexRef = useRef(-1);
-  const postGoalRef = useRef(null);
+  const goalTimerRef = useRef(null);
   const playQueueFromRef = useRef(() => {});
   const fadeOutRef = useRef(() => {});
   useEffect(() => { queueRef.current = queue; }, [queue]);
@@ -116,10 +116,14 @@ export function DjProvider({ children }) {
   const triggerGoal = useCallback((queueSongs, startIndex) => {
     audio?.pause();
     setIsPlaying(false);
+    if (goalTimerRef.current) { clearTimeout(goalTimerRef.current); goalTimerRef.current = null; }
     if (queueSongs && queueSongs.length) {
-      postGoalRef.current = { songs: queueSongs, startIndex: startIndex ?? 0 };
-    } else {
-      postGoalRef.current = null;
+      const songs = queueSongs;
+      const idx = startIndex ?? 0;
+      goalTimerRef.current = setTimeout(() => {
+        goalTimerRef.current = null;
+        playQueueFromRef.current(songs, idx);
+      }, 4000);
     }
     let ga = goalAudioRef.current;
     if (!ga) {
@@ -128,12 +132,7 @@ export function DjProvider({ children }) {
     }
     if (ga) {
       if (!ga._wired) {
-        ga.addEventListener('ended', () => {
-          setGoalPlaying(false);
-          const post = postGoalRef.current;
-          postGoalRef.current = null;
-          if (post) playQueueFromRef.current(post.songs, post.startIndex);
-        });
+        ga.addEventListener('ended', () => setGoalPlaying(false));
         ga.addEventListener('pause', () => setGoalPlaying(false));
         ga._wired = true;
       }
@@ -153,7 +152,7 @@ export function DjProvider({ children }) {
       const frac = Math.min(1, (performance.now() - t0) / (sec * 1000));
       ga.volume = startVol * (1 - frac);
       if (frac < 1) requestAnimationFrame(step);
-      else { ga.pause(); try { ga.currentTime = 0; } catch (_) {} ga.volume = startVol; postGoalRef.current = null; setGoalPlaying(false); }
+      else { ga.pause(); try { ga.currentTime = 0; } catch (_) {} ga.volume = startVol; if (goalTimerRef.current) { clearTimeout(goalTimerRef.current); goalTimerRef.current = null; } setGoalPlaying(false); }
     };
     requestAnimationFrame(step);
   }, []);
