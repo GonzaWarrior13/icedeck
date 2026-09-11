@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useDj } from '@/lib/DjContext';
 import { formatTime } from '@/lib/audio';
-import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Waves, Siren } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Waves, Siren, ChevronDown } from 'lucide-react';
 
 export default function Player() {
   const dj = useDj();
@@ -26,6 +26,8 @@ export default function Player() {
     setGoalMenuOpen(false);
     dj.triggerGoal();
   };
+
+  const defaultPl = playlists.find((p) => p.id === dj.goalSetlistId);
 
   const song = dj.currentSong;
 
@@ -96,13 +98,24 @@ export default function Player() {
           >
             <Waves className="w-3.5 h-3.5" /> Fade
           </button>
-          <div className="relative">
+          <div className="relative flex items-stretch">
             <button
-              onClick={() => setGoalMenuOpen((o) => !o)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500 text-slate-950 hover:bg-amber-400 transition shadow"
-              title="Goal! Play the goal horn, then shuffle a setlist"
+              onClick={() => {
+                const def = playlists.find((p) => p.id === dj.goalSetlistId);
+                if (def) goalWithPlaylist(def);
+                else goalOnly();
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-l-lg text-xs font-semibold bg-amber-500 text-slate-950 hover:bg-amber-400 transition shadow"
+              title={defaultPl ? `Goal! Horn + shuffle "${defaultPl.name}"` : 'Goal! Play the goal horn'}
             >
               <Siren className="w-3.5 h-3.5" /> Goal
+            </button>
+            <button
+              onClick={() => setGoalMenuOpen((o) => !o)}
+              className="px-1.5 py-1.5 rounded-r-lg text-xs font-semibold bg-amber-600 text-slate-950 hover:bg-amber-500 transition shadow border-l border-amber-400/40"
+              title="More goal options"
+            >
+              <ChevronDown className="w-3 h-3" />
             </button>
             {goalMenuOpen && (
               <>

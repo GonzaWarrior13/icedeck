@@ -30,6 +30,13 @@ export function DjProvider({ children }) {
   const [masterVolume, setMasterVolumeState] = useState(1);
   const [isFading, setIsFading] = useState(false);
   const [goalPlaying, setGoalPlaying] = useState(false);
+  const [goalSetlistId, setGoalSetlistIdState] = useState(() => {
+    try { return localStorage.getItem('dj_goalSetlistId') || null; } catch { return null; }
+  });
+  const setGoalSetlist = useCallback((id) => {
+    setGoalSetlistIdState(id);
+    try { if (id) localStorage.setItem('dj_goalSetlistId', id); else localStorage.removeItem('dj_goalSetlistId'); } catch {}
+  }, []);
 
   const queueRef = useRef([]);
   const indexRef = useRef(-1);
@@ -237,7 +244,7 @@ export function DjProvider({ children }) {
 
   const value = {
     queue, currentIndex, currentSong, isPlaying, currentTime, duration,
-    masterVolume, isFading, audio, goalPlaying,
+    masterVolume, isFading, audio, goalPlaying, goalSetlistId, setGoalSetlist,
     play, pause, next, prev, seek, setMasterVolume, fadeOut, triggerGoal, stopGoal,
     addToQueue, addManyToQueue, removeFromQueue, reorderQueue, clearQueue, playNow, playQueueFrom,
   };
