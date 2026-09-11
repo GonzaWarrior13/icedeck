@@ -52,25 +52,26 @@ export default function Playlists() {
     setPlaylists((prev) => prev.filter((p) => p.id !== pl.id));
   };
 
-  const loadPlaylist = (pl, startIndex = 0) => {
-    const ordered = (pl.song_ids || [])
-      .map((id) => songs.find((s) => s.id === id))
-      .filter(Boolean);
+  const resolveSongs = async (pl) => {
+    let list = songs;
+    try {
+      list = await base44.entities.Song.list('-updated_date', 200);
+      setSongs(list);
+    } catch {}
+    const byId = new Map(list.map((s) => [s.id, s]));
+    return (pl.song_ids || []).map((id) => byId.get(id)).filter(Boolean);
+  };
+
+  const loadPlaylist = async (pl, startIndex = 0) => {
+    const ordered = await resolveSongs(pl);
     if (!ordered.length) return;
     dj.playQueueFrom(ordered, startIndex);
     navigate('/');
   };
 
   const shufflePlaylist = async (pl) => {
-    const ids = pl.song_ids || [];
-    if (!ids.length) return;
-    let fresh = songs;
-    try {
-      fresh = await base44.entities.Song.list('-updated_date', 200);
-      setSongs(fresh);
-    } catch {}
-    const byId = new Map(fresh.map((s) => [s.id, s]));
-    const ordered = ids.map((id) => byId.get(id)).filter(Boolean);
+    const ordered = await resolveSongs(pl);
+    if (!ordered.length) return;
     const weighted = ordered.map((song) => ({ song, count: song.play_count || 0, rand: Math.random() }));
     weighted.sort((a, b) => a.count - b.count || a.rand - b.rand);
     dj.playQueueFrom(weighted.map((w) => w.song), 0);

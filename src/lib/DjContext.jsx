@@ -23,8 +23,12 @@ export function DjProvider({ children }) {
   const audio = audioRef.current;
   const goalAudioRef = useRef(null);
 
-  const [queue, setQueue] = useState([]);
-  const [currentIndex, setCurrentIndex] = useState(-1);
+  const [queue, setQueue] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('dj_queue') || '[]'); } catch { return []; }
+  });
+  const [currentIndex, setCurrentIndex] = useState(() => {
+    try { const v = Number(localStorage.getItem('dj_index')); return Number.isFinite(v) ? v : -1; } catch { return -1; }
+  });
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -44,8 +48,8 @@ export function DjProvider({ children }) {
   const goalTimerRef = useRef(null);
   const playQueueFromRef = useRef(() => {});
   const fadeOutRef = useRef(() => {});
-  useEffect(() => { queueRef.current = queue; }, [queue]);
-  useEffect(() => { indexRef.current = currentIndex; }, [currentIndex]);
+  useEffect(() => { queueRef.current = queue; try { localStorage.setItem('dj_queue', JSON.stringify(queue)); } catch {} }, [queue]);
+  useEffect(() => { indexRef.current = currentIndex; try { localStorage.setItem('dj_index', String(currentIndex)); } catch {} }, [currentIndex]);
 
   const currentSong = currentIndex >= 0 ? queue[currentIndex] : null;
 
@@ -56,6 +60,16 @@ export function DjProvider({ children }) {
   }, [audio, currentSong, masterVolume]);
 
   useEffect(() => { applyVolume(); }, [applyVolume]);
+
+  // restore the audio source on reload so the saved queue can resume
+  useEffect(() => {
+    if (!audio) return;
+    const song = queue[currentIndex];
+    if (!song) return;
+    const url = song.preview_url || song.file_url;
+    if (url) audio.src = url;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const playIndex = useCallback((index) => {
     const q = queueRef.current;
