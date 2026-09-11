@@ -61,10 +61,20 @@ export default function Playlists() {
     navigate('/');
   };
 
-  const shufflePlaylist = (pl) => {
-    const count = (pl.song_ids || []).length;
-    if (!count) return;
-    loadPlaylist(pl, Math.floor(Math.random() * count));
+  const shufflePlaylist = async (pl) => {
+    const ids = pl.song_ids || [];
+    if (!ids.length) return;
+    let fresh = songs;
+    try {
+      fresh = await base44.entities.Song.list('-updated_date', 200);
+      setSongs(fresh);
+    } catch {}
+    const byId = new Map(fresh.map((s) => [s.id, s]));
+    const ordered = ids.map((id) => byId.get(id)).filter(Boolean);
+    const weighted = ordered.map((song) => ({ song, count: song.play_count || 0, rand: Math.random() }));
+    weighted.sort((a, b) => a.count - b.count || a.rand - b.rand);
+    dj.playQueueFrom(weighted.map((w) => w.song), 0);
+    navigate('/');
   };
 
   return (

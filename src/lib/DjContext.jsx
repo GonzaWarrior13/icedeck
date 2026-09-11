@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useRef, useState, useEffect, useCallback } from 'react';
+import { base44 } from '@/api/base44Client';
 
 const GOAL_HORN_URL = 'https://media.base44.com/files/public/6a8f48cd9a055819d8b79b87/d73c0e5ef_TorontoMapleLeafsGoalHornNoSong.mp3';
 
@@ -62,6 +63,9 @@ export function DjProvider({ children }) {
     const song = q[index];
     setCurrentIndex(index);
     setCurrentTime(0);
+    if (song.id) {
+      base44.entities.Song.update(song.id, { play_count: (song.play_count || 0) + 1 }).catch(() => {});
+    }
     if (!audio) return;
     const url = song.preview_url || song.file_url;
     if (!url) return;
