@@ -107,17 +107,17 @@ export default function Playlists() {
                 <button onClick={() => shufflePlaylist(pl)} className="w-10 h-10 rounded-full bg-slate-800 text-cyan-300 flex items-center justify-center hover:bg-slate-700 transition" title="Shuffle setlist">
                   <Shuffle className="w-4 h-4" />
                 </button>
-                <button
-                  onClick={() => dj.setGoalSetlist(dj.goalSetlistId === pl.id ? null : pl.id)}
-                  className={`w-10 h-10 rounded-full flex items-center justify-center transition border ${dj.goalSetlistId === pl.id ? 'bg-amber-500 text-slate-950 border-amber-400 ring-2 ring-amber-400/40' : 'bg-slate-800 text-amber-300 border-slate-700 hover:bg-slate-700'}`}
-                  title={dj.goalSetlistId === pl.id ? 'Default goal setlist — click to clear' : 'Set as default goal setlist'}
-                >
-                  <Target className="w-4 h-4" />
-                </button>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium truncate">{pl.name}</p>
                   <p className="text-xs text-slate-500">{count} tracks</p>
                 </div>
+                <button
+                  onClick={() => dj.setGoalSetlist(dj.goalSetlistId === pl.id ? null : pl.id)}
+                  className={`p-2 rounded-lg transition ${dj.goalSetlistId === pl.id ? 'text-amber-400' : 'text-slate-500 hover:text-amber-300'}`}
+                  title={dj.goalSetlistId === pl.id ? 'Default goal setlist — click to clear' : 'Set as default goal setlist'}
+                >
+                  <Target className="w-4 h-4" />
+                </button>
                 <button onClick={() => openEdit(pl)} className="p-2 rounded-lg text-slate-400 hover:text-cyan-300" title="Edit setlist">
                   <Pencil className="w-4 h-4" />
                 </button>
