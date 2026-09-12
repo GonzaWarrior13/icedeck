@@ -50,6 +50,32 @@ export function DjProvider({ children }) {
   const goalTimerRef = useRef(null);
   const playQueueFromRef = useRef(() => {});
   const fadeOutRef = useRef(() => {});
+  const hotkeysRef = useRef({});
+  const [hotkeyVersion, setHotkeyVersion] = useState(0);
+  const refreshHotkeys = useCallback(() => setHotkeyVersion((v) => v + 1), []);
+
+  // load playlists + songs and build a hotkey -> resolved songs map
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [pls, sgs] = await Promise.all([
+          base44.entities.Playlist.list('-updated_date', 100),
+          base44.entities.Song.list('-updated_date', 200),
+        ]);
+        if (cancelled) return;
+        const byId = new Map(sgs.map((s) => [s.id, s]));
+        const map = {};
+        pls.forEach((pl) => {
+          if (!pl.hotkey) return;
+          const songs = (pl.song_ids || []).map((id) => byId.get(id)).filter(Boolean);
+          if (songs.length) map[pl.hotkey] = songs;
+        });
+        hotkeysRef.current = map;
+      } catch {}
+    })();
+    return () => { cancelled = true; };
+  }, [hotkeyVersion]);
   useEffect(() => { queueRef.current = queue; try { localStorage.setItem('dj_queue', JSON.stringify(queue)); } catch {} }, [queue]);
   useEffect(() => { indexRef.current = currentIndex; try { localStorage.setItem('dj_index', String(currentIndex)); } catch {} }, [currentIndex]);
 
@@ -219,6 +245,13 @@ export function DjProvider({ children }) {
         const ae = document.activeElement;
         if (ae && ae !== document.body) ae.blur();
       };
+      const normKey = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+      if (hotkeysRef.current[normKey]) {
+        e.preventDefault();
+        dropFocus();
+        playQueueFromRef.current(hotkeysRef.current[normKey], 0);
+        return;
+      }
       if (e.code === 'Space' || e.key === ' ') {
         e.preventDefault();
         dropFocus();
@@ -297,7 +330,7 @@ export function DjProvider({ children }) {
 
   const value = {
     queue, currentIndex, currentSong, isPlaying, currentTime, duration,
-    masterVolume, isFading, audio, goalPlaying, goalSetlistId, setGoalSetlist,
+    masterVolume, isFading, audio, goalPlaying, goalSetlistId, setGoalSetlist, refreshHotkeys,
     play, pause, next, prev, seek, setMasterVolume, fadeOut, triggerGoal, stopGoal,
     addToQueue, addManyToQueue, removeFromQueue, reorderQueue, clearQueue, playNow, playQueueFrom,
   };

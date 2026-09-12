@@ -31,25 +31,27 @@ export default function Playlists() {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  const openCreate = () => setEditor({ id: null, name: '', songIds: [] });
-  const openEdit = (pl) => setEditor({ id: pl.id, name: pl.name, songIds: [...(pl.song_ids || [])] });
+  const openCreate = () => setEditor({ id: null, name: '', songIds: [], hotkey: '' });
+  const openEdit = (pl) => setEditor({ id: pl.id, name: pl.name, songIds: [...(pl.song_ids || [])], hotkey: pl.hotkey || '' });
 
-  const handleSave = async (name, songIds) => {
+  const handleSave = async (name, songIds, hotkey) => {
     if (!name) return;
     if (editor.id) {
-      const updated = await base44.entities.Playlist.update(editor.id, { name, song_ids: songIds });
+      const updated = await base44.entities.Playlist.update(editor.id, { name, song_ids: songIds, hotkey: hotkey || '' });
       setPlaylists((prev) => prev.map((p) => (p.id === editor.id ? updated : p)));
     } else {
-      const created = await base44.entities.Playlist.create({ name, song_ids: songIds });
+      const created = await base44.entities.Playlist.create({ name, song_ids: songIds, hotkey: hotkey || '' });
       setPlaylists((prev) => [created, ...prev]);
     }
     setEditor(null);
+    dj.refreshHotkeys();
   };
 
   const deletePlaylist = async (pl) => {
     if (!confirm(`Delete setlist "${pl.name}"?`)) return;
     await base44.entities.Playlist.delete(pl.id);
     setPlaylists((prev) => prev.filter((p) => p.id !== pl.id));
+    dj.refreshHotkeys();
   };
 
   const resolveSongs = async (pl) => {
@@ -94,6 +96,7 @@ export default function Playlists() {
         <SetlistEditor
           initialName={editor.name}
           initialSongIds={editor.songIds}
+          initialHotkey={editor.hotkey}
           songs={songs}
           onCancel={() => setEditor(null)}
           onSave={handleSave}
@@ -120,7 +123,7 @@ export default function Playlists() {
                 </button>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium truncate">{pl.name}</p>
-                  <p className="text-xs text-slate-500">{count} tracks</p>
+                  <p className="text-xs text-slate-500">{count} tracks{pl.hotkey ? ` · key ${pl.hotkey.toUpperCase()}` : ''}</p>
                 </div>
                 <button
                   onClick={() => dj.setGoalSetlist(dj.goalSetlistId === pl.id ? null : pl.id)}

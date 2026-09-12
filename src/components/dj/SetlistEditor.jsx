@@ -5,12 +5,31 @@ import { Label } from '@/components/ui/label';
 import { Save, X, ChevronUp, ChevronDown, Trash2, Plus, Search } from 'lucide-react';
 import { formatTime } from '@/lib/audio';
 
-export default function SetlistEditor({ initialName = '', initialSongIds = [], songs = [], onCancel, onSave }) {
+export default function SetlistEditor({ initialName = '', initialSongIds = [], initialHotkey = '', songs = [], onCancel, onSave }) {
   const [name, setName] = useState(initialName);
   const [ids, setIds] = useState(initialSongIds);
+  const [hotkey, setHotkey] = useState(initialHotkey);
+  const [recording, setRecording] = useState(false);
   const [query, setQuery] = useState('');
 
-  useEffect(() => { setName(initialName); setIds(initialSongIds); }, [initialName, initialSongIds]);
+  useEffect(() => { setName(initialName); setIds(initialSongIds); setHotkey(initialHotkey || ''); }, [initialName, initialSongIds, initialHotkey]);
+
+  useEffect(() => {
+    if (!recording) return;
+    const onKey = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.key === 'Escape') { setRecording(false); return; }
+      if (e.key === 'Backspace') { setHotkey(''); setRecording(false); return; }
+      const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+      if (/^(f\d{1,2})$/i.test(key) || /^[a-z0-9]$/.test(key)) {
+        setHotkey(key);
+        setRecording(false);
+      }
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [recording]);
 
   const selected = useMemo(() => ids.map((id) => songs.find((s) => s.id === id)).filter(Boolean), [ids, songs]);
   const available = useMemo(() => {
@@ -31,12 +50,26 @@ export default function SetlistEditor({ initialName = '', initialSongIds = [], s
           <Label className="text-xs text-slate-400">Setlist name</Label>
           <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Warmup mix" className="bg-slate-950 border-slate-700" autoFocus />
         </div>
-        <Button onClick={() => onSave(name.trim(), ids)} disabled={!name.trim()} className="bg-cyan-400 text-slate-950 hover:bg-cyan-300">
+        <Button onClick={() => onSave(name.trim(), ids, hotkey)} disabled={!name.trim()} className="bg-cyan-400 text-slate-950 hover:bg-cyan-300">
           <Save className="w-4 h-4 mr-1" /> Save
         </Button>
         <Button variant="outline" onClick={onCancel} className="bg-transparent border-slate-700 text-slate-200 hover:bg-slate-800">
           <X className="w-4 h-4" />
         </Button>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <Label className="text-xs text-slate-400 shrink-0">Hotkey</Label>
+        <button
+          onClick={() => setRecording((r) => !r)}
+          className={`px-3 py-1.5 rounded-lg text-sm border transition ${recording ? 'border-cyan-400 text-cyan-300 bg-cyan-400/10 animate-pulse' : hotkey ? 'border-slate-700 bg-slate-950 text-slate-200 hover:border-slate-600' : 'border-dashed border-slate-700 bg-slate-950/40 text-slate-500 hover:border-slate-600'}`}
+        >
+          {recording ? 'Press a key…' : hotkey ? hotkey.toUpperCase() : 'Set key'}
+        </button>
+        {hotkey && !recording && (
+          <button onClick={() => setHotkey('')} className="text-xs text-slate-500 hover:text-rose-300">Clear</button>
+        )}
+        <span className="text-[11px] text-slate-600">Press this key anytime to play the setlist instantly.</span>
       </div>
 
       <div>

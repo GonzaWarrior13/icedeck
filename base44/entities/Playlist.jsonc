@@ -13,6 +13,9 @@
       "items": {
         "type": "string"
       }
+    },
+    "hotkey": {
+      "type": "string"
     }
   },
   "required": [
