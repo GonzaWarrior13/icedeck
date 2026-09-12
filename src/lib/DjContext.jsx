@@ -189,14 +189,24 @@ export function DjProvider({ children }) {
       const tag = (t?.tagName || '').toLowerCase();
       if (tag === 'input' || tag === 'textarea' || t?.isContentEditable) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
+      // drop focus from any clicked control so the key acts on the player, not the button
+      const dropFocus = () => {
+        const ae = document.activeElement;
+        if (ae && ae !== document.body) ae.blur();
+      };
       if (e.code === 'Space' || e.key === ' ') {
-        if (goalPlaying) { e.preventDefault(); stopGoal(); return; }
         e.preventDefault();
+        dropFocus();
+        if (goalPlaying) { stopGoal(); return; }
         if (isPlaying) pause();
         else if (currentSong) play();
       } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        dropFocus();
         next();
       } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        dropFocus();
         prev();
       }
     };
