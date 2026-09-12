@@ -19,8 +19,10 @@ export function DjProvider({ children }) {
   const audioRef = useRef(null);
   if (typeof Audio !== 'undefined' && !audioRef.current) {
     audioRef.current = new Audio();
+    audioRef.current.preload = 'auto';
   }
   const audio = audioRef.current;
+  const prefetchRef = useRef(null);
   const goalAudioRef = useRef(null);
 
   const [queue, setQueue] = useState(() => {
@@ -61,13 +63,35 @@ export function DjProvider({ children }) {
 
   useEffect(() => { applyVolume(); }, [applyVolume]);
 
+  // prefetch the next queued track so it starts instantly when the user advances
+  const prefetchNext = useCallback(() => {
+    const q = queueRef.current;
+    const ni = indexRef.current + 1;
+    const nextSong = ni < q.length ? q[ni] : null;
+    if (!nextSong) return;
+    const url = nextSong.preview_url || nextSong.file_url;
+    if (!url) return;
+    if (!prefetchRef.current && typeof Audio !== 'undefined') {
+      prefetchRef.current = new Audio();
+    }
+    const p = prefetchRef.current;
+    if (!p) return;
+    if (p.src !== url) {
+      p.preload = 'auto';
+      p.src = url;
+      p.load();
+    }
+  }, []);
+  useEffect(() => { prefetchNext(); }, [queue, currentIndex, prefetchNext]);
+
   // restore the audio source on reload so the saved queue can resume
   useEffect(() => {
     if (!audio) return;
     const song = queue[currentIndex];
     if (!song) return;
     const url = song.preview_url || song.file_url;
-    if (url) audio.src = url;
+    if (url) { audio.src = url; }
+    prefetchNext();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -93,6 +117,7 @@ export function DjProvider({ children }) {
       };
       audio.addEventListener('loadedmetadata', onMeta);
     }
+    prefetchNext();
   }, [audio]);
 
   const nextRef = useRef(() => {});
