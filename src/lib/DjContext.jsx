@@ -51,6 +51,7 @@ export function DjProvider({ children }) {
   const playQueueFromRef = useRef(() => {});
   const fadeOutRef = useRef(() => {});
   const hotkeysRef = useRef({});
+  const playlistSongsRef = useRef({});
   const goalSetlistIdRef = useRef(null);
   useEffect(() => { goalSetlistIdRef.current = goalSetlistId; }, [goalSetlistId]);
   const [hotkeyVersion, setHotkeyVersion] = useState(0);
@@ -68,12 +69,15 @@ export function DjProvider({ children }) {
         if (cancelled) return;
         const byId = new Map(sgs.map((s) => [s.id, s]));
         const map = {};
+        const songsMap = {};
         pls.forEach((pl) => {
-          if (!pl.hotkey) return;
           const songs = (pl.song_ids || []).map((id) => byId.get(id)).filter(Boolean);
+          if (songs.length) songsMap[pl.id] = songs;
+          if (!pl.hotkey) return;
           if (songs.length) map[pl.hotkey] = { songs, playlistId: pl.id };
         });
         hotkeysRef.current = map;
+        playlistSongsRef.current = songsMap;
       } catch {}
     })();
     return () => { cancelled = true; };
@@ -248,19 +252,27 @@ export function DjProvider({ children }) {
         if (ae && ae !== document.body) ae.blur();
       };
       const normKey = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+      if (normKey === 'g') {
+        e.preventDefault();
+        dropFocus();
+        const gsid = goalSetlistIdRef.current;
+        const songs = gsid ? playlistSongsRef.current[gsid] : null;
+        if (songs && songs.length) {
+          const weighted = songs.map((song) => ({ song, count: song.play_count || 0, rand: Math.random() }));
+          weighted.sort((a, b) => a.count - b.count || a.rand - b.rand);
+          triggerGoal(weighted.map((w) => w.song), 0);
+        } else {
+          triggerGoal();
+        }
+        return;
+      }
       const entry = hotkeysRef.current[normKey];
       if (entry) {
         e.preventDefault();
         dropFocus();
         const weighted = entry.songs.map((song) => ({ song, count: song.play_count || 0, rand: Math.random() }));
         weighted.sort((a, b) => a.count - b.count || a.rand - b.rand);
-        const shuffled = weighted.map((w) => w.song);
-        if (entry.playlistId && entry.playlistId === goalSetlistIdRef.current) {
-          const startIdx = shuffled.length ? Math.floor(Math.random() * shuffled.length) : 0;
-          triggerGoal(shuffled, startIdx);
-        } else {
-          playQueueFromRef.current(shuffled, 0);
-        }
+        playQueueFromRef.current(weighted.map((w) => w.song), 0);
         return;
       }
       if (e.code === 'Space' || e.key === ' ') {
