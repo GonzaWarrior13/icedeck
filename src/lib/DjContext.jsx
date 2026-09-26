@@ -249,7 +249,9 @@ export function DjProvider({ children }) {
       if (hotkeysRef.current[normKey]) {
         e.preventDefault();
         dropFocus();
-        playQueueFromRef.current(hotkeysRef.current[normKey], 0);
+        const weighted = hotkeysRef.current[normKey].map((song) => ({ song, count: song.play_count || 0, rand: Math.random() }));
+        weighted.sort((a, b) => a.count - b.count || a.rand - b.rand);
+        playQueueFromRef.current(weighted.map((w) => w.song), 0);
         return;
       }
       if (e.code === 'Space' || e.key === ' ') {
