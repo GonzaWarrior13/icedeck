@@ -53,6 +53,9 @@ export function DjProvider({ children }) {
   const hotkeysRef = useRef({});
   const playlistSongsRef = useRef({});
   const goalSetlistIdRef = useRef(null);
+  const setlistPlayedRef = useRef({}); // setlistId -> Set of songIds played this cycle
+  const activeSetlistIdRef = useRef(null);
+  const playSetlistRef = useRef(() => {});
   useEffect(() => { goalSetlistIdRef.current = goalSetlistId; }, [goalSetlistId]);
   const [hotkeyVersion, setHotkeyVersion] = useState(0);
   const refreshHotkeys = useCallback(() => setHotkeyVersion((v) => v + 1), []);
@@ -131,6 +134,12 @@ export function DjProvider({ children }) {
     setCurrentTime(0);
     if (song.id) {
       base44.entities.Song.update(song.id, { play_count: (song.play_count || 0) + 1 }).catch(() => {});
+      const sid = activeSetlistIdRef.current;
+      if (sid) {
+        let played = setlistPlayedRef.current[sid];
+        if (!played) { played = new Set(); setlistPlayedRef.current[sid] = played; }
+        played.add(song.id);
+      }
     }
     if (!audio) return;
     const url = song.preview_url || song.file_url;
@@ -191,7 +200,7 @@ export function DjProvider({ children }) {
   }, [audio, currentSong, isFading, masterVolume, next]);
   fadeOutRef.current = fadeOut;
 
-  const triggerGoal = useCallback((queueSongs, startIndex) => {
+  const triggerGoal = useCallback((queueSongs, startIndex, setlistId) => {
     audio?.pause();
     setIsPlaying(false);
     if (goalTimerRef.current) { clearTimeout(goalTimerRef.current); goalTimerRef.current = null; }
@@ -200,7 +209,8 @@ export function DjProvider({ children }) {
       const idx = startIndex ?? 0;
       goalTimerRef.current = setTimeout(() => {
         goalTimerRef.current = null;
-        playQueueFromRef.current(songs, idx);
+        if (setlistId) playSetlistRef.current(setlistId, songs);
+        else playQueueFromRef.current(songs, idx);
       }, 4000);
     }
     let ga = goalAudioRef.current;
@@ -254,12 +264,6 @@ export function DjProvider({ children }) {
           return ids.map((id) => byId.get(id)).filter(Boolean);
         } catch { return []; }
       };
-      const playShuffled = (songs, then) => {
-        if (!songs.length) return;
-        const weighted = songs.map((song) => ({ song, count: song.play_count || 0, rand: Math.random() }));
-        weighted.sort((a, b) => a.count - b.count || a.rand - b.rand);
-        then(weighted.map((w) => w.song), 0);
-      };
       const normKey = e.key.length === 1 ? e.key.toLowerCase() : e.key;
       if (normKey === 'g') {
         e.preventDefault();
@@ -270,7 +274,7 @@ export function DjProvider({ children }) {
           (async () => {
             const songs = await resolveFresh(ids);
             if (!songs.length) return;
-            playShuffled(songs, triggerGoal);
+            triggerGoal(songs, 0, gsid);
           })();
         } else {
           triggerGoal();
@@ -284,7 +288,7 @@ export function DjProvider({ children }) {
         (async () => {
           const songs = await resolveFresh(entry.songIds);
           if (!songs.length) return;
-          playShuffled(songs, playQueueFromRef.current);
+          playSetlistRef.current(entry.playlistId, songs);
         })();
         return;
       }
@@ -351,24 +355,46 @@ export function DjProvider({ children }) {
     setIsPlaying(false);
   }, [audio]);
   const playNow = useCallback((song) => {
+    activeSetlistIdRef.current = null;
     queueRef.current = [song];
     setQueue([song]);
     setCurrentIndex(-1);
     playIndex(0);
   }, [playIndex]);
   const playQueueFrom = useCallback((songs, idx = 0) => {
+    activeSetlistIdRef.current = null;
     queueRef.current = songs;
     setQueue(songs);
     setCurrentIndex(-1);
     playIndex(idx);
   }, [playIndex]);
   playQueueFromRef.current = playQueueFrom;
+  // play a setlist with a no-repeat shuffle bag: a song can't replay until every
+  // other song in the setlist has been used, then the cycle resets.
+  const playSetlist = useCallback((setlistId, songs) => {
+    if (!songs || !songs.length) return;
+    let played = setlistPlayedRef.current[setlistId];
+    if (!played) { played = new Set(); setlistPlayedRef.current[setlistId] = played; }
+    let available = songs.filter((s) => !played.has(s.id));
+    if (!available.length) { played.clear(); available = songs; }
+    const arr = [...available];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    activeSetlistIdRef.current = setlistId;
+    queueRef.current = arr;
+    setQueue(arr);
+    setCurrentIndex(-1);
+    playIndex(0);
+  }, [playIndex]);
+  playSetlistRef.current = playSetlist;
 
   const value = {
     queue, currentIndex, currentSong, isPlaying, currentTime, duration,
     masterVolume, isFading, audio, goalPlaying, goalSetlistId, setGoalSetlist, refreshHotkeys,
     play, pause, next, prev, seek, setMasterVolume, fadeOut, triggerGoal, stopGoal,
-    addToQueue, addManyToQueue, removeFromQueue, reorderQueue, clearQueue, playNow, playQueueFrom,
+    addToQueue, addManyToQueue, removeFromQueue, reorderQueue, clearQueue, playNow, playQueueFrom, playSetlist,
   };
   return <DjContext.Provider value={value}>{children}</DjContext.Provider>;
 }
