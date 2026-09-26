@@ -54,6 +54,7 @@ export function DjProvider({ children }) {
   const playlistSongsRef = useRef({});
   const goalSetlistIdRef = useRef(null);
   const setlistPlayedRef = useRef({}); // setlistId -> Set of songIds played this cycle
+  const setlistLastRef = useRef({}); // setlistId -> last songId played (across cycles)
   const activeSetlistIdRef = useRef(null);
   const playSetlistRef = useRef(() => {});
   useEffect(() => { goalSetlistIdRef.current = goalSetlistId; }, [goalSetlistId]);
@@ -139,6 +140,7 @@ export function DjProvider({ children }) {
         let played = setlistPlayedRef.current[sid];
         if (!played) { played = new Set(); setlistPlayedRef.current[sid] = played; }
         played.add(song.id);
+        setlistLastRef.current[sid] = song.id;
       }
     }
     if (!audio) return;
@@ -377,10 +379,15 @@ export function DjProvider({ children }) {
     if (!played) { played = new Set(); setlistPlayedRef.current[setlistId] = played; }
     let available = songs.filter((s) => !played.has(s.id));
     if (!available.length) { played.clear(); available = songs; }
-    const arr = [...available];
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
+    // weighted: least-played first, random tiebreak
+    const weighted = available.map((s) => ({ song: s, count: s.play_count || 0, rand: Math.random() }));
+    weighted.sort((a, b) => a.count - b.count || a.rand - b.rand);
+    const arr = weighted.map((w) => w.song);
+    // don't start a fresh cycle with the song that ended the previous one
+    const lastId = setlistLastRef.current[setlistId];
+    if (lastId && arr.length > 1 && arr[0].id === lastId) {
+      const swapWith = 1 + Math.floor(Math.random() * (arr.length - 1));
+      [arr[0], arr[swapWith]] = [arr[swapWith], arr[0]];
     }
     activeSetlistIdRef.current = setlistId;
     queueRef.current = arr;
