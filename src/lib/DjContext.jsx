@@ -62,19 +62,15 @@ export function DjProvider({ children }) {
     let cancelled = false;
     (async () => {
       try {
-        const [pls, sgs] = await Promise.all([
-          base44.entities.Playlist.list('-updated_date', 100),
-          base44.entities.Song.list('-updated_date', 200),
-        ]);
+        const pls = await base44.entities.Playlist.list('-updated_date', 100);
         if (cancelled) return;
-        const byId = new Map(sgs.map((s) => [s.id, s]));
         const map = {};
         const songsMap = {};
         pls.forEach((pl) => {
-          const songs = (pl.song_ids || []).map((id) => byId.get(id)).filter(Boolean);
-          if (songs.length) songsMap[pl.id] = songs;
+          const ids = pl.song_ids || [];
+          if (ids.length) songsMap[pl.id] = ids;
           if (!pl.hotkey) return;
-          if (songs.length) map[pl.hotkey] = { songs, playlistId: pl.id };
+          if (ids.length) map[pl.hotkey] = { songIds: ids, playlistId: pl.id };
         });
         hotkeysRef.current = map;
         playlistSongsRef.current = songsMap;
@@ -251,16 +247,31 @@ export function DjProvider({ children }) {
         const ae = document.activeElement;
         if (ae && ae !== document.body) ae.blur();
       };
+      const resolveFresh = async (ids) => {
+        try {
+          const all = await base44.entities.Song.list('-updated_date', 200);
+          const byId = new Map(all.map((s) => [s.id, s]));
+          return ids.map((id) => byId.get(id)).filter(Boolean);
+        } catch { return []; }
+      };
+      const playShuffled = (songs, then) => {
+        if (!songs.length) return;
+        const weighted = songs.map((song) => ({ song, count: song.play_count || 0, rand: Math.random() }));
+        weighted.sort((a, b) => a.count - b.count || a.rand - b.rand);
+        then(weighted.map((w) => w.song), 0);
+      };
       const normKey = e.key.length === 1 ? e.key.toLowerCase() : e.key;
       if (normKey === 'g') {
         e.preventDefault();
         dropFocus();
         const gsid = goalSetlistIdRef.current;
-        const songs = gsid ? playlistSongsRef.current[gsid] : null;
-        if (songs && songs.length) {
-          const weighted = songs.map((song) => ({ song, count: song.play_count || 0, rand: Math.random() }));
-          weighted.sort((a, b) => a.count - b.count || a.rand - b.rand);
-          triggerGoal(weighted.map((w) => w.song), 0);
+        const ids = gsid ? playlistSongsRef.current[gsid] : null;
+        if (ids && ids.length) {
+          (async () => {
+            const songs = await resolveFresh(ids);
+            if (!songs.length) return;
+            playShuffled(songs, triggerGoal);
+          })();
         } else {
           triggerGoal();
         }
@@ -270,9 +281,11 @@ export function DjProvider({ children }) {
       if (entry) {
         e.preventDefault();
         dropFocus();
-        const weighted = entry.songs.map((song) => ({ song, count: song.play_count || 0, rand: Math.random() }));
-        weighted.sort((a, b) => a.count - b.count || a.rand - b.rand);
-        playQueueFromRef.current(weighted.map((w) => w.song), 0);
+        (async () => {
+          const songs = await resolveFresh(entry.songIds);
+          if (!songs.length) return;
+          playShuffled(songs, playQueueFromRef.current);
+        })();
         return;
       }
       if (e.code === 'Space' || e.key === ' ') {
