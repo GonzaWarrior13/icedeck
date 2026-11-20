@@ -1,23 +1,21 @@
 import React from 'react';
-import { Zap } from 'lucide-react';
+import { Play } from 'lucide-react';
 
 export default function QuickAccess({ songs, onPlay }) {
   if (!songs.length) return null;
   return (
     <div>
-      <div className="flex items-center gap-2 mb-2 text-xs uppercase tracking-wider text-muted-foreground">
-        <Zap className="w-3.5 h-3.5 text-primary" aria-hidden="true" /> Quick Access
-      </div>
-      <div className="flex flex-wrap gap-2">
+      <p className="section-label mb-3">Quick access</p>
+      <div className="flex gap-3 overflow-x-auto scroll-area pb-1">
         {songs.map((song) => (
           <button
             key={song.id}
             onClick={() => onPlay(song)}
             aria-label={`Play ${song.title}`}
-            className="min-h-11 px-3 py-2 rounded-lg bg-card/70 border border-border hover:border-primary/50 hover:bg-primary/5 transition text-sm text-left max-w-[220px]"
+            className="shrink-0 w-[168px] h-[72px] rounded-[10px] bg-secondary px-4 flex flex-col justify-center gap-1 text-left transition-colors hover:bg-secondary/70"
           >
-            <span className="block truncate font-medium">{song.title}</span>
-            <span className="block truncate text-xs text-muted-foreground">{song.artist || 'Unknown'}</span>
+            <Play className="w-3.5 h-3.5 text-primary fill-current" aria-hidden="true" />
+            <span className="w-full truncate text-sm font-medium">{song.title}</span>
           </button>
         ))}
       </div>

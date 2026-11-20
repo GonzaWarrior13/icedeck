@@ -113,17 +113,17 @@ export default function SpotifyImport({ existingSongs = [], onImported }) {
     <div className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="inline-flex items-center gap-2 min-h-11 rounded-lg bg-secondary hover:bg-secondary/80 px-3 py-2 text-sm text-foreground transition"
+        className="inline-flex items-center gap-2 min-h-10 rounded-[10px] border border-border px-3.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
         aria-expanded={open}
       >
-        <Music className="w-4 h-4 text-emerald-400" aria-hidden="true" /> Spotify
+        <Music className="w-4 h-4" aria-hidden="true" /> Spotify
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-96 max-w-[calc(100vw-2rem)] z-30 rounded-xl border border-border bg-popover shadow-xl p-3 space-y-3">
+        <div className="absolute right-0 mt-2 w-96 max-w-[calc(100vw-2rem)] z-30 rounded-[10px] border border-border bg-popover shadow-[0_16px_40px_rgba(0,0,0,0.5)] p-4 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm font-medium text-popover-foreground">
-              <Music className="w-4 h-4 text-emerald-400" aria-hidden="true" /> Spotify playlists
+              <Music className="w-4 h-4 text-primary" aria-hidden="true" /> Spotify playlists
             </div>
             <button
               onClick={() => setOpen(false)}
@@ -139,7 +139,7 @@ export default function SpotifyImport({ existingSongs = [], onImported }) {
               <button
                 onClick={handleConnect}
                 disabled={connecting}
-                className="w-full inline-flex items-center justify-center gap-2 min-h-11 rounded-lg bg-primary hover:bg-primary/90 disabled:opacity-50 px-3 py-2 text-sm font-medium text-primary-foreground"
+                className="w-full inline-flex items-center justify-center gap-2 min-h-10 rounded-[10px] bg-foreground text-background hover:bg-foreground/90 disabled:opacity-50 px-3 text-sm font-semibold"
               >
                 {connecting ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> : null}
                 {connecting ? 'Opening Spotify…' : 'Connect Spotify'}
@@ -152,7 +152,7 @@ export default function SpotifyImport({ existingSongs = [], onImported }) {
               </p>
               <button
                 onClick={copyRedirect}
-                className="w-full min-h-11 rounded-lg border border-border text-xs font-medium text-foreground hover:bg-secondary/60"
+                className="w-full min-h-10 rounded-[10px] border border-border text-xs font-medium text-foreground hover:bg-secondary transition-colors"
               >
                 {copied ? 'Copied' : 'Copy redirect URI'}
               </button>
@@ -160,7 +160,7 @@ export default function SpotifyImport({ existingSongs = [], onImported }) {
           ) : (
             <div className="space-y-2">
               <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                <span className="inline-flex items-center gap-1 text-emerald-400">
+                <span className="inline-flex items-center gap-1 text-primary">
                   <Check className="w-3 h-3" aria-hidden="true" /> Connected
                 </span>
                 <button onClick={handleDisconnect} className="underline hover:text-foreground">Disconnect</button>
@@ -183,7 +183,7 @@ export default function SpotifyImport({ existingSongs = [], onImported }) {
                       <button
                         onClick={() => handleImport(pl)}
                         disabled={!!importingId}
-                        className="shrink-0 min-h-11 px-3 rounded-lg bg-secondary hover:bg-secondary/80 disabled:opacity-50 text-xs font-medium"
+                        className="shrink-0 min-h-9 px-3 rounded-[8px] border border-border hover:bg-secondary disabled:opacity-50 text-xs font-medium transition-colors"
                       >
                         {importingId === pl.id ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> : 'Import'}
                       </button>
@@ -199,8 +199,8 @@ export default function SpotifyImport({ existingSongs = [], onImported }) {
             </div>
           )}
 
-          {error && <p className="text-xs text-red-400">{error}</p>}
-          {message && <p className="text-xs text-emerald-400">{message}</p>}
+          {error && <p className="text-xs text-destructive">{error}</p>}
+          {message && <p className="text-xs text-primary">{message}</p>}
         </div>
       )}
     </div>

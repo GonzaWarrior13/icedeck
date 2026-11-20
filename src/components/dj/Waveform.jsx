@@ -3,7 +3,7 @@ import React, { useRef, useEffect, useCallback } from 'react';
 export default function Waveform({
   peaks, duration, start, end, currentTime,
   onSeek, onStartChange, onEndChange,
-  height = 80, color = '#22d3ee',
+  height = 80, color = '#8FD6F2',
 }) {
   const canvasRef = useRef(null);
   const draggingRef = useRef(null);
@@ -20,7 +20,7 @@ export default function Waveform({
     ctx.clearRect(0, 0, cw, height);
     const mid = height / 2;
     if (!peaks || !peaks.length) {
-      ctx.fillStyle = '#334155';
+      ctx.fillStyle = '#1D2631';
       ctx.fillRect(0, mid - 1, cw, 2);
       return;
     }
@@ -31,22 +31,22 @@ export default function Waveform({
       const p = peaks[i];
       const bh = Math.max(1, p * (height * 0.92));
       const x = i * barW;
-      ctx.fillStyle = x <= playedX ? color : '#475569';
+      ctx.fillStyle = x <= playedX ? color : '#33414F';
       ctx.fillRect(x, mid - bh / 2, Math.max(1, barW - 0.5), bh);
     }
     if (duration && currentTime != null) {
       const px = (currentTime / duration) * cw;
-      ctx.fillStyle = '#f8fafc';
+      ctx.fillStyle = '#E4ECF2';
       ctx.fillRect(px - 1, 0, 2, height);
     }
     if (start != null && duration) {
       const sx = (start / duration) * cw;
-      ctx.fillStyle = '#22c55e';
+      ctx.fillStyle = '#8FD6F2';
       ctx.fillRect(sx - 2, 0, 4, height);
     }
     if (end != null && duration) {
       const ex = (end / duration) * cw;
-      ctx.fillStyle = '#ef4444';
+      ctx.fillStyle = '#FF5B4A';
       ctx.fillRect(ex - 2, 0, 4, height);
     }
   }, [peaks, duration, start, end, currentTime, height, color]);

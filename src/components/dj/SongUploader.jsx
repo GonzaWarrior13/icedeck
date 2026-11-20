@@ -63,7 +63,7 @@ export default function SongUploader({ onUploaded }) {
   };
 
   return (
-    <label className="flex items-center gap-2 px-3 py-2 rounded-lg bg-cyan-400/10 text-cyan-300 border border-cyan-400/30 hover:bg-cyan-400/20 transition cursor-pointer text-sm font-medium">
+    <label className="flex items-center gap-2 min-h-10 px-4 rounded-[10px] bg-foreground text-background hover:bg-foreground/90 transition cursor-pointer text-sm font-semibold">
       <UploadCloud className="w-4 h-4" />
       <span>{uploading ? progress : 'Upload tracks'}</span>
       {uploading && <Loader2 className="w-4 h-4 animate-spin ml-1" />}

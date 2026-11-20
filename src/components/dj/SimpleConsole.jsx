@@ -50,17 +50,17 @@ export default function SimpleConsole() {
   };
 
   return (
-    <div className="flex flex-col h-full p-4 gap-3 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+    <div className="flex flex-col h-full px-5 md:px-8 py-5 gap-5 pb-[calc(1rem+env(safe-area-inset-bottom))]">
       <header className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-lg font-semibold tracking-tight">IceDeck</h1>
-          <p className="truncate text-sm text-muted-foreground">
+          <p className="section-label">Console</p>
+          <p className="mt-1 truncate font-display text-2xl font-semibold leading-none">
             {dj.currentSong ? dj.currentSong.title : 'Nothing playing'}
           </p>
         </div>
         <Link
           to="/settings"
-          className="shrink-0 min-h-11 px-3 rounded-lg bg-secondary text-sm text-foreground flex items-center"
+          className="shrink-0 min-h-10 px-3.5 rounded-[10px] border border-border text-sm text-muted-foreground hover:text-foreground hover:bg-secondary flex items-center transition-colors"
         >
           Settings
         </Link>
@@ -70,7 +70,7 @@ export default function SimpleConsole() {
         <button
           onClick={() => (dj.isPlaying ? dj.pause() : dj.play())}
           disabled={!dj.currentSong && !dj.isPlaying}
-          className="min-h-20 rounded-2xl bg-primary text-primary-foreground flex flex-col items-center justify-center gap-1 font-semibold disabled:opacity-40 active:scale-[0.99] transition"
+          className="min-h-20 rounded-[14px] bg-primary text-primary-foreground flex flex-col items-center justify-center gap-1.5 font-semibold disabled:opacity-40 active:scale-[0.99] transition"
           aria-label={dj.isPlaying ? 'Pause' : 'Play'}
         >
           {dj.isPlaying ? <Pause className="w-7 h-7 fill-current" aria-hidden="true" /> : <Play className="w-7 h-7 fill-current" aria-hidden="true" />}
@@ -78,7 +78,7 @@ export default function SimpleConsole() {
         </button>
         <button
           onClick={triggerGoal}
-          className="min-h-20 rounded-2xl bg-amber-500 text-slate-950 flex flex-col items-center justify-center gap-1 font-semibold active:scale-[0.99] transition"
+          className="min-h-20 rounded-[14px] bg-signal text-signal-foreground flex flex-col items-center justify-center gap-1.5 font-bold uppercase tracking-[0.1em] active:scale-[0.99] transition"
           aria-label="Goal horn"
         >
           <Siren className="w-7 h-7" aria-hidden="true" />
@@ -86,15 +86,15 @@ export default function SimpleConsole() {
         </button>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto scroll-area space-y-2">
+      <div className="flex-1 min-h-0 overflow-y-auto scroll-area">
         {isLoading ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground py-3">
             <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> Loading setlists…
           </div>
         ) : chosen.length === 0 ? (
-          <div className="text-center py-8 px-4 text-sm text-muted-foreground border border-dashed border-border rounded-xl">
-            <ListMusic className="w-5 h-5 mx-auto mb-2 opacity-50" aria-hidden="true" />
-            No setlists picked yet. Choose them in Settings.
+          <div className="pt-12 text-center">
+            <ListMusic className="w-5 h-5 mx-auto mb-3 text-muted-foreground/60" aria-hidden="true" />
+            <p className="text-sm text-muted-foreground">No setlists picked yet. Choose them in Settings.</p>
           </div>
         ) : (
           <div className={`grid gap-3 ${chosen.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
@@ -103,14 +103,14 @@ export default function SimpleConsole() {
                 key={pl.id}
                 onClick={() => shufflePlaylist(pl)}
                 disabled={busyId === pl.id}
-                className="min-h-28 rounded-2xl bg-card border border-border px-3 py-4 flex flex-col items-center justify-center gap-1.5 text-center active:scale-[0.99] transition hover:border-primary/60 disabled:opacity-60"
+                className="min-h-28 rounded-[14px] bg-secondary px-3 py-4 flex flex-col items-center justify-center gap-1.5 text-center active:scale-[0.99] transition hover:bg-secondary/70 disabled:opacity-60"
                 aria-label={`Shuffle ${pl.name}`}
               >
                 {busyId === pl.id
                   ? <Loader2 className="w-6 h-6 animate-spin text-primary" aria-hidden="true" />
                   : <Shuffle className="w-6 h-6 text-primary" aria-hidden="true" />}
                 <span className="font-semibold text-base leading-tight line-clamp-2">{pl.name}</span>
-                <span className="text-xs text-muted-foreground">{(pl.song_ids || []).length} tracks</span>
+                <span className="text-xs tabular-nums text-muted-foreground">{(pl.song_ids || []).length} tracks</span>
               </button>
             ))}
           </div>

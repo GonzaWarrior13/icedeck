@@ -1,84 +1,90 @@
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter+Tight:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    /* IceDeck runs one dark palette everywhere: the rink console, the auth
-       screens and the 404 page all read from these tokens. */
-    --background: 222 47% 4%;
-    --foreground: 210 40% 96%;
-    --card: 222 47% 11%;
-    --card-foreground: 210 40% 96%;
-    --popover: 222 47% 11%;
-    --popover-foreground: 210 40% 96%;
-    --primary: 187 92% 62%;
-    --primary-foreground: 222 47% 4%;
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 96%;
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 217 33% 17%;
-    --accent-foreground: 210 40% 96%;
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 217 33% 18%;
-    --input: 217 33% 18%;
-    --ring: 187 92% 62%;
-    --chart-1: 187 92% 62%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-    --radius: 0.75rem;
-    --font-heading: ui-sans-serif, system-ui, sans-serif;
-    --font-body: ui-sans-serif, system-ui, sans-serif;
-    --font-display: ui-sans-serif, system-ui, sans-serif;
+    /* IceDeck: a rink-side broadcast console. Near-black blue-slate surfaces,
+       one ice accent for live/selected, one signal red for the goal horn. */
+    --background: 213 31% 6%;
+    --foreground: 205 35% 92%;
+    --card: 213 30% 7%;
+    --card-foreground: 205 35% 92%;
+    --popover: 212 28% 10%;
+    --popover-foreground: 205 35% 92%;
+    --primary: 197 79% 75%;
+    --primary-foreground: 213 31% 6%;
+    --secondary: 212 28% 10%;
+    --secondary-foreground: 205 35% 92%;
+    --muted: 212 28% 10%;
+    --muted-foreground: 212 14% 59%;
+    --accent: 212 28% 10%;
+    --accent-foreground: 205 35% 92%;
+    --destructive: 6 100% 65%;
+    --destructive-foreground: 213 31% 6%;
+    --signal: 6 100% 65%;
+    --signal-foreground: 213 31% 6%;
+    --border: 213 26% 15%;
+    --input: 213 26% 15%;
+    --ring: 197 79% 75%;
+    --chart-1: 197 79% 75%;
+    --chart-2: 174 45% 55%;
+    --chart-3: 38 80% 62%;
+    --chart-4: 6 100% 65%;
+    --chart-5: 212 14% 59%;
+    --radius: 0.625rem;
+    --font-heading: "Barlow Condensed", ui-sans-serif, system-ui, sans-serif;
+    --font-body: "Inter Tight", ui-sans-serif, system-ui, sans-serif;
+    --font-display: "Barlow Condensed", ui-sans-serif, system-ui, sans-serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    --sidebar-background: 222 47% 9%;
-    --sidebar-foreground: 210 40% 96%;
-    --sidebar-primary: 187 92% 62%;
-    --sidebar-primary-foreground: 222 47% 4%;
-    --sidebar-accent: 217 33% 17%;
-    --sidebar-accent-foreground: 210 40% 96%;
-    --sidebar-border: 217 33% 18%;
-    --sidebar-ring: 187 92% 62%;
+    --sidebar-background: 213 30% 7%;
+    --sidebar-foreground: 205 35% 92%;
+    --sidebar-primary: 197 79% 75%;
+    --sidebar-primary-foreground: 213 31% 6%;
+    --sidebar-accent: 212 28% 10%;
+    --sidebar-accent-foreground: 205 35% 92%;
+    --sidebar-border: 213 26% 15%;
+    --sidebar-ring: 197 79% 75%;
     --tabbar-h: calc(3.75rem + env(safe-area-inset-bottom));
   }
 
   .dark {
-    --background: 222 47% 4%;
-    --foreground: 210 40% 96%;
-    --card: 222 47% 11%;
-    --card-foreground: 210 40% 96%;
-    --popover: 222 47% 11%;
-    --popover-foreground: 210 40% 96%;
-    --primary: 187 92% 62%;
-    --primary-foreground: 222 47% 4%;
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 96%;
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 217 33% 17%;
-    --accent-foreground: 210 40% 96%;
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 217 33% 18%;
-    --input: 217 33% 18%;
-    --ring: 187 92% 62%;
-    --chart-1: 187 92% 62%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-    --sidebar-background: 222 47% 9%;
-    --sidebar-foreground: 210 40% 96%;
-    --sidebar-primary: 187 92% 62%;
-    --sidebar-primary-foreground: 222 47% 4%;
-    --sidebar-accent: 217 33% 17%;
-    --sidebar-accent-foreground: 210 40% 96%;
-    --sidebar-border: 217 33% 18%;
-    --sidebar-ring: 187 92% 62%;
+    --background: 213 31% 6%;
+    --foreground: 205 35% 92%;
+    --card: 213 30% 7%;
+    --card-foreground: 205 35% 92%;
+    --popover: 212 28% 10%;
+    --popover-foreground: 205 35% 92%;
+    --primary: 197 79% 75%;
+    --primary-foreground: 213 31% 6%;
+    --secondary: 212 28% 10%;
+    --secondary-foreground: 205 35% 92%;
+    --muted: 212 28% 10%;
+    --muted-foreground: 212 14% 59%;
+    --accent: 212 28% 10%;
+    --accent-foreground: 205 35% 92%;
+    --destructive: 6 100% 65%;
+    --destructive-foreground: 213 31% 6%;
+    --signal: 6 100% 65%;
+    --signal-foreground: 213 31% 6%;
+    --border: 213 26% 15%;
+    --input: 213 26% 15%;
+    --ring: 197 79% 75%;
+    --chart-1: 197 79% 75%;
+    --chart-2: 174 45% 55%;
+    --chart-3: 38 80% 62%;
+    --chart-4: 6 100% 65%;
+    --chart-5: 212 14% 59%;
+    --sidebar-background: 213 30% 7%;
+    --sidebar-foreground: 205 35% 92%;
+    --sidebar-primary: 197 79% 75%;
+    --sidebar-primary-foreground: 213 31% 6%;
+    --sidebar-accent: 212 28% 10%;
+    --sidebar-accent-foreground: 205 35% 92%;
+    --sidebar-border: 213 26% 15%;
+    --sidebar-ring: 197 79% 75%;
   }
 }
 
@@ -105,6 +111,7 @@
     line-height: 1.5;
     overscroll-behavior: none;
     -webkit-tap-highlight-color: transparent;
+    -webkit-font-smoothing: antialiased;
   }
 
   /* Controls are tap targets, not selectable copy. Content text keeps its selection. */
@@ -146,6 +153,11 @@
     -webkit-user-select: none;
     user-select: none;
     -webkit-touch-callout: none;
+  }
+
+  /* Small uppercase label used above every section. */
+  .section-label {
+    @apply text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground;
   }
 }
 

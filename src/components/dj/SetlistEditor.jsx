@@ -44,51 +44,79 @@ export default function SetlistEditor({ initialName = '', initialSongIds = [], i
   const moveDown = (i) => setIds((p) => { if (i >= p.length - 1) return p; const n = [...p]; [n[i + 1], n[i]] = [n[i], n[i + 1]]; return n; });
 
   return (
-    <div className="bg-card/60 border border-border rounded-2xl p-4 space-y-4">
+    <div className="bg-secondary rounded-[14px] p-5 md:p-8 space-y-6">
       <div className="flex flex-wrap items-end gap-3">
-        <div className="flex-1 min-w-[160px]">
-          <Label className="text-xs text-muted-foreground">Setlist name</Label>
-          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Warmup mix" className="bg-background border-border" autoFocus />
+        <div className="flex-1 min-w-[200px]">
+          <Label className="section-label">Setlist name</Label>
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. Warmup mix"
+            className="mt-2 h-12 bg-transparent border-0 border-b border-border rounded-none px-0 font-display text-2xl md:text-3xl font-semibold focus-visible:ring-0 focus-visible:border-primary"
+            autoFocus
+          />
         </div>
-        <Button onClick={() => onSave(name.trim(), ids, hotkey)} disabled={!name.trim()} className="min-h-11 bg-primary text-primary-foreground hover:bg-primary/90">
-          <Save className="w-4 h-4 mr-1" aria-hidden="true" /> Save
+        <Button
+          onClick={() => onSave(name.trim(), ids, hotkey)}
+          disabled={!name.trim()}
+          className="min-h-10 rounded-[10px] bg-foreground text-background hover:bg-foreground/90 font-semibold"
+        >
+          <Save className="w-4 h-4 mr-1.5" aria-hidden="true" /> Save
         </Button>
-        <Button variant="outline" onClick={onCancel} aria-label="Cancel setlist editing" className="min-h-11 min-w-11 bg-transparent border-border text-foreground hover:bg-secondary">
+        <Button
+          variant="outline"
+          onClick={onCancel}
+          aria-label="Cancel setlist editing"
+          className="min-h-10 min-w-10 rounded-[10px] bg-transparent border-border text-muted-foreground hover:bg-card hover:text-foreground"
+        >
           <X className="w-4 h-4" aria-hidden="true" />
         </Button>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <Label className="text-xs text-muted-foreground shrink-0">Hotkey</Label>
+        <Label className="section-label shrink-0">Hotkey</Label>
         <button
           onClick={() => setRecording((r) => !r)}
           aria-label={recording ? 'Press a key to assign' : hotkey ? `Hotkey ${hotkey.toUpperCase()}, change it` : 'Set a hotkey'}
-          className={`min-h-11 min-w-11 px-3 py-2 rounded-lg text-sm border transition ${recording ? 'border-primary text-primary bg-primary/10 animate-pulse' : hotkey ? 'border-border bg-background text-foreground hover:border-muted-foreground/50' : 'border-dashed border-border bg-background/40 text-muted-foreground hover:border-muted-foreground/50'}`}
+          className={`min-h-10 min-w-10 px-3 rounded-full border text-sm tabular-nums transition-colors ${
+            recording
+              ? 'border-primary text-primary bg-primary/10'
+              : hotkey
+                ? 'border-border bg-card text-foreground hover:border-muted-foreground/40'
+                : 'border-dashed border-border text-muted-foreground hover:border-muted-foreground/40'
+          }`}
         >
-          {recording ? 'Press a key…' : hotkey ? hotkey.toUpperCase() : 'Set key'}
+          {recording ? 'Press keys…' : hotkey ? hotkey.toUpperCase() : 'Set key'}
         </button>
         {hotkey && !recording && (
-          <button onClick={() => setHotkey('')} className="min-h-11 px-2 text-xs text-muted-foreground hover:text-destructive">Clear</button>
+          <button onClick={() => setHotkey('')} className="min-h-11 px-2 text-xs text-muted-foreground hover:text-destructive">
+            Clear
+          </button>
         )}
         <span className="text-xs text-muted-foreground">Press this key anytime to play the setlist instantly.</span>
       </div>
 
       <div>
-        <p className="text-xs text-muted-foreground mb-1.5">Tracks in this setlist ({selected.length})</p>
+        <p className="section-label mb-2">Tracks in this setlist ({selected.length})</p>
         {selected.length === 0 ? (
-          <p className="text-xs text-muted-foreground border border-dashed border-border rounded-lg py-6 text-center">Add tracks below.</p>
+          <p className="text-sm text-muted-foreground border border-dashed border-border rounded-[10px] py-8 text-center">
+            Add tracks below.
+          </p>
         ) : (
-          <div className="space-y-1.5 max-h-64 overflow-y-auto scroll-area pr-1">
+          <div className="divide-y divide-border max-h-64 overflow-y-auto scroll-area">
             {selected.map((s, i) => (
-              <div key={s.id} className="flex items-center gap-1.5 p-2 rounded-lg bg-background/60 border border-border">
-                <span className="text-xs text-muted-foreground w-5 text-right tabular-nums">{i + 1}</span>
+              <div key={s.id} className="flex items-center gap-2 py-2 min-h-14">
+                <span className="text-xs tabular-nums text-muted-foreground w-5 text-right">{i + 1}</span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm">{s.title}</p>
-                  <p className="truncate text-xs text-muted-foreground">{s.artist || 'Unknown'} · {formatTime(s.duration)}</p>
+                  <p className="truncate text-sm font-medium">{s.title}</p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {s.artist || 'Unknown'} <span className="opacity-60">·</span>{' '}
+                    <span className="tabular-nums">{formatTime(s.duration)}</span>
+                  </p>
                 </div>
-                <button onClick={() => moveUp(i)} disabled={i === 0} className="min-h-11 min-w-11 flex items-center justify-center rounded text-muted-foreground hover:text-primary disabled:opacity-30" aria-label={`Move ${s.title} up`}><ChevronUp className="w-4 h-4" aria-hidden="true" /></button>
-                <button onClick={() => moveDown(i)} disabled={i === selected.length - 1} className="min-h-11 min-w-11 flex items-center justify-center rounded text-muted-foreground hover:text-primary disabled:opacity-30" aria-label={`Move ${s.title} down`}><ChevronDown className="w-4 h-4" aria-hidden="true" /></button>
-                <button onClick={() => removeAt(i)} className="min-h-11 min-w-11 flex items-center justify-center rounded text-muted-foreground hover:text-destructive" aria-label={`Remove ${s.title} from setlist`}><Trash2 className="w-3.5 h-3.5" aria-hidden="true" /></button>
+                <button onClick={() => moveUp(i)} disabled={i === 0} className="min-h-11 min-w-9 flex items-center justify-center rounded-[8px] text-muted-foreground hover:text-foreground disabled:opacity-30" aria-label={`Move ${s.title} up`}><ChevronUp className="w-4 h-4" aria-hidden="true" /></button>
+                <button onClick={() => moveDown(i)} disabled={i === selected.length - 1} className="min-h-11 min-w-9 flex items-center justify-center rounded-[8px] text-muted-foreground hover:text-foreground disabled:opacity-30" aria-label={`Move ${s.title} down`}><ChevronDown className="w-4 h-4" aria-hidden="true" /></button>
+                <button onClick={() => removeAt(i)} className="min-h-11 min-w-9 flex items-center justify-center rounded-[8px] text-muted-foreground hover:text-destructive" aria-label={`Remove ${s.title} from setlist`}><Trash2 className="w-3.5 h-3.5" aria-hidden="true" /></button>
               </div>
             ))}
           </div>
@@ -96,19 +124,25 @@ export default function SetlistEditor({ initialName = '', initialSongIds = [], i
       </div>
 
       <div>
-        <p className="text-xs text-muted-foreground mb-1.5">Add tracks</p>
+        <p className="section-label mb-2">Add tracks</p>
         <div className="relative mb-2">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
-          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search your library…" aria-label="Search your library" className="min-h-11 pl-9 bg-background border-border" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search your library…"
+            aria-label="Search your library"
+            className="h-11 pl-10 rounded-[10px] bg-card border-transparent focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-primary/60"
+          />
         </div>
-        <div className="space-y-1.5 max-h-56 overflow-y-auto scroll-area pr-1">
+        <div className="max-h-56 overflow-y-auto scroll-area divide-y divide-border">
           {available.map((s) => (
-            <button key={s.id} onClick={() => addSong(s.id)} className="w-full min-h-11 flex items-center justify-between gap-2 p-2 rounded-lg bg-background/40 border border-border hover:border-muted-foreground/50 text-left" aria-label={`Add ${s.title} to setlist`}>
+            <button key={s.id} onClick={() => addSong(s.id)} className="w-full min-h-12 flex items-center justify-between gap-2 py-2 text-left hover:text-foreground" aria-label={`Add ${s.title} to setlist`}>
               <span className="truncate text-sm">{s.title} <span className="text-muted-foreground">· {s.artist || 'Unknown'}</span></span>
               <Plus className="w-4 h-4 text-primary shrink-0" aria-hidden="true" />
             </button>
           ))}
-          {!available.length && <p className="text-xs text-muted-foreground text-center py-4">No matching tracks.</p>}
+          {!available.length && <p className="text-xs text-muted-foreground text-center py-6">No matching tracks.</p>}
         </div>
       </div>
     </div>

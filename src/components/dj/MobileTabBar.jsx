@@ -55,11 +55,12 @@ export default function MobileTabBar() {
               onClick={() => go({ key, to })}
               aria-label={label}
               aria-current={active ? 'page' : undefined}
-              className={`flex flex-col items-center justify-center gap-0.5 min-h-[3.75rem] py-2 text-[12px] font-medium no-select transition-colors ${
+              className={`relative flex flex-col items-center justify-center gap-1 min-h-[3.75rem] py-2 text-[11px] font-medium tracking-wide no-select transition-colors ${
                 active ? 'text-primary' : 'text-muted-foreground'
               }`}
             >
-              <Icon className="w-5 h-5" aria-hidden="true" />
+              {active && <span className="absolute top-0 inset-x-8 h-0.5 rounded-full bg-primary" aria-hidden="true" />}
+              <Icon className="w-[22px] h-[22px]" strokeWidth={1.5} aria-hidden="true" />
               <span>{label}</span>
             </button>
           );

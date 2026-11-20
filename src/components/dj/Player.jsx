@@ -27,9 +27,10 @@ export default function Player() {
 
   if (!song) {
     return (
-      <div className="shrink-0 border-t border-border bg-card/90 backdrop-blur px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:pb-3">
-        <div className="flex items-center justify-center text-sm text-muted-foreground">
-          <Waves className="w-4 h-4 mr-2" aria-hidden="true" /> No track loaded — add one to the queue.
+      <div className="shrink-0 border-t border-border bg-card px-4 md:px-8 py-3 md:py-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:pb-4">
+        <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
+          <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50" aria-hidden="true" />
+          Nothing loaded — add a track to the queue.
         </div>
       </div>
     );
@@ -39,43 +40,45 @@ export default function Player() {
   const pct = dj.duration ? (dj.currentTime / dj.duration) * 100 : 0;
 
   return (
-    <div className="shrink-0 border-t border-border bg-card/95 backdrop-blur px-3 md:px-4 py-2.5 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:pb-3">
-      <div className="flex items-center gap-3 md:gap-4">
-        <div className="hidden sm:block min-w-0 w-48">
-          <p className="truncate font-medium text-sm">{song.title}</p>
-          <p className="truncate text-sm text-muted-foreground">{song.artist || 'Unknown'}</p>
+    <div className="shrink-0 border-t border-border bg-card px-3 md:px-8 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:pb-4">
+      <div className="flex items-center gap-3 md:gap-6">
+        <div className="hidden sm:block min-w-0 w-48 lg:w-64 shrink-0">
+          <p className="truncate text-[16px] font-semibold leading-tight">{song.title}</p>
+          <p className="truncate text-[13px] text-muted-foreground">{song.artist || 'Unknown'}</p>
         </div>
 
-        <div className="flex items-center gap-1 md:gap-2">
+        <div className="flex items-center gap-1 md:gap-1.5 shrink-0">
           <button
             onClick={dj.prev}
             aria-label="Previous track"
-            className="min-h-11 min-w-11 flex items-center justify-center rounded-full hover:bg-secondary text-foreground"
             title="Previous"
+            className="min-h-11 min-w-11 md:min-h-9 md:min-w-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
           >
             <SkipBack className="w-4 h-4" aria-hidden="true" />
           </button>
           <button
             onClick={dj.isPlaying ? dj.pause : dj.play}
             aria-label={dj.isPlaying ? 'Pause' : 'Play'}
-            className="w-11 h-11 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition"
+            className="w-[52px] h-[52px] shrink-0 rounded-full bg-primary text-primary-foreground flex items-center justify-center transition-transform active:scale-[0.96] hover:bg-primary/90"
           >
             {dj.isPlaying ? <Pause className="w-5 h-5 fill-current" aria-hidden="true" /> : <Play className="w-5 h-5 fill-current" aria-hidden="true" />}
           </button>
           <button
             onClick={dj.next}
             aria-label="Next track"
-            className="min-h-11 min-w-11 flex items-center justify-center rounded-full hover:bg-secondary text-foreground"
             title="Next"
+            className="min-h-11 min-w-11 md:min-h-9 md:min-w-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
           >
             <SkipForward className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
 
-        <div className="flex-1 flex items-center gap-2 md:gap-3">
-          <span className="hidden sm:inline text-xs text-muted-foreground tabular-nums w-10 text-right">{formatTime(dj.currentTime)}</span>
+        <div className="flex-1 min-w-0 flex items-center gap-2 md:gap-3">
+          <span className="hidden sm:inline font-display text-[15px] font-medium tabular-nums w-10 text-right text-foreground">
+            {formatTime(dj.currentTime)}
+          </span>
           <div
-            className="relative flex-1 h-1.5 rounded-full bg-secondary cursor-pointer group"
+            className="relative flex-1 h-1 rounded-full bg-border cursor-pointer group"
             onClick={(e) => {
               const rect = e.currentTarget.getBoundingClientRect();
               const frac = (e.clientX - rect.left) / rect.width;
@@ -91,19 +94,21 @@ export default function Player() {
             <div className="absolute inset-y-0 left-0 rounded-full bg-primary" style={{ width: `${pct}%` }} />
             {song.start_point > 0 && (
               <div
-                className="absolute -top-1 w-0.5 h-3.5 bg-emerald-400"
+                className="absolute -top-1.5 w-0.5 h-4 bg-primary"
                 style={{ left: `${(song.start_point / (dj.duration || 1)) * 100}%` }}
               />
             )}
           </div>
-          <span className="hidden sm:inline text-xs text-muted-foreground tabular-nums w-12">{formatTime(remaining)}</span>
+          <span className="hidden sm:inline font-display text-[15px] font-medium tabular-nums w-12 text-muted-foreground">
+            -{formatTime(remaining)}
+          </span>
         </div>
 
-        <div className="flex items-center gap-1 md:gap-2">
+        <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
           <button
             onClick={() => (dj.goalPlaying ? dj.stopGoal() : dj.fadeOut(2, false))}
             disabled={dj.isFading || (!dj.isPlaying && !dj.goalPlaying)}
-            className="hidden sm:flex items-center gap-1.5 min-h-11 px-3 rounded-lg text-xs bg-secondary hover:bg-secondary/80 text-foreground disabled:opacity-40"
+            className="hidden sm:flex items-center gap-1.5 min-h-11 px-3 rounded-[10px] border border-border text-xs font-semibold text-foreground hover:bg-secondary disabled:opacity-40 transition-colors"
             title={dj.goalPlaying ? 'Fade out goal horn' : 'Fade out & pause'}
             aria-label={dj.goalPlaying ? 'Fade out goal horn' : 'Fade out and pause'}
           >
@@ -116,7 +121,7 @@ export default function Player() {
                 if (def) goalWithPlaylist(def);
                 else goalOnly();
               }}
-              className="flex items-center gap-1.5 min-h-11 px-3 rounded-l-lg text-xs font-semibold bg-amber-500 text-slate-950 hover:bg-amber-400 transition shadow"
+              className="flex items-center gap-1.5 min-h-11 px-3 rounded-l-[10px] text-[13px] font-bold uppercase tracking-[0.1em] bg-signal text-signal-foreground hover:bg-signal/90 transition-colors"
               title={defaultPl ? `Goal! Horn + shuffle "${defaultPl.name}"` : 'Goal! Play the goal horn'}
               aria-label={defaultPl ? `Goal horn then ${defaultPl.name}` : 'Play goal horn'}
             >
@@ -124,7 +129,7 @@ export default function Player() {
             </button>
             <button
               onClick={() => setGoalMenuOpen((o) => !o)}
-              className="min-h-11 min-w-11 flex items-center justify-center rounded-r-lg text-xs font-semibold bg-amber-600 text-slate-950 hover:bg-amber-500 transition shadow border-l border-amber-400/40"
+              className="min-h-11 min-w-11 flex items-center justify-center rounded-r-[10px] bg-signal text-signal-foreground hover:bg-signal/90 transition-colors border-l border-signal-foreground/20"
               title="More goal options"
               aria-label="More goal options"
               aria-expanded={goalMenuOpen}
@@ -134,13 +139,22 @@ export default function Player() {
             {goalMenuOpen && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setGoalMenuOpen(false)} aria-hidden="true" />
-                <div className="absolute bottom-full mb-2 right-0 w-56 max-h-72 overflow-y-auto bg-popover border border-border rounded-lg shadow-xl py-1 z-50">
-                  <button onClick={goalOnly} className="w-full text-left min-h-11 px-3 py-2 text-sm text-popover-foreground hover:bg-secondary">Horn only</button>
+                <div className="absolute bottom-full mb-2 right-0 w-[280px] max-h-80 overflow-y-auto bg-popover border border-border rounded-[10px] shadow-[0_16px_40px_rgba(0,0,0,0.5)] py-1 z-50">
+                  <button
+                    onClick={goalOnly}
+                    className="w-full text-left min-h-11 px-3 py-2 text-sm text-popover-foreground hover:bg-secondary transition-colors"
+                  >
+                    Horn only
+                  </button>
                   {playlists.length > 0 && (
-                    <div className="px-3 pt-2 pb-1 text-[11px] uppercase tracking-wide text-muted-foreground">Shuffle after horn</div>
+                    <div className="px-3 pt-2 pb-1 section-label">Shuffle after horn</div>
                   )}
                   {playlists.map((pl) => (
-                    <button key={pl.id} onClick={() => goalWithPlaylist(pl)} className="w-full text-left min-h-11 px-3 py-2 text-sm text-popover-foreground hover:bg-secondary truncate">
+                    <button
+                      key={pl.id}
+                      onClick={() => goalWithPlaylist(pl)}
+                      className="w-full text-left min-h-11 px-3 py-2 text-sm text-muted-foreground hover:text-popover-foreground hover:bg-secondary truncate transition-colors"
+                    >
                       {pl.name}
                     </button>
                   ))}
@@ -153,7 +167,7 @@ export default function Player() {
           </div>
           <button
             onClick={() => dj.setMasterVolume(dj.masterVolume > 0 ? 0 : 1)}
-            className="min-h-11 min-w-11 flex items-center justify-center rounded-full hover:bg-secondary text-foreground"
+            className="min-h-11 min-w-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground transition-colors"
             aria-label={dj.masterVolume > 0 ? 'Mute' : 'Unmute'}
           >
             {dj.masterVolume > 0 ? <Volume2 className="w-4 h-4" aria-hidden="true" /> : <VolumeX className="w-4 h-4" aria-hidden="true" />}
@@ -165,7 +179,7 @@ export default function Player() {
             step={0.01}
             value={dj.masterVolume}
             onChange={(e) => dj.setMasterVolume(Number(e.target.value))}
-            className="hidden sm:block w-20 accent-primary"
+            className="hidden lg:block w-24 accent-primary"
             aria-label="Master volume"
           />
         </div>

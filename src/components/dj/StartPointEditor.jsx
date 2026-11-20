@@ -119,7 +119,7 @@ export default function StartPointEditor({ song, onClose, onSave }) {
 
   return (
     <Dialog open={!!song} onOpenChange={(o) => !o && onClose?.()}>
-      <DialogContent className="bg-card border-border text-card-foreground max-w-2xl">
+      <DialogContent className="bg-popover border-border text-popover-foreground max-w-2xl rounded-[14px]">
         <motion.div
           className="space-y-4"
           initial={isMobile ? { y: 28, opacity: 0 } : false}
@@ -133,7 +133,7 @@ export default function StartPointEditor({ song, onClose, onSave }) {
           </DialogHeader>
 
           <div className="space-y-4">
-            {error && <p className="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded p-2">{error}</p>}
+            {error && <p className="text-xs text-destructive bg-destructive/10 rounded-[8px] p-2">{error}</p>}
 
             <div className="rounded-xl bg-background/60 border border-border p-3">
               {analyzing ? (
@@ -206,7 +206,7 @@ export default function StartPointEditor({ song, onClose, onSave }) {
               {previewing ? <Pause className="w-4 h-4 mr-1" aria-hidden="true" /> : <Play className="w-4 h-4 mr-1" aria-hidden="true" />}
               {previewing ? 'Stop' : 'Preview'}
             </Button>
-            <Button onClick={handleSave} disabled={saving} className="min-h-11 bg-primary text-primary-foreground hover:bg-primary/90">
+            <Button onClick={handleSave} disabled={saving} className="min-h-10 rounded-[10px] bg-foreground text-background hover:bg-foreground/90 font-semibold">
               {saving ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> : <Save className="w-4 h-4 mr-1" aria-hidden="true" />} Save
             </Button>
           </DialogFooter>

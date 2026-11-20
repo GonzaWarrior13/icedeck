@@ -57,7 +57,7 @@ export default function NormalizeButton() {
       <button
         onClick={normalize}
         disabled={running || !songs.length}
-        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 transition text-sm font-medium disabled:opacity-60"
+        className="flex items-center gap-2 min-h-10 px-3.5 rounded-[10px] border border-border text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors text-sm font-medium disabled:opacity-40"
       >
         {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <Volume2 className="w-4 h-4" />}
         <span>{running ? 'Normalizing…' : 'Normalize volume'}</span>

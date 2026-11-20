@@ -2,7 +2,7 @@ import React from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { useDj } from '@/lib/DjContext';
 import { formatTime } from '@/lib/audio';
-import { Trash2, GripVertical, Play, ListMusic } from 'lucide-react';
+import { Trash2, GripVertical, Play } from 'lucide-react';
 
 export default function Queue() {
   const dj = useDj();
@@ -18,49 +18,72 @@ export default function Queue() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2 text-sm font-medium">
-          <ListMusic className="w-4 h-4 text-primary" aria-hidden="true" /> Queue
-          <span className="text-xs text-muted-foreground">({dj.queue.length})</span>
+      <div className="flex items-center justify-between gap-3 px-4 h-14 border-b border-border shrink-0">
+        <div className="flex items-center gap-2">
+          <span className="section-label">Queue</span>
+          <span className="rounded-full border border-border px-2 py-0.5 text-[11px] tabular-nums text-muted-foreground">
+            {dj.queue.length}
+          </span>
         </div>
         {dj.queue.length > 0 && (
-          <button onClick={dj.clearQueue} className="min-h-11 px-2 text-xs text-muted-foreground hover:text-destructive">Clear</button>
+          <button
+            onClick={dj.clearQueue}
+            className="min-h-11 px-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Clear
+          </button>
         )}
       </div>
+
       {dj.queue.length === 0 ? (
-        <div className="flex-1 flex items-center justify-center text-center text-sm text-muted-foreground border border-dashed border-border rounded-xl py-10 px-4">
-          Drag songs here or tap <span className="text-primary mx-1">+</span> to build your set.
+        <div className="flex-1 flex items-start justify-center px-6 pt-12 text-center">
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Drag songs here or tap <span className="text-primary">+</span> to build your set.
+          </p>
         </div>
       ) : (
         <DragDropContext onDragEnd={onDragEnd}>
           <Droppable droppableId="queue">
             {(provided) => (
-              <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-1.5 flex-1 overflow-y-auto scroll-area">
+              <div
+                ref={provided.innerRef}
+                {...provided.droppableProps}
+                className="flex-1 overflow-y-auto scroll-area divide-y divide-border"
+              >
                 {dj.queue.map((song, i) => (
                   <Draggable key={song.id + '-' + i} draggableId={song.id + '-' + i} index={i}>
                     {(p) => (
                       <div
                         ref={p.innerRef}
                         {...p.draggableProps}
-                        className={`flex items-center gap-2 p-2.5 rounded-lg border ${dj.currentIndex === i ? 'bg-primary/10 border-primary/40' : 'bg-card/60 border-border'}`}
+                        className={`flex items-center gap-2 px-2 min-h-14 ${
+                          dj.currentIndex === i ? 'bg-primary/10' : 'hover:bg-secondary/60'
+                        }`}
                       >
-                        <span {...p.dragHandleProps} className="min-h-11 min-w-6 flex items-center justify-center text-muted-foreground/60 cursor-grab active:cursor-grabbing" aria-label="Reorder track">
+                        <span
+                          {...p.dragHandleProps}
+                          className="min-h-11 min-w-6 flex items-center justify-center text-muted-foreground/60 cursor-grab active:cursor-grabbing"
+                          aria-label="Reorder track"
+                        >
                           <GripVertical className="w-4 h-4" aria-hidden="true" />
                         </span>
                         <button
                           onClick={() => dj.playQueueFrom(dj.queue, i)}
-                          className="shrink-0 min-h-11 min-w-11 rounded-full bg-secondary hover:bg-primary hover:text-primary-foreground flex items-center justify-center transition"
+                          className="shrink-0 w-9 h-9 rounded-full border border-border text-primary flex items-center justify-center hover:border-primary/60 transition-colors"
                           aria-label={`Play ${song.title} from queue`}
                         >
                           <Play className="w-3 h-3 fill-current" aria-hidden="true" />
                         </button>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm">{song.title}</p>
-                          <p className="truncate text-xs text-muted-foreground">{song.artist || 'Unknown'} · {formatTime(song.duration)}</p>
+                          <p className={`truncate text-sm ${dj.currentIndex === i ? 'text-primary' : ''}`}>{song.title}</p>
+                          <p className="truncate text-xs text-muted-foreground">
+                            {song.artist || 'Unknown'} <span className="opacity-60">·</span>{' '}
+                            <span className="tabular-nums">{formatTime(song.duration)}</span>
+                          </p>
                         </div>
                         <button
                           onClick={() => dj.removeFromQueue(i)}
-                          className="min-h-11 min-w-11 flex items-center justify-center rounded text-muted-foreground/60 hover:text-destructive"
+                          className="min-h-11 min-w-9 flex items-center justify-center rounded-[8px] text-muted-foreground/60 hover:text-destructive transition-colors"
                           aria-label={`Remove ${song.title} from queue`}
                         >
                           <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />

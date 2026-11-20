@@ -1,22 +1,44 @@
 import React from "react";
+import { Disc3 } from "lucide-react";
 
 export default function AuthLayout({ icon: Icon, title, subtitle, footer, children }) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary mb-4">
-            <Icon className="w-7 h-7 text-primary-foreground" aria-hidden="true" />
+    <div className="min-h-screen flex flex-col bg-background">
+      <div className="px-5 md:px-10 pt-[calc(1.5rem+env(safe-area-inset-top))] md:pt-8">
+        <div className="flex items-center gap-2.5">
+          <span className="w-8 h-8 rounded-[8px] bg-primary flex items-center justify-center" aria-hidden="true">
+            <span className="w-2.5 h-2.5 rounded-full bg-background" />
+          </span>
+          <span className="font-display text-2xl font-semibold uppercase leading-none tracking-[0.08em]">
+            Ice<span className="text-primary">Deck</span>
+          </span>
+        </div>
+      </div>
+
+      <div className="flex-1 flex items-center justify-center px-5 py-10 md:py-12">
+        <div className="w-full max-w-[400px]">
+          <div className="mb-8">
+            <div className="flex items-center gap-2.5 mb-3">
+              {Icon && <Icon className="w-4 h-4 text-primary" strokeWidth={1.5} aria-hidden="true" />}
+              <span className="section-label">IceDeck DJ</span>
+            </div>
+            <h1 className="font-display text-[40px] font-semibold leading-[1] tracking-[-0.01em] text-foreground">{title}</h1>
+            {subtitle && <p className="mt-2 text-[15px] text-muted-foreground">{subtitle}</p>}
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">{title}</h1>
-          {subtitle && <p className="text-muted-foreground mt-2">{subtitle}</p>}
+
+          <div className="bg-card border border-border rounded-[14px] p-6 md:p-8">
+            {children}
+          </div>
+
+          {footer && (
+            <p className="mt-6 text-sm text-muted-foreground">{footer}</p>
+          )}
+
+          <div className="mt-8 flex items-center gap-2 text-[11px] uppercase tracking-[0.12em] text-muted-foreground/60">
+            <Disc3 className="w-3.5 h-3.5" strokeWidth={1.5} aria-hidden="true" />
+            Rink-side audio control
+          </div>
         </div>
-        <div className="bg-card rounded-2xl shadow-sm border border-border p-8">
-          {children}
-        </div>
-        {footer && (
-          <p className="text-center text-sm text-muted-foreground mt-6">{footer}</p>
-        )}
       </div>
     </div>
   );
