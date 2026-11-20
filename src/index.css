@@ -24,7 +24,7 @@
     --accent-foreground: 0 0% 100%;
     --destructive: 25 95% 53%;
     --destructive-foreground: 0 0% 7%;
-    --signal: 25 95% 53%;
+    --signal: 0 0% 100%;
     --signal-foreground: 0 0% 7%;
     --border: 0 0% 18%;
     --input: 0 0% 18%;
@@ -67,7 +67,7 @@
     --accent-foreground: 0 0% 100%;
     --destructive: 25 95% 53%;
     --destructive-foreground: 0 0% 7%;
-    --signal: 25 95% 53%;
+    --signal: 0 0% 100%;
     --signal-foreground: 0 0% 7%;
     --border: 0 0% 18%;
     --input: 0 0% 18%;
