@@ -13,7 +13,7 @@ export default function SongCard({ song, isActive, onPlay, onAddQueue, onEdit, o
 
   return (
     <div
-      className={`group flex items-center gap-2.5 px-0 py-2 md:gap-3 md:px-3 md:py-3 transition-colors ${
+      className={`group flex items-center gap-2.5 px-0 py-2 md:gap-3 md:px-3 md:py-2.5 transition-colors ${
         isActive ? 'bg-primary/10' : 'hover:bg-secondary/50'
       }`}
     >

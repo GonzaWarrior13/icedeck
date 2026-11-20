@@ -75,12 +75,12 @@ export default function Library() {
       <PullToRefresh
         onRefresh={refresh}
         className="flex-1 min-h-0"
-        contentClassName="px-4 md:px-10 pt-4 pb-6 md:py-10 space-y-5 md:space-y-10"
+        contentClassName="px-4 md:px-8 pt-4 pb-6 md:py-8 space-y-5 md:space-y-7"
       >
         <header className="space-y-3 md:flex md:flex-wrap md:items-end md:justify-between md:gap-4 md:space-y-0">
           <div className="min-w-0">
             <div className="flex items-baseline gap-2.5">
-              <h1 className="font-display text-[34px] md:text-[56px] font-semibold leading-none tracking-[-0.01em]">Library</h1>
+              <h1 className="font-display text-[34px] md:text-[46px] font-semibold leading-none tracking-[-0.01em]">Library</h1>
               <span className="text-[13px] tabular-nums text-muted-foreground">{songs.length} tracks</span>
             </div>
             <p className="mt-1 hidden text-[15px] text-muted-foreground md:block">Cue, edit, and fade for game day.</p>
@@ -97,7 +97,7 @@ export default function Library() {
 
         <QuickAccess songs={quickSongs} onPlay={dj.playNow} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-6 lg:gap-10">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_336px] gap-6 lg:gap-7">
           <section className="min-w-0 space-y-4 md:space-y-5">
             <TagFilter
               filter={filter}
@@ -118,7 +118,7 @@ export default function Library() {
             />
           </section>
           <section className="lg:sticky lg:top-6">
-            <div className="flex h-[280px] flex-col overflow-hidden border-y border-border md:h-[420px] md:rounded-[14px] md:border md:bg-card lg:h-[calc(100vh-9rem)]">
+            <div className="flex h-[280px] flex-col overflow-hidden border-y border-border md:h-[380px] md:rounded-[14px] md:border md:bg-card lg:h-[calc(100vh-8rem)]">
               <Queue />
             </div>
           </section>

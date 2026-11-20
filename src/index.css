@@ -7,7 +7,7 @@
 @layer base {
   :root {
     /* IceDeck: a rink-side broadcast console. Near-black blue-slate surfaces,
-       one ice accent for live/selected, one signal red for the goal horn. */
+       one ice accent carries every live, selected and goal state. */
     --background: 213 31% 6%;
     --foreground: 205 35% 92%;
     --card: 213 30% 7%;
@@ -24,7 +24,7 @@
     --accent-foreground: 205 35% 92%;
     --destructive: 6 100% 65%;
     --destructive-foreground: 213 31% 6%;
-    --signal: 6 100% 65%;
+    --signal: 197 79% 75%;
     --signal-foreground: 213 31% 6%;
     --border: 213 26% 15%;
     --input: 213 26% 15%;
@@ -67,7 +67,7 @@
     --accent-foreground: 205 35% 92%;
     --destructive: 6 100% 65%;
     --destructive-foreground: 213 31% 6%;
-    --signal: 6 100% 65%;
+    --signal: 197 79% 75%;
     --signal-foreground: 213 31% 6%;
     --border: 213 26% 15%;
     --input: 213 26% 15%;

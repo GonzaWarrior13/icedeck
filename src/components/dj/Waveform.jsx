@@ -46,7 +46,7 @@ export default function Waveform({
     }
     if (end != null && duration) {
       const ex = (end / duration) * cw;
-      ctx.fillStyle = '#FF5B4A';
+      ctx.fillStyle = '#A7B4BF';
       ctx.fillRect(ex - 2, 0, 4, height);
     }
   }, [peaks, duration, start, end, currentTime, height, color]);

@@ -27,7 +27,7 @@ export default function Player() {
 
   if (!song) {
     return (
-      <div className="shrink-0 border-t border-border bg-card px-4 md:px-8 py-2.5 md:py-4 pb-[calc(0.625rem+env(safe-area-inset-bottom))] md:pb-4">
+      <div className="shrink-0 border-t border-border bg-card px-4 md:px-6 py-2.5 md:py-3 pb-[calc(0.625rem+env(safe-area-inset-bottom))] md:pb-3">
         <div className="flex items-center gap-2.5 text-[13px] md:text-sm text-muted-foreground">
           <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50" aria-hidden="true" />
           Nothing loaded — add a track to the queue.
@@ -40,7 +40,7 @@ export default function Player() {
   const pct = dj.duration ? (dj.currentTime / dj.duration) * 100 : 0;
 
   return (
-    <div className="shrink-0 border-t border-border bg-card px-3 md:px-8 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] md:py-4 md:pb-4">
+    <div className="shrink-0 border-t border-border bg-card px-3 md:px-6 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] md:py-3 md:pb-3">
       <div
         className="relative -mx-3 mb-2 h-1.5 cursor-pointer bg-border/70 md:hidden"
         onClick={(e) => {
