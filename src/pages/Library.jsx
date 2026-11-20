@@ -9,7 +9,7 @@ import Queue from '@/components/dj/Queue';
 import Player from '@/components/dj/Player';
 import TagFilter from '@/components/dj/TagFilter';
 import QuickAccess from '@/components/dj/QuickAccess';
-import YouTubeImportButton from '@/components/dj/YouTubeImportButton';
+import SpotifyImport from '@/components/dj/SpotifyImport';
 import NormalizeButton from '@/components/dj/NormalizeButton';
 import PullToRefresh from '@/components/dj/PullToRefresh';
 
@@ -84,7 +84,10 @@ export default function Library() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <SongUploader onUploaded={handleUploaded} />
-            <YouTubeImportButton onUploaded={handleUploaded} />
+            <SpotifyImport
+              existingSongs={songs}
+              onImported={(created) => queryClient.setQueryData(SONGS_KEY, (prev = []) => [...created, ...prev])}
+            />
             <NormalizeButton />
           </div>
         </header>

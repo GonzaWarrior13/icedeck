@@ -20,6 +20,7 @@ import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
+import SpotifyCallback from '@/pages/SpotifyCallback';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -53,6 +54,9 @@ const AuthenticatedApp = () => {
           <Route path="/playlists" element={<Playlists />} />
           <Route path="/settings" element={<Settings />} />
         </Route>
+      </Route>
+      <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
+        <Route path="/spotify-callback" element={<SpotifyCallback />} />
       </Route>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />

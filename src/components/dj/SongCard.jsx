@@ -13,13 +13,16 @@ const TAG_COLORS = {
 export default function SongCard({ song, isActive, onPlay, onAddQueue, onEdit, onDelete, onToggleQuick }) {
   const tags = song.tags || [];
   const isQuick = tags.includes('quick');
+  // Spotify imports carry no audio file unless Spotify serves a preview clip.
+  const playable = !!(song.file_url || song.preview_url);
   return (
     <div className={`group flex flex-wrap items-center gap-3 p-3 rounded-xl border transition ${isActive ? 'bg-primary/10 border-primary/40' : 'bg-card/60 border-border hover:border-muted-foreground/40'}`}>
       <button
         onClick={() => onPlay(song)}
-        className="shrink-0 min-h-11 min-w-11 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition"
-        title="Play now"
-        aria-label={`Play ${song.title}`}
+        disabled={!playable}
+        className="shrink-0 min-h-11 min-w-11 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition disabled:opacity-40 disabled:hover:bg-primary"
+        title={playable ? 'Play now' : 'No audio available for this track'}
+        aria-label={playable ? `Play ${song.title}` : `${song.title} has no audio available`}
       >
         <Play className="w-4 h-4 fill-current" aria-hidden="true" />
       </button>
