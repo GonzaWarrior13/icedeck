@@ -47,7 +47,7 @@
     --sidebar-accent-foreground: 205 35% 92%;
     --sidebar-border: 213 26% 15%;
     --sidebar-ring: 197 79% 75%;
-    --tabbar-h: calc(3.75rem + env(safe-area-inset-bottom));
+    --tabbar-h: calc(3.25rem + env(safe-area-inset-bottom));
   }
 
   .dark {

@@ -57,10 +57,15 @@ export default function NormalizeButton() {
       <button
         onClick={normalize}
         disabled={running || !songs.length}
-        className="flex items-center gap-2 min-h-10 px-3.5 rounded-[10px] border border-border text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors text-sm font-medium disabled:opacity-40"
+        className="flex items-center gap-1.5 min-h-9 px-2.5 rounded-[10px] border border-border text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors text-[13px] font-medium disabled:opacity-40 md:min-h-10 md:gap-2 md:px-3.5 md:text-sm"
       >
-        {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <Volume2 className="w-4 h-4" />}
-        <span>{running ? 'Normalizing…' : 'Normalize volume'}</span>
+        {running ? (
+          <Loader2 className="w-3.5 h-3.5 animate-spin md:w-4 md:h-4" />
+        ) : (
+          <Volume2 className="w-3.5 h-3.5 md:w-4 md:h-4" />
+        )}
+        <span className="md:hidden">{running ? 'Leveling…' : 'Level'}</span>
+        <span className="hidden md:inline">{running ? 'Normalizing…' : 'Normalize volume'}</span>
       </button>
       {status && <span className="text-xs text-muted-foreground">{status}</span>}
       {error && <span className="text-xs text-destructive">{error}</span>}

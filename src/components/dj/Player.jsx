@@ -27,8 +27,8 @@ export default function Player() {
 
   if (!song) {
     return (
-      <div className="shrink-0 border-t border-border bg-card px-4 md:px-8 py-3 md:py-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:pb-4">
-        <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
+      <div className="shrink-0 border-t border-border bg-card px-4 md:px-8 py-2.5 md:py-4 pb-[calc(0.625rem+env(safe-area-inset-bottom))] md:pb-4">
+        <div className="flex items-center gap-2.5 text-[13px] md:text-sm text-muted-foreground">
           <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50" aria-hidden="true" />
           Nothing loaded — add a track to the queue.
         </div>
@@ -40,8 +40,23 @@ export default function Player() {
   const pct = dj.duration ? (dj.currentTime / dj.duration) * 100 : 0;
 
   return (
-    <div className="shrink-0 border-t border-border bg-card px-3 md:px-8 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:pb-4">
-      <div className="flex items-center gap-3 md:gap-6">
+    <div className="shrink-0 border-t border-border bg-card px-3 md:px-8 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] md:py-4 md:pb-4">
+      <div
+        className="relative -mx-3 mb-2 h-1.5 cursor-pointer bg-border/70 md:hidden"
+        onClick={(e) => {
+          const rect = e.currentTarget.getBoundingClientRect();
+          const frac = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+          dj.seek(frac * (dj.duration || 0));
+        }}
+        role="slider"
+        aria-label="Seek"
+        aria-valuemin={0}
+        aria-valuemax={Math.round(dj.duration || 0)}
+        aria-valuenow={Math.round(dj.currentTime || 0)}
+      >
+        <div className="absolute inset-y-0 left-0 bg-primary" style={{ width: `${pct}%` }} />
+      </div>
+      <div className="flex items-center justify-between gap-3 md:gap-6">
         <div className="hidden sm:block min-w-0 w-48 lg:w-64 shrink-0">
           <p className="truncate text-[16px] font-semibold leading-tight">{song.title}</p>
           <p className="truncate text-[13px] text-muted-foreground">{song.artist || 'Unknown'}</p>
@@ -73,7 +88,7 @@ export default function Player() {
           </button>
         </div>
 
-        <div className="flex-1 min-w-0 flex items-center gap-2 md:gap-3">
+        <div className="hidden flex-1 min-w-0 items-center gap-2 md:flex md:gap-3">
           <span className="hidden sm:inline font-display text-[15px] font-medium tabular-nums w-10 text-right text-foreground">
             {formatTime(dj.currentTime)}
           </span>
@@ -167,7 +182,7 @@ export default function Player() {
           </div>
           <button
             onClick={() => dj.setMasterVolume(dj.masterVolume > 0 ? 0 : 1)}
-            className="min-h-11 min-w-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground transition-colors"
+            className="flex h-10 w-8 items-center justify-center rounded-full text-muted-foreground hover:text-foreground transition-colors md:h-9 md:w-9"
             aria-label={dj.masterVolume > 0 ? 'Mute' : 'Unmute'}
           >
             {dj.masterVolume > 0 ? <Volume2 className="w-4 h-4" aria-hidden="true" /> : <VolumeX className="w-4 h-4" aria-hidden="true" />}

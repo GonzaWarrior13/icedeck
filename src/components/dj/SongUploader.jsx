@@ -63,10 +63,19 @@ export default function SongUploader({ onUploaded }) {
   };
 
   return (
-    <label className="flex items-center gap-2 min-h-10 px-4 rounded-[10px] bg-foreground text-background hover:bg-foreground/90 transition cursor-pointer text-sm font-semibold">
-      <UploadCloud className="w-4 h-4" />
-      <span>{uploading ? progress : 'Upload tracks'}</span>
-      {uploading && <Loader2 className="w-4 h-4 animate-spin ml-1" />}
+    <label className="flex items-center gap-1.5 min-h-9 px-2.5 rounded-[10px] bg-foreground text-background hover:bg-foreground/90 transition cursor-pointer text-[13px] font-semibold md:min-h-10 md:gap-2 md:px-4 md:text-sm">
+      <UploadCloud className="w-3.5 h-3.5 md:w-4 md:h-4" />
+      <span className="max-w-[132px] truncate md:max-w-none">
+        {uploading ? (
+          progress
+        ) : (
+          <>
+            <span className="md:hidden">Upload</span>
+            <span className="hidden md:inline">Upload tracks</span>
+          </>
+        )}
+      </span>
+      {uploading && <Loader2 className="w-3.5 h-3.5 md:w-4 md:h-4 animate-spin ml-0.5" />}
       <input
         ref={inputRef}
         type="file"

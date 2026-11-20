@@ -113,10 +113,10 @@ export default function SpotifyImport({ existingSongs = [], onImported }) {
     <div className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="inline-flex items-center gap-2 min-h-10 rounded-[10px] border border-border px-3.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+        className="inline-flex items-center gap-1.5 min-h-9 rounded-[10px] border border-border px-2.5 text-[13px] font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors md:min-h-10 md:gap-2 md:px-3.5 md:text-sm"
         aria-expanded={open}
       >
-        <Music className="w-4 h-4" aria-hidden="true" /> Spotify
+        <Music className="w-3.5 h-3.5 md:w-4 md:h-4" aria-hidden="true" /> Spotify
       </button>
 
       {open && (

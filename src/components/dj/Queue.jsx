@@ -18,7 +18,7 @@ export default function Queue() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between gap-3 px-4 h-14 border-b border-border shrink-0">
+      <div className="flex items-center justify-between gap-3 px-3 h-12 md:px-4 md:h-14 border-b border-border shrink-0">
         <div className="flex items-center gap-2">
           <span className="section-label">Queue</span>
           <span className="rounded-full border border-border px-2 py-0.5 text-[11px] tabular-nums text-muted-foreground">
@@ -36,7 +36,7 @@ export default function Queue() {
       </div>
 
       {dj.queue.length === 0 ? (
-        <div className="flex-1 flex items-start justify-center px-6 pt-12 text-center">
+        <div className="flex-1 flex items-start justify-center px-6 pt-8 md:pt-12 text-center">
           <p className="text-sm text-muted-foreground leading-relaxed">
             Drag songs here or tap <span className="text-primary">+</span> to build your set.
           </p>
@@ -56,7 +56,7 @@ export default function Queue() {
                       <div
                         ref={p.innerRef}
                         {...p.draggableProps}
-                        className={`flex items-center gap-2 px-2 min-h-14 ${
+                        className={`flex items-center gap-2 px-1.5 md:px-2 min-h-[52px] md:min-h-14 ${
                           dj.currentIndex === i ? 'bg-primary/10' : 'hover:bg-secondary/60'
                         }`}
                       >

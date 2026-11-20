@@ -75,19 +75,17 @@ export default function Library() {
       <PullToRefresh
         onRefresh={refresh}
         className="flex-1 min-h-0"
-        contentClassName="px-5 md:px-10 py-6 md:py-10 space-y-8 md:space-y-10"
+        contentClassName="px-4 md:px-10 pt-4 pb-6 md:py-10 space-y-5 md:space-y-10"
       >
-        <header className="flex flex-wrap items-end justify-between gap-4">
+        <header className="space-y-3 md:flex md:flex-wrap md:items-end md:justify-between md:gap-4 md:space-y-0">
           <div className="min-w-0">
-            <div className="flex items-center gap-3">
-              <h1 className="font-display text-[44px] md:text-[56px] font-semibold leading-[0.95] tracking-[-0.01em]">Library</h1>
-              <span className="mb-2 rounded-full border border-border px-2.5 py-0.5 text-xs tabular-nums text-muted-foreground">
-                {songs.length} tracks
-              </span>
+            <div className="flex items-baseline gap-2.5">
+              <h1 className="font-display text-[34px] md:text-[56px] font-semibold leading-none tracking-[-0.01em]">Library</h1>
+              <span className="text-[13px] tabular-nums text-muted-foreground">{songs.length} tracks</span>
             </div>
-            <p className="mt-1 text-[15px] text-muted-foreground">Cue, edit, and fade for game day.</p>
+            <p className="mt-1 hidden text-[15px] text-muted-foreground md:block">Cue, edit, and fade for game day.</p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1.5 md:gap-2">
             <SongUploader onUploaded={handleUploaded} />
             <SpotifyImport
               existingSongs={songs}
@@ -99,8 +97,8 @@ export default function Library() {
 
         <QuickAccess songs={quickSongs} onPlay={dj.playNow} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-8 lg:gap-10">
-          <section className="min-w-0 space-y-5">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-6 lg:gap-10">
+          <section className="min-w-0 space-y-4 md:space-y-5">
             <TagFilter
               filter={filter}
               setFilter={setFilter}
@@ -120,7 +118,7 @@ export default function Library() {
             />
           </section>
           <section className="lg:sticky lg:top-6">
-            <div className="bg-card border border-border rounded-[14px] h-[420px] lg:h-[calc(100vh-9rem)] flex flex-col overflow-hidden">
+            <div className="flex h-[280px] flex-col overflow-hidden border-y border-border md:h-[420px] md:rounded-[14px] md:border md:bg-card lg:h-[calc(100vh-9rem)]">
               <Queue />
             </div>
           </section>
