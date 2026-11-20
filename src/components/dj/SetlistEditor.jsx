@@ -44,50 +44,51 @@ export default function SetlistEditor({ initialName = '', initialSongIds = [], i
   const moveDown = (i) => setIds((p) => { if (i >= p.length - 1) return p; const n = [...p]; [n[i + 1], n[i]] = [n[i], n[i + 1]]; return n; });
 
   return (
-    <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 space-y-4">
-      <div className="flex items-end gap-3">
-        <div className="flex-1">
-          <Label className="text-xs text-slate-400">Setlist name</Label>
-          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Warmup mix" className="bg-slate-950 border-slate-700" autoFocus />
+    <div className="bg-card/60 border border-border rounded-2xl p-4 space-y-4">
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="flex-1 min-w-[160px]">
+          <Label className="text-xs text-muted-foreground">Setlist name</Label>
+          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Warmup mix" className="bg-background border-border" autoFocus />
         </div>
-        <Button onClick={() => onSave(name.trim(), ids, hotkey)} disabled={!name.trim()} className="bg-cyan-400 text-slate-950 hover:bg-cyan-300">
-          <Save className="w-4 h-4 mr-1" /> Save
+        <Button onClick={() => onSave(name.trim(), ids, hotkey)} disabled={!name.trim()} className="min-h-11 bg-primary text-primary-foreground hover:bg-primary/90">
+          <Save className="w-4 h-4 mr-1" aria-hidden="true" /> Save
         </Button>
-        <Button variant="outline" onClick={onCancel} className="bg-transparent border-slate-700 text-slate-200 hover:bg-slate-800">
-          <X className="w-4 h-4" />
+        <Button variant="outline" onClick={onCancel} aria-label="Cancel setlist editing" className="min-h-11 min-w-11 bg-transparent border-border text-foreground hover:bg-secondary">
+          <X className="w-4 h-4" aria-hidden="true" />
         </Button>
       </div>
 
-      <div className="flex items-center gap-3">
-        <Label className="text-xs text-slate-400 shrink-0">Hotkey</Label>
+      <div className="flex flex-wrap items-center gap-3">
+        <Label className="text-xs text-muted-foreground shrink-0">Hotkey</Label>
         <button
           onClick={() => setRecording((r) => !r)}
-          className={`px-3 py-1.5 rounded-lg text-sm border transition ${recording ? 'border-cyan-400 text-cyan-300 bg-cyan-400/10 animate-pulse' : hotkey ? 'border-slate-700 bg-slate-950 text-slate-200 hover:border-slate-600' : 'border-dashed border-slate-700 bg-slate-950/40 text-slate-500 hover:border-slate-600'}`}
+          aria-label={recording ? 'Press a key to assign' : hotkey ? `Hotkey ${hotkey.toUpperCase()}, change it` : 'Set a hotkey'}
+          className={`min-h-11 min-w-11 px-3 py-2 rounded-lg text-sm border transition ${recording ? 'border-primary text-primary bg-primary/10 animate-pulse' : hotkey ? 'border-border bg-background text-foreground hover:border-muted-foreground/50' : 'border-dashed border-border bg-background/40 text-muted-foreground hover:border-muted-foreground/50'}`}
         >
           {recording ? 'Press a key…' : hotkey ? hotkey.toUpperCase() : 'Set key'}
         </button>
         {hotkey && !recording && (
-          <button onClick={() => setHotkey('')} className="text-xs text-slate-500 hover:text-rose-300">Clear</button>
+          <button onClick={() => setHotkey('')} className="min-h-11 px-2 text-xs text-muted-foreground hover:text-destructive">Clear</button>
         )}
-        <span className="text-[11px] text-slate-600">Press this key anytime to play the setlist instantly.</span>
+        <span className="text-xs text-muted-foreground">Press this key anytime to play the setlist instantly.</span>
       </div>
 
       <div>
-        <p className="text-xs text-slate-400 mb-1.5">Tracks in this setlist ({selected.length})</p>
+        <p className="text-xs text-muted-foreground mb-1.5">Tracks in this setlist ({selected.length})</p>
         {selected.length === 0 ? (
-          <p className="text-xs text-slate-500 border border-dashed border-slate-800 rounded-lg py-6 text-center">Add tracks below.</p>
+          <p className="text-xs text-muted-foreground border border-dashed border-border rounded-lg py-6 text-center">Add tracks below.</p>
         ) : (
-          <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
+          <div className="space-y-1.5 max-h-64 overflow-y-auto scroll-area pr-1">
             {selected.map((s, i) => (
-              <div key={s.id} className="flex items-center gap-2 p-2 rounded-lg bg-slate-950/60 border border-slate-800">
-                <span className="text-xs text-slate-500 w-5 text-right tabular-nums">{i + 1}</span>
+              <div key={s.id} className="flex items-center gap-1.5 p-2 rounded-lg bg-background/60 border border-border">
+                <span className="text-xs text-muted-foreground w-5 text-right tabular-nums">{i + 1}</span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm">{s.title}</p>
-                  <p className="truncate text-[11px] text-slate-500">{s.artist || 'Unknown'} · {formatTime(s.duration)}</p>
+                  <p className="truncate text-xs text-muted-foreground">{s.artist || 'Unknown'} · {formatTime(s.duration)}</p>
                 </div>
-                <button onClick={() => moveUp(i)} disabled={i === 0} className="p-1 rounded text-slate-400 hover:text-cyan-300 disabled:opacity-30" aria-label="Move up"><ChevronUp className="w-4 h-4" /></button>
-                <button onClick={() => moveDown(i)} disabled={i === selected.length - 1} className="p-1 rounded text-slate-400 hover:text-cyan-300 disabled:opacity-30" aria-label="Move down"><ChevronDown className="w-4 h-4" /></button>
-                <button onClick={() => removeAt(i)} className="p-1 rounded text-slate-500 hover:text-rose-300" aria-label="Remove"><Trash2 className="w-3.5 h-3.5" /></button>
+                <button onClick={() => moveUp(i)} disabled={i === 0} className="min-h-11 min-w-11 flex items-center justify-center rounded text-muted-foreground hover:text-primary disabled:opacity-30" aria-label={`Move ${s.title} up`}><ChevronUp className="w-4 h-4" aria-hidden="true" /></button>
+                <button onClick={() => moveDown(i)} disabled={i === selected.length - 1} className="min-h-11 min-w-11 flex items-center justify-center rounded text-muted-foreground hover:text-primary disabled:opacity-30" aria-label={`Move ${s.title} down`}><ChevronDown className="w-4 h-4" aria-hidden="true" /></button>
+                <button onClick={() => removeAt(i)} className="min-h-11 min-w-11 flex items-center justify-center rounded text-muted-foreground hover:text-destructive" aria-label={`Remove ${s.title} from setlist`}><Trash2 className="w-3.5 h-3.5" aria-hidden="true" /></button>
               </div>
             ))}
           </div>
@@ -95,19 +96,19 @@ export default function SetlistEditor({ initialName = '', initialSongIds = [], i
       </div>
 
       <div>
-        <p className="text-xs text-slate-400 mb-1.5">Add tracks</p>
+        <p className="text-xs text-muted-foreground mb-1.5">Add tracks</p>
         <div className="relative mb-2">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search your library…" className="pl-9 bg-slate-950 border-slate-700" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search your library…" aria-label="Search your library" className="min-h-11 pl-9 bg-background border-border" />
         </div>
-        <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+        <div className="space-y-1.5 max-h-56 overflow-y-auto scroll-area pr-1">
           {available.map((s) => (
-            <button key={s.id} onClick={() => addSong(s.id)} className="w-full flex items-center justify-between p-2 rounded-lg bg-slate-950/40 border border-slate-800 hover:border-slate-700 text-left">
-              <span className="truncate text-sm">{s.title} <span className="text-slate-500">· {s.artist || 'Unknown'}</span></span>
-              <Plus className="w-4 h-4 text-cyan-300 shrink-0" />
+            <button key={s.id} onClick={() => addSong(s.id)} className="w-full min-h-11 flex items-center justify-between gap-2 p-2 rounded-lg bg-background/40 border border-border hover:border-muted-foreground/50 text-left" aria-label={`Add ${s.title} to setlist`}>
+              <span className="truncate text-sm">{s.title} <span className="text-muted-foreground">· {s.artist || 'Unknown'}</span></span>
+              <Plus className="w-4 h-4 text-primary shrink-0" aria-hidden="true" />
             </button>
           ))}
-          {!available.length && <p className="text-xs text-slate-600 text-center py-4">No matching tracks.</p>}
+          {!available.length && <p className="text-xs text-muted-foreground text-center py-4">No matching tracks.</p>}
         </div>
       </div>
     </div>

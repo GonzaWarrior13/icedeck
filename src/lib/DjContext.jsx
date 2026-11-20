@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useRef, useState, useEffect, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { PLAYLISTS_KEY, playlistsQueryOptions, songsQueryOptions } from '@/hooks/useDjData';
 
 const GOAL_HORN_URL = 'https://media.base44.com/files/public/6a8f48cd9a055819d8b79b87/d73c0e5ef_TorontoMapleLeafsGoalHornNoSong.mp3';
 
@@ -16,6 +18,7 @@ const DjContext = createContext(defaultDj);
 export const useDj = () => useContext(DjContext);
 
 export function DjProvider({ children }) {
+  const queryClient = useQueryClient();
   const audioRef = useRef(null);
   if (typeof Audio !== 'undefined' && !audioRef.current) {
     audioRef.current = new Audio();
@@ -59,14 +62,17 @@ export function DjProvider({ children }) {
   const playSetlistRef = useRef(() => {});
   useEffect(() => { goalSetlistIdRef.current = goalSetlistId; }, [goalSetlistId]);
   const [hotkeyVersion, setHotkeyVersion] = useState(0);
-  const refreshHotkeys = useCallback(() => setHotkeyVersion((v) => v + 1), []);
+  const refreshHotkeys = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: PLAYLISTS_KEY });
+    setHotkeyVersion((v) => v + 1);
+  }, [queryClient]);
 
   // load playlists + songs and build a hotkey -> resolved songs map
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const pls = await base44.entities.Playlist.list('-updated_date', 100);
+        const pls = await queryClient.fetchQuery(playlistsQueryOptions);
         if (cancelled) return;
         const map = {};
         const songsMap = {};
@@ -81,7 +87,7 @@ export function DjProvider({ children }) {
       } catch {}
     })();
     return () => { cancelled = true; };
-  }, [hotkeyVersion]);
+  }, [hotkeyVersion, queryClient]);
   useEffect(() => { queueRef.current = queue; try { localStorage.setItem('dj_queue', JSON.stringify(queue)); } catch {} }, [queue]);
   useEffect(() => { indexRef.current = currentIndex; try { localStorage.setItem('dj_index', String(currentIndex)); } catch {} }, [currentIndex]);
 
@@ -261,7 +267,7 @@ export function DjProvider({ children }) {
       };
       const resolveFresh = async (ids) => {
         try {
-          const all = await base44.entities.Song.list('-updated_date', 200);
+          const all = await queryClient.fetchQuery({ ...songsQueryOptions, staleTime: 0 });
           const byId = new Map(all.map((s) => [s.id, s]));
           return ids.map((id) => byId.get(id)).filter(Boolean);
         } catch { return []; }
@@ -312,7 +318,7 @@ export function DjProvider({ children }) {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [isPlaying, currentSong, goalPlaying, play, pause, next, prev, stopGoal]);
+  }, [isPlaying, currentSong, goalPlaying, play, pause, next, prev, stopGoal, queryClient]);
 
   // html audio listeners
   useEffect(() => {

@@ -1,0 +1,25 @@
+import { useQuery } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
+
+export const SONGS_KEY = ['songs'];
+export const PLAYLISTS_KEY = ['playlists'];
+
+export const fetchSongs = () => base44.entities.Song.list('-updated_date', 200);
+export const fetchPlaylists = () => base44.entities.Playlist.list('-updated_date', 100);
+
+export const songsQueryOptions = {
+  queryKey: SONGS_KEY,
+  queryFn: fetchSongs,
+  staleTime: 60 * 1000,
+};
+
+export const playlistsQueryOptions = {
+  queryKey: PLAYLISTS_KEY,
+  queryFn: fetchPlaylists,
+  staleTime: 60 * 1000,
+};
+
+// One cache for the whole app: the library page, the setlists page, the player and
+// the global hotkeys all read the same Song/Playlist queries.
+export const useSongs = () => useQuery(songsQueryOptions);
+export const usePlaylists = () => useQuery(playlistsQueryOptions);

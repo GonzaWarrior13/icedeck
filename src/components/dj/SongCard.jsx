@@ -14,13 +14,14 @@ export default function SongCard({ song, isActive, onPlay, onAddQueue, onEdit, o
   const tags = song.tags || [];
   const isQuick = tags.includes('quick');
   return (
-    <div className={`group flex items-center gap-3 p-3 rounded-xl border transition ${isActive ? 'bg-cyan-400/10 border-cyan-400/40' : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'}`}>
+    <div className={`group flex flex-wrap items-center gap-3 p-3 rounded-xl border transition ${isActive ? 'bg-primary/10 border-primary/40' : 'bg-card/60 border-border hover:border-muted-foreground/40'}`}>
       <button
         onClick={() => onPlay(song)}
-        className="shrink-0 w-10 h-10 rounded-full bg-cyan-400 text-slate-950 flex items-center justify-center hover:bg-cyan-300 transition"
+        className="shrink-0 min-h-11 min-w-11 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition"
         title="Play now"
+        aria-label={`Play ${song.title}`}
       >
-        <Play className="w-4 h-4 fill-current" />
+        <Play className="w-4 h-4 fill-current" aria-hidden="true" />
       </button>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
@@ -31,29 +32,50 @@ export default function SongCard({ song, isActive, onPlay, onAddQueue, onEdit, o
             </span>
           )}
         </div>
-        <p className="truncate text-xs text-slate-400">{song.artist || 'Unknown'} · {formatTime(song.duration)}</p>
+        <p className="truncate text-sm text-muted-foreground">{song.artist || 'Unknown'} · {formatTime(song.duration)}</p>
         {tags.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-1.5">
             {tags.map((t) => (
-              <span key={t} className={`text-[10px] px-1.5 py-0.5 rounded border ${TAG_COLORS[t] || 'bg-slate-700/40 text-slate-300 border-slate-600'}`}>
+              <span key={t} className={`text-[10px] px-1.5 py-0.5 rounded border ${TAG_COLORS[t] || 'bg-secondary text-secondary-foreground border-border'}`}>
                 {t}
               </span>
             ))}
           </div>
         )}
       </div>
-      <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition">
-        <button onClick={() => onToggleQuick(song)} title="Quick access" className={`p-2 rounded-lg hover:bg-slate-800 ${isQuick ? 'text-cyan-300' : 'text-slate-500'}`}>
-          <Star className={`w-4 h-4 ${isQuick ? 'fill-current' : ''}`} />
+      <div className="flex items-center gap-0.5 transition md:opacity-60 md:group-hover:opacity-100 max-md:w-full max-md:justify-end">
+        <button
+          onClick={() => onToggleQuick(song)}
+          title="Quick access"
+          aria-label={isQuick ? `Remove ${song.title} from quick access` : `Add ${song.title} to quick access`}
+          aria-pressed={isQuick}
+          className={`min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-secondary ${isQuick ? 'text-primary' : 'text-muted-foreground'}`}
+        >
+          <Star className={`w-4 h-4 ${isQuick ? 'fill-current' : ''}`} aria-hidden="true" />
         </button>
-        <button onClick={() => onAddQueue(song)} title="Add to queue" className="p-2 rounded-lg hover:bg-slate-800 text-slate-300">
-          <Plus className="w-4 h-4" />
+        <button
+          onClick={() => onAddQueue(song)}
+          title="Add to queue"
+          aria-label={`Add ${song.title} to queue`}
+          className="min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-secondary text-foreground"
+        >
+          <Plus className="w-4 h-4" aria-hidden="true" />
         </button>
-        <button onClick={() => onEdit(song)} title="Edit start point" className="p-2 rounded-lg hover:bg-slate-800 text-slate-300">
-          <Scissors className="w-4 h-4" />
+        <button
+          onClick={() => onEdit(song)}
+          title="Edit start point"
+          aria-label={`Edit start point for ${song.title}`}
+          className="min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-secondary text-foreground"
+        >
+          <Scissors className="w-4 h-4" aria-hidden="true" />
         </button>
-        <button onClick={() => onDelete(song)} title="Delete" className="p-2 rounded-lg hover:bg-slate-800 text-slate-500 hover:text-rose-300">
-          <Trash2 className="w-4 h-4" />
+        <button
+          onClick={() => onDelete(song)}
+          title="Delete"
+          aria-label={`Delete ${song.title}`}
+          className="min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-secondary text-muted-foreground hover:text-destructive"
+        >
+          <Trash2 className="w-4 h-4" aria-hidden="true" />
         </button>
       </div>
     </div>

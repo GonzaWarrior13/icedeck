@@ -1,18 +1,23 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { motion } from 'framer-motion';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { base44 } from '@/api/base44Client';
 import {
   decodeAudioFile, computePeaks, suggestStartPoint, formatTime, parseTime,
 } from '@/lib/audio';
-import Waveform from './Waveform';
 import { Loader2, Play, Pause, Sparkles, Save, Wand2, Scissors } from 'lucide-react';
 
+// The waveform canvas is the heaviest piece of the editor; it loads with the dialog.
+const Waveform = lazy(() => import('./Waveform'));
+
 export default function StartPointEditor({ song, onClose, onSave }) {
+  const isMobile = useIsMobile();
   const [peaks, setPeaks] = useState(null);
   const [duration, setDuration] = useState(song?.duration || 0);
   const [start, setStart] = useState(song?.start_point || 0);
@@ -114,88 +119,98 @@ export default function StartPointEditor({ song, onClose, onSave }) {
 
   return (
     <Dialog open={!!song} onOpenChange={(o) => !o && onClose?.()}>
-      <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-2xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Scissors className="w-4 h-4 text-cyan-400" /> Start Point — {song?.title}
-          </DialogTitle>
-        </DialogHeader>
+      <DialogContent className="bg-card border-border text-card-foreground max-w-2xl">
+        <motion.div
+          className="space-y-4"
+          initial={isMobile ? { y: 28, opacity: 0 } : false}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.2, ease: 'easeOut' }}
+        >
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Scissors className="w-4 h-4 text-primary" aria-hidden="true" /> Start Point — {song?.title}
+            </DialogTitle>
+          </DialogHeader>
 
-        <div className="space-y-4">
-          {error && <p className="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded p-2">{error}</p>}
+          <div className="space-y-4">
+            {error && <p className="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded p-2">{error}</p>}
 
-          <div className="rounded-xl bg-slate-950/60 border border-slate-800 p-3">
-            {analyzing ? (
-              <div className="flex items-center justify-center h-20 text-slate-400 text-sm">
-                <Loader2 className="w-4 h-4 animate-spin mr-2" /> Analyzing audio…
+            <div className="rounded-xl bg-background/60 border border-border p-3">
+              {analyzing ? (
+                <div className="flex items-center justify-center h-20 text-muted-foreground text-sm">
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" aria-hidden="true" /> Analyzing audio…
+                </div>
+              ) : (
+                <Suspense fallback={<div className="h-[84px] rounded bg-secondary/40" />}>
+                  <Waveform
+                    peaks={peaks}
+                    duration={duration}
+                    start={start}
+                    end={end}
+                    currentTime={displayTime}
+                    onSeek={(t) => { if (previewRef.current) previewRef.current.currentTime = t; }}
+                    onStartChange={(t) => { setStart(t); setStartInput(formatTime(t)); }}
+                    onEndChange={(t) => { setEnd(t); setEndInput(formatTime(t)); }}
+                    height={84}
+                  />
+                </Suspense>
+              )}
+              <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
+                <span className="tabular-nums">{formatTime(displayTime)}</span>
+                <span className="tabular-nums">/ {formatTime(duration)}</span>
               </div>
-            ) : (
-              <Waveform
-                peaks={peaks}
-                duration={duration}
-                start={start}
-                end={end}
-                currentTime={displayTime}
-                onSeek={(t) => { if (previewRef.current) previewRef.current.currentTime = t; }}
-                onStartChange={(t) => { setStart(t); setStartInput(formatTime(t)); }}
-                onEndChange={(t) => { setEnd(t); setEndInput(formatTime(t)); }}
-                height={84}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs text-muted-foreground">Start point (mm:ss or sec)</Label>
+                <Input
+                  value={startInput}
+                  onChange={(e) => applyStartInput(e.target.value)}
+                  className="min-h-11 bg-background border-border"
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">End point (optional)</Label>
+                <Input
+                  value={endInput}
+                  onChange={(e) => applyEndInput(e.target.value)}
+                  placeholder="auto"
+                  className="min-h-11 bg-background border-border"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-xs text-muted-foreground">Per-song volume: {volume}%</Label>
+              <input
+                type="range" min={0} max={100} value={volume}
+                onChange={(e) => setVolume(Number(e.target.value))}
+                className="w-full accent-primary"
+                aria-label="Per-song volume"
               />
+            </div>
+
+            {suggestion && (
+              <p className="text-xs text-primary bg-primary/10 border border-primary/20 rounded p-2 flex items-center gap-2">
+                <Sparkles className="w-3.5 h-3.5" aria-hidden="true" /> {suggestion.reason} at {formatTime(suggestion.start)}
+              </p>
             )}
-            <div className="flex items-center justify-between mt-2 text-xs text-slate-400">
-              <span className="tabular-nums">{formatTime(displayTime)}</span>
-              <span className="tabular-nums">/ {formatTime(duration)}</span>
-            </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label className="text-xs text-slate-400">Start point (mm:ss or sec)</Label>
-              <Input
-                value={startInput}
-                onChange={(e) => applyStartInput(e.target.value)}
-                className="bg-slate-950 border-slate-700"
-              />
-            </div>
-            <div>
-              <Label className="text-xs text-slate-400">End point (optional)</Label>
-              <Input
-                value={endInput}
-                onChange={(e) => applyEndInput(e.target.value)}
-                placeholder="auto"
-                className="bg-slate-950 border-slate-700"
-              />
-            </div>
-          </div>
-
-          <div>
-            <Label className="text-xs text-slate-400">Per-song volume: {volume}%</Label>
-            <input
-              type="range" min={0} max={100} value={volume}
-              onChange={(e) => setVolume(Number(e.target.value))}
-              className="w-full accent-cyan-400"
-            />
-          </div>
-
-          {suggestion && (
-            <p className="text-xs text-cyan-300 bg-cyan-400/10 border border-cyan-400/20 rounded p-2 flex items-center gap-2">
-              <Sparkles className="w-3.5 h-3.5" /> {suggestion.reason} at {formatTime(suggestion.start)}
-            </p>
-          )}
-        </div>
-
-        <DialogFooter className="gap-2 sm:gap-2">
-          <Button variant="outline" onClick={handleSuggest} disabled={!peaks} className="bg-transparent border-slate-700 text-slate-200 hover:bg-slate-800">
-            <Wand2 className="w-4 h-4 mr-1" /> Auto-suggest
-          </Button>
-          <Button variant="outline" onClick={togglePreview} className="bg-transparent border-slate-700 text-slate-200 hover:bg-slate-800">
-            {previewing ? <Pause className="w-4 h-4 mr-1" /> : <Play className="w-4 h-4 mr-1" />}
-            {previewing ? 'Stop' : 'Preview'}
-          </Button>
-          <Button onClick={handleSave} disabled={saving} className="bg-cyan-400 text-slate-950 hover:bg-cyan-300">
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 mr-1" />} Save
-          </Button>
-        </DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" onClick={handleSuggest} disabled={!peaks} className="min-h-11 bg-transparent border-border text-foreground hover:bg-secondary">
+              <Wand2 className="w-4 h-4 mr-1" aria-hidden="true" /> Auto-suggest
+            </Button>
+            <Button variant="outline" onClick={togglePreview} className="min-h-11 bg-transparent border-border text-foreground hover:bg-secondary">
+              {previewing ? <Pause className="w-4 h-4 mr-1" aria-hidden="true" /> : <Play className="w-4 h-4 mr-1" aria-hidden="true" />}
+              {previewing ? 'Stop' : 'Preview'}
+            </Button>
+            <Button onClick={handleSave} disabled={saving} className="min-h-11 bg-primary text-primary-foreground hover:bg-primary/90">
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> : <Save className="w-4 h-4 mr-1" aria-hidden="true" />} Save
+            </Button>
+          </DialogFooter>
+        </motion.div>
       </DialogContent>
     </Dialog>
   );

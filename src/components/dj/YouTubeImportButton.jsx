@@ -53,18 +53,23 @@ export default function YouTubeImportButton({ onUploaded }) {
     <div className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="inline-flex items-center gap-2 rounded-lg bg-slate-800 hover:bg-slate-700 px-3 py-2 text-sm text-slate-200 transition"
+        className="inline-flex items-center gap-2 min-h-11 rounded-lg bg-secondary hover:bg-secondary/80 px-3 py-2 text-sm text-foreground transition"
+        aria-expanded={open}
       >
-        <Youtube className="w-4 h-4 text-red-500" /> Search YouTube
+        <Youtube className="w-4 h-4 text-red-500" aria-hidden="true" /> Search YouTube
       </button>
       {open && (
-        <div className="absolute right-0 mt-2 w-80 z-30 rounded-xl border border-slate-800 bg-slate-900 shadow-xl p-3 space-y-3">
+        <div className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] z-30 rounded-xl border border-border bg-popover shadow-xl p-3 space-y-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm font-medium text-slate-200">
-              <LinkIcon className="w-4 h-4" /> Paste a YouTube link
+            <div className="flex items-center gap-2 text-sm font-medium text-popover-foreground">
+              <LinkIcon className="w-4 h-4" aria-hidden="true" /> Paste a YouTube link
             </div>
-            <button onClick={() => { setOpen(false); reset(); }} className="text-slate-400 hover:text-slate-200">
-              <X className="w-4 h-4" />
+            <button
+              onClick={() => { setOpen(false); reset(); }}
+              className="min-h-11 min-w-11 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground"
+              aria-label="Close YouTube import"
+            >
+              <X className="w-4 h-4" aria-hidden="true" />
             </button>
           </div>
           <input
@@ -72,17 +77,18 @@ export default function YouTubeImportButton({ onUploaded }) {
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder="https://youtube.com/watch?v=..."
-            className="w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-cyan-500"
+            aria-label="YouTube link"
+            className="w-full min-h-11 rounded-lg bg-secondary border border-border px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
           />
           {error && <p className="text-xs text-red-400">{error}</p>}
           <button
             onClick={handleExtract}
             disabled={loading}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 px-3 py-2 text-sm font-medium text-slate-950"
+            className="w-full inline-flex items-center justify-center gap-2 min-h-11 rounded-lg bg-primary hover:bg-primary/90 disabled:opacity-50 px-3 py-2 text-sm font-medium text-primary-foreground"
           >
-            {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Extracting…</> : 'Extract audio'}
+            {loading ? <><Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> Extracting…</> : 'Extract audio'}
           </button>
-          <p className="text-[10px] text-slate-500">Only extract content you have rights to use. YouTube may block some links.</p>
+          <p className="text-[11px] text-muted-foreground">Only extract content you have rights to use. YouTube may block some links.</p>
         </div>
       )}
     </div>

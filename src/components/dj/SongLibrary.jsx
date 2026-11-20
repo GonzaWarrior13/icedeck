@@ -5,14 +5,14 @@ import { Loader2 } from 'lucide-react';
 export default function SongLibrary({ songs, loading, currentSongId, onPlay, onAddQueue, onEdit, onDelete, onToggleQuick }) {
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12 text-slate-500">
-        <Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading library…
+      <div className="flex items-center justify-center py-12 text-muted-foreground">
+        <Loader2 className="w-5 h-5 animate-spin mr-2" aria-hidden="true" /> Loading library…
       </div>
     );
   }
   if (!songs.length) {
     return (
-      <div className="text-center py-12 text-slate-500 text-sm">
+      <div className="text-center py-12 text-muted-foreground text-sm">
         No tracks yet. Upload some audio to get started.
       </div>
     );

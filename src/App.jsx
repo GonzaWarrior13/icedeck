@@ -9,8 +9,13 @@ import ScrollToTop from './components/ScrollToTop';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { Navigate } from 'react-router-dom';
 import DjLayout from '@/components/dj/DjLayout';
-import Home from '@/pages/Home';
-import Playlists from '@/pages/Playlists';
+import { ThemeProvider } from '@/lib/ThemeProvider';
+import { lazy } from 'react';
+
+// Route pages load on demand so the Android WebView boots light.
+const Home = lazy(() => import('@/pages/Home'));
+const Playlists = lazy(() => import('@/pages/Playlists'));
+const Settings = lazy(() => import('@/pages/Settings'));
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
@@ -23,7 +28,7 @@ const AuthenticatedApp = () => {
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
       <div className="fixed inset-0 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-4 border-border border-t-primary rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -46,6 +51,7 @@ const AuthenticatedApp = () => {
         <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
           <Route path="/" element={<Home />} />
           <Route path="/playlists" element={<Playlists />} />
+          <Route path="/settings" element={<Settings />} />
         </Route>
       </Route>
       <Route path="/login" element={<Login />} />
@@ -61,15 +67,17 @@ const AuthenticatedApp = () => {
 function App() {
 
   return (
-    <AuthProvider>
-      <QueryClientProvider client={queryClientInstance}>
-        <Router>
-          <ScrollToTop />
-          <AuthenticatedApp />
-        </Router>
-        <Toaster />
-      </QueryClientProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <QueryClientProvider client={queryClientInstance}>
+          <Router>
+            <ScrollToTop />
+            <AuthenticatedApp />
+          </Router>
+          <Toaster />
+        </QueryClientProvider>
+      </AuthProvider>
+    </ThemeProvider>
   )
 }
 

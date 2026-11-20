@@ -1,47 +1,50 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useDj } from '@/lib/DjContext';
+import { PLAYLISTS_KEY, SONGS_KEY, playlistsQueryOptions, songsQueryOptions, usePlaylists, useSongs } from '@/hooks/useDjData';
 import { Button } from '@/components/ui/button';
 import { ListMusic, Plus, Trash2, Play, Pencil, Shuffle, Target } from 'lucide-react';
 import SetlistEditor from '@/components/dj/SetlistEditor';
 import Player from '@/components/dj/Player';
+import PullToRefresh from '@/components/dj/PullToRefresh';
 
 export default function Playlists() {
   const navigate = useNavigate();
   const dj = useDj();
-  const [playlists, setPlaylists] = useState([]);
-  const [songs, setSongs] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data: playlists = [], isLoading: loading } = usePlaylists();
+  const { data: songs = [] } = useSongs();
   const [editor, setEditor] = useState(null);
 
-  const fetchAll = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [pl, sg] = await Promise.all([
-        base44.entities.Playlist.list('-updated_date', 100),
-        base44.entities.Song.list('-updated_date', 200),
-      ]);
-      setPlaylists(pl);
-      setSongs(sg);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  const refresh = useCallback(
+    () => Promise.all([
+      queryClient.invalidateQueries({ queryKey: PLAYLISTS_KEY }),
+      queryClient.invalidateQueries({ queryKey: SONGS_KEY }),
+    ]),
+    [queryClient],
+  );
 
   const openCreate = () => setEditor({ id: null, name: '', songIds: [], hotkey: '' });
   const openEdit = (pl) => setEditor({ id: pl.id, name: pl.name, songIds: [...(pl.song_ids || [])], hotkey: pl.hotkey || '' });
 
   const handleSave = async (name, songIds, hotkey) => {
-    if (!name) return;
-    if (editor.id) {
-      const updated = await base44.entities.Playlist.update(editor.id, { name, song_ids: songIds, hotkey: hotkey || '' });
-      setPlaylists((prev) => prev.map((p) => (p.id === editor.id ? updated : p)));
+    if (!name || !editor) return;
+    const editorId = editor.id;
+    const previous = queryClient.getQueryData(PLAYLISTS_KEY) || [];
+    const payload = { name, song_ids: songIds, hotkey: hotkey || '' };
+
+    if (editorId) {
+      queryClient.setQueryData(PLAYLISTS_KEY, previous.map((p) => (p.id === editorId ? { ...p, ...payload } : p)));
+      try {
+        await base44.entities.Playlist.update(editorId, payload);
+      } catch {
+        queryClient.setQueryData(PLAYLISTS_KEY, previous);
+      }
     } else {
-      const created = await base44.entities.Playlist.create({ name, song_ids: songIds, hotkey: hotkey || '' });
-      setPlaylists((prev) => [created, ...prev]);
+      const created = await base44.entities.Playlist.create(payload);
+      queryClient.setQueryData(PLAYLISTS_KEY, [created, ...previous]);
     }
     setEditor(null);
     dj.refreshHotkeys();
@@ -49,17 +52,24 @@ export default function Playlists() {
 
   const deletePlaylist = async (pl) => {
     if (!confirm(`Delete setlist "${pl.name}"?`)) return;
-    await base44.entities.Playlist.delete(pl.id);
-    setPlaylists((prev) => prev.filter((p) => p.id !== pl.id));
+    const previous = queryClient.getQueryData(PLAYLISTS_KEY) || [];
+    queryClient.setQueryData(PLAYLISTS_KEY, previous.filter((p) => p.id !== pl.id));
+    try {
+      await base44.entities.Playlist.delete(pl.id);
+    } catch {
+      queryClient.setQueryData(PLAYLISTS_KEY, previous);
+    }
     dj.refreshHotkeys();
   };
 
   const resolveSongs = async (pl) => {
     let list = songs;
     try {
-      list = await base44.entities.Song.list('-updated_date', 200);
-      setSongs(list);
-    } catch {}
+      // One fetch, shared with every other page through the query cache.
+      list = await queryClient.fetchQuery({ ...songsQueryOptions, staleTime: 0 });
+    } catch {
+      /* fall back to the cached list */
+    }
     const byId = new Map(list.map((s) => [s.id, s]));
     return (pl.song_ids || []).map((id) => byId.get(id)).filter(Boolean);
   };
@@ -81,14 +91,18 @@ export default function Playlists() {
   };
 
   return (
-    <div className="p-4 md:p-6 space-y-5 max-w-4xl">
-      <header className="flex items-center justify-between gap-3">
+    <PullToRefresh
+      onRefresh={refresh}
+      className="flex-1 min-h-0 md:flex-none md:overflow-visible"
+      contentClassName="p-4 md:p-6 space-y-5 max-w-4xl"
+    >
+      <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Setlists</h1>
-          <p className="text-sm text-slate-400">Save and reuse queues for intermissions, warmups, and celebrations</p>
+          <p className="text-sm text-muted-foreground">Save and reuse queues for intermissions, warmups, and celebrations</p>
         </div>
-        <Button onClick={openCreate} className="bg-cyan-400 text-slate-950 hover:bg-cyan-300">
-          <Plus className="w-4 h-4 mr-1" /> New setlist
+        <Button onClick={openCreate} className="min-h-11 bg-primary text-primary-foreground hover:bg-primary/90">
+          <Plus className="w-4 h-4 mr-1" aria-hidden="true" /> New setlist
         </Button>
       </header>
 
@@ -104,46 +118,70 @@ export default function Playlists() {
       )}
 
       {loading ? (
-        <p className="text-slate-500 text-sm">Loading…</p>
+        <p className="text-muted-foreground text-sm">Loading…</p>
       ) : playlists.length === 0 ? (
-        <div className="text-center py-12 text-slate-500 text-sm border border-dashed border-slate-800 rounded-xl">
-          <ListMusic className="w-6 h-6 mx-auto mb-2 opacity-50" /> No setlists yet. Create one to save a reusable queue.
+        <div className="text-center py-12 text-muted-foreground text-sm border border-dashed border-border rounded-xl">
+          <ListMusic className="w-6 h-6 mx-auto mb-2 opacity-50" aria-hidden="true" /> No setlists yet. Create one to save a reusable queue.
         </div>
       ) : (
         <div className="space-y-2">
           {playlists.map((pl) => {
             const count = (pl.song_ids || []).length;
             return (
-              <div key={pl.id} className="flex items-center gap-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-                <button onClick={() => loadPlaylist(pl)} className="w-10 h-10 rounded-full bg-cyan-400 text-slate-950 flex items-center justify-center hover:bg-cyan-300" title="Play setlist">
-                  <Play className="w-4 h-4 fill-current" />
+              <div key={pl.id} className="flex flex-wrap items-center gap-2 p-3 rounded-xl bg-card/60 border border-border">
+                <button
+                  onClick={() => loadPlaylist(pl)}
+                  className="shrink-0 min-h-11 min-w-11 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition"
+                  title="Play setlist"
+                  aria-label={`Play ${pl.name}`}
+                >
+                  <Play className="w-4 h-4 fill-current" aria-hidden="true" />
                 </button>
-                <button onClick={() => shufflePlaylist(pl)} className="w-10 h-10 rounded-full bg-slate-800 text-cyan-300 flex items-center justify-center hover:bg-slate-700 transition" title="Shuffle setlist">
-                  <Shuffle className="w-4 h-4" />
+                <button
+                  onClick={() => shufflePlaylist(pl)}
+                  className="shrink-0 min-h-11 min-w-11 rounded-full bg-secondary text-primary flex items-center justify-center hover:bg-secondary/80 transition"
+                  title="Shuffle setlist"
+                  aria-label={`Shuffle ${pl.name}`}
+                >
+                  <Shuffle className="w-4 h-4" aria-hidden="true" />
                 </button>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium truncate">{pl.name}</p>
-                  <p className="text-xs text-slate-500">{count} tracks{pl.hotkey ? ` · key ${pl.hotkey.toUpperCase()}` : ''}</p>
+                  <p className="text-sm text-muted-foreground truncate">{count} tracks{pl.hotkey ? ` · key ${pl.hotkey.toUpperCase()}` : ''}</p>
                 </div>
-                <button
-                  onClick={() => dj.setGoalSetlist(dj.goalSetlistId === pl.id ? null : pl.id)}
-                  className={`p-2 rounded-lg transition ${dj.goalSetlistId === pl.id ? 'text-amber-400' : 'text-slate-500 hover:text-amber-300'}`}
-                  title={dj.goalSetlistId === pl.id ? 'Default goal setlist — click to clear' : 'Set as default goal setlist'}
-                >
-                  <Target className="w-4 h-4" />
-                </button>
-                <button onClick={() => openEdit(pl)} className="p-2 rounded-lg text-slate-400 hover:text-cyan-300" title="Edit setlist">
-                  <Pencil className="w-4 h-4" />
-                </button>
-                <button onClick={() => deletePlaylist(pl)} className="p-2 rounded-lg text-slate-500 hover:text-rose-300" title="Delete setlist">
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                <div className="flex items-center gap-0.5 max-md:w-full max-md:justify-end">
+                  <button
+                    onClick={() => dj.setGoalSetlist(dj.goalSetlistId === pl.id ? null : pl.id)}
+                    className={`min-h-11 min-w-11 flex items-center justify-center rounded-lg transition ${dj.goalSetlistId === pl.id ? 'text-amber-400' : 'text-muted-foreground hover:text-amber-300'}`}
+                    title={dj.goalSetlistId === pl.id ? 'Default goal setlist — click to clear' : 'Set as default goal setlist'}
+                    aria-label={dj.goalSetlistId === pl.id ? `Clear default goal setlist ${pl.name}` : `Set ${pl.name} as default goal setlist`}
+                    aria-pressed={dj.goalSetlistId === pl.id}
+                  >
+                    <Target className="w-4 h-4" aria-hidden="true" />
+                  </button>
+                  <button
+                    onClick={() => openEdit(pl)}
+                    className="min-h-11 min-w-11 flex items-center justify-center rounded-lg text-muted-foreground hover:text-primary"
+                    title="Edit setlist"
+                    aria-label={`Edit ${pl.name}`}
+                  >
+                    <Pencil className="w-4 h-4" aria-hidden="true" />
+                  </button>
+                  <button
+                    onClick={() => deletePlaylist(pl)}
+                    className="min-h-11 min-w-11 flex items-center justify-center rounded-lg text-muted-foreground hover:text-destructive"
+                    title="Delete setlist"
+                    aria-label={`Delete ${pl.name}`}
+                  >
+                    <Trash2 className="w-4 h-4" aria-hidden="true" />
+                  </button>
+                </div>
               </div>
             );
           })}
         </div>
       )}
       <Player />
-    </div>
+    </PullToRefresh>
   );
 }
