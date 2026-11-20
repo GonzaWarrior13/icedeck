@@ -2,6 +2,7 @@ import React, { Suspense } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { Disc3, Library, ListMusic, Settings as SettingsIcon } from 'lucide-react';
 import { DjProvider } from '@/lib/DjContext';
+import { useSimpleMode } from '@/lib/simpleMode';
 import MobileTabBar from './MobileTabBar';
 import PageTransition from './PageTransition';
 
@@ -19,16 +20,19 @@ const PageFallback = () => (
 
 export default function DjLayout() {
   const { pathname } = useLocation();
+  const { enabled: simpleMode } = useSimpleMode();
+  // Simple mode strips the shell down to the console and its way back to Settings.
+  const items = simpleMode ? nav.filter((item) => item.to === '/settings') : nav;
   return (
     <DjProvider>
-      <div className="app-shell-height bg-background text-foreground flex flex-col md:flex-row overflow-hidden md:overflow-visible">
+      <div className={`${simpleMode ? 'simple-shell' : 'app-shell-height'} bg-background text-foreground flex flex-col md:flex-row overflow-hidden md:overflow-visible`}>
         <aside className="shrink-0 md:w-56 md:min-h-screen border-b md:border-b-0 md:border-r border-border bg-card/70 backdrop-blur flex md:flex-col items-center md:items-stretch px-3 md:px-5 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3 md:py-5 gap-3">
           <div className="flex items-center gap-2 font-semibold tracking-tight text-lg md:mb-6">
             <Disc3 className="w-7 h-7 text-primary" aria-hidden="true" />
             <span className="hidden md:inline">Ice<span className="text-primary">Deck</span></span>
           </div>
           <nav className="flex md:flex-col gap-1 w-full" aria-label="Sections">
-            {nav.map(({ to, label, icon: Icon }) => {
+            {items.map(({ to, label, icon: Icon }) => {
               const active = pathname === to;
               return (
                 <Link
@@ -61,7 +65,7 @@ export default function DjLayout() {
           </Suspense>
         </main>
 
-        <MobileTabBar />
+        {!simpleMode && <MobileTabBar />}
       </div>
     </DjProvider>
   );

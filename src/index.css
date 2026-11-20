@@ -160,6 +160,12 @@
   height: calc(100dvh - var(--tabbar-h));
 }
 
+/* Simple mode hides the tab bar, so the console owns the whole screen. */
+.simple-shell {
+  height: 100vh;
+  height: 100dvh;
+}
+
 .page-bottom-space {
   padding-bottom: calc(var(--tabbar-h) + 1.5rem);
 }

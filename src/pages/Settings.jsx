@@ -3,6 +3,10 @@ import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { AlertTriangle, Loader2, Mail, ShieldAlert, UserRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
+import { usePlaylists } from '@/hooks/useDjData';
+import { useSimpleMode } from '@/lib/simpleMode';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,8 +25,16 @@ export default function Settings() {
     queryFn: () => base44.auth.me(),
     staleTime: 5 * 60 * 1000,
   });
+  const { data: playlists = [] } = usePlaylists();
+  const { enabled: simpleMode, playlistIds, setEnabled, setPlaylistIds, togglePlaylist } = useSimpleMode();
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
+
+  const toggleSimpleMode = (on) => {
+    // First time on: start with every setlist picked, then trim the list.
+    if (on && playlistIds.length === 0) setPlaylistIds(playlists.map((p) => p.id));
+    setEnabled(on);
+  };
 
   const deleteAccount = async () => {
     setError('');
@@ -60,6 +72,44 @@ export default function Settings() {
                 <Mail className="w-3.5 h-3.5" aria-hidden="true" /> {user?.email || '—'}
               </p>
             </div>
+          </div>
+        )}
+      </section>
+
+      <section className="bg-card/60 border border-border rounded-2xl p-4 space-y-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="text-sm font-medium">Simple mode</h2>
+            <p className="text-sm text-muted-foreground">
+              Game-day view with play/pause, the goal horn, and only the setlists you pick.
+            </p>
+          </div>
+          <Switch
+            checked={simpleMode}
+            onCheckedChange={toggleSimpleMode}
+            aria-label="Simple mode"
+            className="shrink-0"
+          />
+        </div>
+
+        {simpleMode && (
+          <div className="space-y-1 pt-1">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Setlists shown</p>
+            {playlists.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-2">No setlists yet.</p>
+            ) : (
+              playlists.map((pl) => (
+                <label key={pl.id} className="flex items-center gap-3 min-h-11 px-1 rounded-lg hover:bg-secondary/50">
+                  <Checkbox
+                    checked={playlistIds.includes(pl.id)}
+                    onCheckedChange={() => togglePlaylist(pl.id)}
+                    aria-label={pl.name}
+                  />
+                  <span className="truncate text-sm flex-1">{pl.name}</span>
+                  <span className="text-xs text-muted-foreground">{(pl.song_ids || []).length}</span>
+                </label>
+              ))
+            )}
           </div>
         )}
       </section>
