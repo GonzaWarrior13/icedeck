@@ -10,8 +10,8 @@ export default async function(req) {
     const user = await base44.auth.me().catch((e) => (e.status === 401 ? null : Promise.reject(e)));
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const clientId = secrets.get('SPOTIFY_CLIENT_ID');
-    const clientSecret = secrets.get('SPOTIFY_CLIENT_SECRET');
+    const clientId = Deno.env.get('SPOTIFY_CLIENT_ID') || secrets.get('SPOTIFY_CLIENT_ID');
+    const clientSecret = Deno.env.get('SPOTIFY_CLIENT_SECRET') || secrets.get('SPOTIFY_CLIENT_SECRET');
     if (!clientId || !clientSecret) {
       return Response.json({
         error: 'Spotify is not set up yet. Add SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET on the dashboard Secrets page, then reconnect.'

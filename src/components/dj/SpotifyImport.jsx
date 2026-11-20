@@ -21,6 +21,17 @@ export default function SpotifyImport({ existingSongs = [], onImported }) {
   const [importingId, setImportingId] = useState(null);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  const copyRedirect = async () => {
+    try {
+      await navigator.clipboard.writeText(spotifyRedirectUri());
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setError('Copy the redirect URI manually from the text above.');
+    }
+  };
 
   const loadPlaylists = async () => {
     setLoading(true);
@@ -134,9 +145,17 @@ export default function SpotifyImport({ existingSongs = [], onImported }) {
                 {connecting ? 'Opening Spotify…' : 'Connect Spotify'}
               </button>
               <p className="text-[11px] text-muted-foreground leading-relaxed">
-                Your Spotify app needs this redirect URI:
-                <span className="block mt-1 break-all text-foreground/80">{spotifyRedirectUri()}</span>
+                In your Spotify app’s settings, add this exact Redirect URI, then connect:
+                <span className="block mt-1 break-all rounded bg-secondary/60 px-2 py-1 text-foreground/80">
+                  {spotifyRedirectUri()}
+                </span>
               </p>
+              <button
+                onClick={copyRedirect}
+                className="w-full min-h-11 rounded-lg border border-border text-xs font-medium text-foreground hover:bg-secondary/60"
+              >
+                {copied ? 'Copied' : 'Copy redirect URI'}
+              </button>
             </div>
           ) : (
             <div className="space-y-2">
