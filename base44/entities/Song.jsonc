@@ -52,6 +52,9 @@
       "type": "number",
       "default": 100
     },
+    "loudness_db": {
+      "type": "number"
+    },
     "play_count": {
       "type": "number",
       "default": 0

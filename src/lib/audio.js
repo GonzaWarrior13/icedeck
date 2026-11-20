@@ -58,6 +58,41 @@ export function suggestStartPoint(buffer) {
   return { start: Math.round(energies[maxIdx].time), reason, energy: maxE, average: avg };
 }
 
+// Average level of a decoded track, in dBFS. Long files are sampled so this
+// stays quick on a whole library.
+export function computeRmsDb(buffer) {
+  const channel = buffer.getChannelData(0);
+  const stride = Math.max(1, Math.floor(channel.length / 200000));
+  let sum = 0;
+  let n = 0;
+  for (let i = 0; i < channel.length; i += stride) {
+    const v = channel[i];
+    sum += v * v;
+    n++;
+  }
+  if (!n || sum === 0) return -60;
+  return 20 * Math.log10(Math.sqrt(sum / n));
+}
+
+export async function analyzeLoudness(url) {
+  return computeRmsDb(await decodeAudioFile(url));
+}
+
+// The loudest end of a library sets the ceiling, so every other track is turned
+// down to match it instead of being pushed past the player's maximum.
+export function referenceDb(levels) {
+  const valid = levels.filter((db) => typeof db === 'number');
+  if (!valid.length) return null;
+  const sorted = [...valid].sort((a, b) => a - b);
+  return sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.85))];
+}
+
+export function volumeForDb(db, ref) {
+  if (db == null || ref == null) return 100;
+  const gain = Math.pow(10, (ref - db) / 20);
+  return Math.max(25, Math.min(100, Math.round(gain * 100)));
+}
+
 export function formatTime(sec) {
   if (sec == null || isNaN(sec)) return '0:00';
   const m = Math.floor(sec / 60);

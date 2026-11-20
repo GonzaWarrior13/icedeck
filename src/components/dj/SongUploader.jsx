@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Loader2, UploadCloud } from 'lucide-react';
+import { analyzeLoudness, referenceDb, volumeForDb } from '@/lib/audio';
 
 export default function SongUploader({ onUploaded }) {
   const [uploading, setUploading] = useState(false);
@@ -12,6 +13,16 @@ export default function SongUploader({ onUploaded }) {
     if (!list.length) return;
     setUploading(true);
     try {
+      // The library's own levels decide where a new track sits, so it drops in matched.
+      const refs = [];
+      try {
+        const existing = await base44.entities.Song.filter({ loudness_db: { $exists: true } });
+        existing.forEach((s) => {
+          if (typeof s.loudness_db === 'number') refs.push(s.loudness_db);
+        });
+      } catch {
+        /* level the track on its own if the library cannot be read */
+      }
       for (const file of list) {
         setProgress(`Uploading ${file.name}…`);
         const { file_url } = await base44.integrations.Core.UploadFile({ file });
@@ -20,6 +31,15 @@ export default function SongUploader({ onUploaded }) {
           a.addEventListener('loadedmetadata', () => res(a.duration || 0), { once: true });
           a.addEventListener('error', () => res(0), { once: true });
         });
+        setProgress(`Leveling ${file.name}…`);
+        let loudness = null;
+        try {
+          loudness = await analyzeLoudness(file_url);
+        } catch {
+          loudness = null;
+        }
+        const volume = volumeForDb(loudness, referenceDb(refs));
+        if (loudness != null) refs.push(loudness);
         const created = await base44.entities.Song.create({
           title: file.name.replace(/\.[^.]+$/, ''),
           artist: 'Unknown',
@@ -27,8 +47,9 @@ export default function SongUploader({ onUploaded }) {
           file_url,
           source: 'local',
           start_point: 0,
-          volume: 100,
+          volume,
           tags: [],
+          ...(loudness != null ? { loudness_db: Math.round(loudness * 10) / 10 } : {}),
         });
         onUploaded?.(created);
       }

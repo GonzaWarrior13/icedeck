@@ -10,6 +10,7 @@ import Player from '@/components/dj/Player';
 import TagFilter from '@/components/dj/TagFilter';
 import QuickAccess from '@/components/dj/QuickAccess';
 import YouTubeImportButton from '@/components/dj/YouTubeImportButton';
+import NormalizeButton from '@/components/dj/NormalizeButton';
 import PullToRefresh from '@/components/dj/PullToRefresh';
 
 // The waveform editor is heavy: it only loads when a track is opened for cueing.
@@ -84,6 +85,7 @@ export default function Library() {
           <div className="flex flex-wrap items-center gap-2">
             <SongUploader onUploaded={handleUploaded} />
             <YouTubeImportButton onUploaded={handleUploaded} />
+            <NormalizeButton />
           </div>
         </header>
 
