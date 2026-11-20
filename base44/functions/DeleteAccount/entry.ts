@@ -8,7 +8,17 @@ export default async function (req) {
 
     // Only the caller's own account is ever removed. Shared arena data
     // (songs, setlists) is left intact for the rest of the team.
-    await base44.asServiceRole.entities.User.delete(user.id);
+    try {
+      await base44.asServiceRole.entities.User.delete(user.id);
+    } catch (e) {
+      if (/owner/i.test(e?.message || '')) {
+        return Response.json(
+          { error: 'The app owner cannot delete their own account. Transfer ownership first.' },
+          { status: 400 },
+        );
+      }
+      throw e;
+    }
 
     return Response.json({ success: true });
   } catch (error) {
