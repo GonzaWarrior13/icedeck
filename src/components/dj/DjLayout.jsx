@@ -21,8 +21,13 @@ const PageFallback = () => (
 export default function DjLayout() {
   const { pathname } = useLocation();
   const { enabled: simpleMode } = useSimpleMode();
-  // Simple mode strips the shell down to the console and its way back to Settings.
-  const items = simpleMode ? nav.filter((item) => item.to === '/settings') : nav;
+  // Simple mode keeps only the console and the way back to Settings.
+  const items = simpleMode
+    ? [
+        { to: '/', label: 'Console', icon: Disc3 },
+        { to: '/settings', label: 'Settings', icon: SettingsIcon },
+      ]
+    : nav;
   return (
     <DjProvider>
       <div className={`${simpleMode ? 'simple-shell' : 'app-shell-height'} bg-background text-foreground flex flex-col md:flex-row overflow-hidden md:overflow-visible`}>

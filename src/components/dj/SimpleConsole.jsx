@@ -97,22 +97,23 @@ export default function SimpleConsole() {
             No setlists picked yet. Choose them in Settings.
           </div>
         ) : (
-          chosen.map((pl) => (
-            <div key={pl.id} className="flex items-center gap-3 p-2 pl-3 rounded-xl bg-card/60 border border-border">
-              <span className="flex-1 min-w-0 truncate font-medium text-[15px]">{pl.name}</span>
+          <div className={`grid gap-3 ${chosen.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+            {chosen.map((pl) => (
               <button
+                key={pl.id}
                 onClick={() => shufflePlaylist(pl)}
                 disabled={busyId === pl.id}
-                className="shrink-0 min-h-11 min-w-11 rounded-lg bg-secondary text-primary flex items-center justify-center hover:bg-secondary/80 disabled:opacity-60"
+                className="min-h-28 rounded-2xl bg-card border border-border px-3 py-4 flex flex-col items-center justify-center gap-1.5 text-center active:scale-[0.99] transition hover:border-primary/60 disabled:opacity-60"
                 aria-label={`Shuffle ${pl.name}`}
-                title={`Shuffle ${pl.name}`}
               >
                 {busyId === pl.id
-                  ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
-                  : <Shuffle className="w-4 h-4" aria-hidden="true" />}
+                  ? <Loader2 className="w-6 h-6 animate-spin text-primary" aria-hidden="true" />
+                  : <Shuffle className="w-6 h-6 text-primary" aria-hidden="true" />}
+                <span className="font-semibold text-base leading-tight line-clamp-2">{pl.name}</span>
+                <span className="text-xs text-muted-foreground">{(pl.song_ids || []).length} tracks</span>
               </button>
-            </div>
-          ))
+            ))}
+          </div>
         )}
       </div>
     </div>
