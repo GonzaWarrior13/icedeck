@@ -14,7 +14,7 @@ export default async function(req) {
 
     const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&limit=${limit}`;
     const res = await fetch(url, {
-      headers: { "User-Agent": "IceDeckDJ/1.0 (https://icedeck.app)" }
+      headers: { "User-Agent": "Rinkbeats/1.0" }
     });
     if (!res.ok) {
       const t = await res.text();

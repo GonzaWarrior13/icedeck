@@ -124,7 +124,7 @@ export default function Settings() {
           <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-destructive">Delete account</p>
         </div>
         <p className="text-sm text-muted-foreground leading-relaxed max-w-[560px]">
-          Deleting your account permanently removes your login and your access to this IceDeck workspace.
+          Deleting your account permanently removes your login and your access to this Rinkbeats workspace.
           You will be signed out immediately and cannot sign back in with the same account. Tracks and
           setlists you added stay in the shared library for the rest of the team.
         </p>

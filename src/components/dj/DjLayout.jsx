@@ -4,6 +4,7 @@ import { Disc3, Library, ListMusic, Settings as SettingsIcon } from 'lucide-reac
 import { DjProvider } from '@/lib/DjContext';
 import { useSimpleMode } from '@/lib/simpleMode';
 import MobileTabBar from './MobileTabBar';
+import BrandMark from './BrandMark';
 import PageTransition from './PageTransition';
 
 const PageFallback = () => (
@@ -49,13 +50,8 @@ export default function DjLayout() {
     <DjProvider>
       <div className={`${simpleMode ? 'simple-shell' : 'app-shell-height'} bg-background text-foreground flex flex-col md:flex-row overflow-hidden md:overflow-visible`}>
         <aside className="shrink-0 md:w-[212px] md:min-h-screen border-b md:border-b-0 md:border-r border-border bg-card flex md:flex-col items-center md:items-stretch px-4 md:px-5 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-2.5 md:py-7 gap-3 md:gap-0">
-          <Link to="/" className="flex items-center gap-2.5 no-select md:mb-8" aria-label="IceDeck DJ home">
-            <span className="w-7 h-7 rounded-[7px] bg-primary flex items-center justify-center" aria-hidden="true">
-              <span className="w-2 h-2 rounded-full bg-background" />
-            </span>
-            <span className="hidden md:inline font-display text-[22px] font-semibold uppercase leading-none tracking-[0.08em]">
-              Ice<span className="text-primary">Deck</span>
-            </span>
+          <Link to="/" className="no-select md:mb-8" aria-label="Rinkbeats home">
+            <BrandMark />
           </Link>
 
           <nav
