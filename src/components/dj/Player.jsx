@@ -28,7 +28,7 @@ export default function Player() {
 
   if (!song) {
     return (
-      <div className="shrink-0 border-t border-border bg-card px-4 md:px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:h-[72px] md:py-0 md:flex md:items-center md:pb-0">
+      <div className="shrink-0 border-t border-border bg-card px-4 md:px-8 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:h-[72px] md:py-0 md:flex md:items-center md:pb-0">
         <div className="flex items-center gap-2.5 type-meta">
           <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50" aria-hidden="true" />
           Nothing loaded — add a track to the queue.
@@ -41,9 +41,9 @@ export default function Player() {
   const pct = dj.duration ? (dj.currentTime / dj.duration) * 100 : 0;
 
   return (
-    <div className="shrink-0 border-t border-border bg-card px-3 md:px-5 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] md:h-[72px] md:pt-0 md:pb-0 md:flex md:items-center">
+    <div className="shrink-0 border-t border-border bg-card px-4 md:px-8 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] md:h-[72px] md:pt-0 md:pb-0 md:flex md:items-center">
       <div
-        className="relative -mx-3 mb-2 h-1 cursor-pointer bg-border lg:hidden"
+        className="relative -mx-4 mb-2 h-1 cursor-pointer bg-border lg:hidden"
         onClick={(e) => {
           const rect = e.currentTarget.getBoundingClientRect();
           const frac = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
