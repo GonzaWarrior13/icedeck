@@ -9,7 +9,7 @@ export default function BrandMark({ size = 'md', className = '' }) {
   const height = size === 'lg' ? 'h-8' : 'h-[21px]';
 
   return (
-    <span className={`inline-flex flex-col items-center no-select ${className}`}>
+    <span className={`inline-flex flex-col items-start no-select ${className}`}>
       <Image
         src={LOGO}
         alt="Rinkbeats"
@@ -17,8 +17,8 @@ export default function BrandMark({ size = 'md', className = '' }) {
         className={`${height} w-auto`}
         style={{ mixBlendMode: 'screen' }}
       />
-      <span className="mt-1 text-[9px] font-medium uppercase tracking-[0.2em] text-muted-foreground/55">
-        Gonzalo Coco
+      <span className="mt-1 text-[9px] font-medium tracking-[0.14em] text-muted-foreground/55">
+        By Gonzalo Coco
       </span>
     </span>
   );
