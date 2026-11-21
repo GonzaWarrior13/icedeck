@@ -50,7 +50,7 @@ export default function DjLayout() {
     <DjProvider>
       <div className={`${simpleMode ? 'simple-shell' : 'app-shell-height'} bg-background text-foreground flex flex-col md:flex-row overflow-hidden md:overflow-visible`}>
         <aside className="shrink-0 md:w-[212px] md:min-h-screen border-b md:border-b-0 md:border-r border-border bg-card flex md:flex-col items-center md:items-stretch px-4 md:px-5 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-2.5 md:py-7 gap-3 md:gap-0">
-          <Link to="/" className="no-select md:mb-8" aria-label="Rinkbeats home">
+          <Link to="/" className="no-select flex flex-1 justify-center md:flex-none md:justify-center md:mb-8" aria-label="Rinkbeats home">
             <BrandMark />
           </Link>
 
