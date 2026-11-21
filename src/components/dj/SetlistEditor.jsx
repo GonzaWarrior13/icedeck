@@ -44,7 +44,7 @@ export default function SetlistEditor({ initialName = '', initialSongIds = [], i
   const moveDown = (i) => setIds((p) => { if (i >= p.length - 1) return p; const n = [...p]; [n[i + 1], n[i]] = [n[i], n[i + 1]]; return n; });
 
   return (
-    <div className="bg-secondary rounded-[14px] p-5 md:p-8 space-y-6">
+    <div className="bg-card border border-border rounded-[10px] p-5 md:p-8 space-y-6">
       <div className="flex flex-wrap items-end gap-3">
         <div className="flex-1 min-w-[200px]">
           <Label className="section-label">Setlist name</Label>
@@ -108,11 +108,12 @@ export default function SetlistEditor({ initialName = '', initialSongIds = [], i
               <div key={s.id} className="flex items-center gap-2 py-2 min-h-14">
                 <span className="text-xs tabular-nums text-muted-foreground w-5 text-right">{i + 1}</span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{s.title}</p>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {s.artist || 'Unknown'} <span className="opacity-60">·</span>{' '}
-                    <span className="tabular-nums">{formatTime(s.duration)}</span>
-                  </p>
+                  <p className="type-track truncate">{s.title}</p>
+                  <div className="mt-0.5 flex items-center gap-1.5">
+                    <p className="type-meta truncate">{s.artist || 'Unknown'}</p>
+                    <span className="type-meta text-muted-foreground/50" aria-hidden="true">·</span>
+                    <span className="type-data shrink-0 text-muted-foreground">{formatTime(s.duration)}</span>
+                  </div>
                 </div>
                 <button onClick={() => moveUp(i)} disabled={i === 0} className="min-h-11 min-w-9 flex items-center justify-center rounded-[8px] text-muted-foreground hover:text-foreground disabled:opacity-30" aria-label={`Move ${s.title} up`}><ChevronUp className="w-4 h-4" aria-hidden="true" /></button>
                 <button onClick={() => moveDown(i)} disabled={i === selected.length - 1} className="min-h-11 min-w-9 flex items-center justify-center rounded-[8px] text-muted-foreground hover:text-foreground disabled:opacity-30" aria-label={`Move ${s.title} down`}><ChevronDown className="w-4 h-4" aria-hidden="true" /></button>

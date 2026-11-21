@@ -21,7 +21,7 @@ export default function Queue() {
       <div className="flex items-center justify-between gap-3 px-3 h-12 md:px-4 md:h-14 border-b border-border shrink-0">
         <div className="flex items-center gap-2">
           <span className="section-label">Queue</span>
-          <span className="rounded-full border border-border px-2 py-0.5 text-[11px] tabular-nums text-muted-foreground">
+          <span className="type-data rounded-[6px] bg-secondary px-1.5 py-0.5 text-[11px] text-muted-foreground">
             {dj.queue.length}
           </span>
         </div>
@@ -56,8 +56,8 @@ export default function Queue() {
                       <div
                         ref={p.innerRef}
                         {...p.draggableProps}
-                        className={`flex items-center gap-2 px-1.5 md:px-2 min-h-[52px] md:min-h-14 ${
-                          dj.currentIndex === i ? 'bg-primary/10' : 'hover:bg-secondary/60'
+                        className={`flex items-center gap-2 px-2 min-h-14 transition-colors ${
+                          dj.currentIndex === i ? 'bg-primary/15' : 'hover:bg-secondary'
                         }`}
                       >
                         <span
@@ -69,17 +69,18 @@ export default function Queue() {
                         </span>
                         <button
                           onClick={() => dj.playQueueFrom(dj.queue, i)}
-                          className="shrink-0 w-9 h-9 rounded-full border border-border text-primary flex items-center justify-center hover:border-primary/60 transition-colors"
+                          className="shrink-0 w-9 h-9 rounded-[8px] border border-border text-primary flex items-center justify-center hover:border-primary/60 hover:bg-primary/10 transition-colors"
                           aria-label={`Play ${song.title} from queue`}
                         >
-                          <Play className="w-3 h-3 fill-current" aria-hidden="true" />
+                          <Play className="w-3.5 h-3.5 fill-current" aria-hidden="true" />
                         </button>
                         <div className="min-w-0 flex-1">
-                          <p className={`truncate text-sm ${dj.currentIndex === i ? 'text-primary' : ''}`}>{song.title}</p>
-                          <p className="truncate text-xs text-muted-foreground">
-                            {song.artist || 'Unknown'} <span className="opacity-60">·</span>{' '}
-                            <span className="tabular-nums">{formatTime(song.duration)}</span>
-                          </p>
+                          <p className={`type-track truncate ${dj.currentIndex === i ? 'text-primary' : ''}`}>{song.title}</p>
+                          <div className="mt-0.5 flex items-center gap-1.5">
+                            <p className="type-meta truncate">{song.artist || 'Unknown'}</p>
+                            <span className="type-meta text-muted-foreground/50" aria-hidden="true">·</span>
+                            <span className="type-data shrink-0 text-muted-foreground">{formatTime(song.duration)}</span>
+                          </div>
                         </div>
                         <button
                           onClick={() => dj.removeFromQueue(i)}

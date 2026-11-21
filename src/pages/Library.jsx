@@ -80,10 +80,12 @@ export default function Library() {
         <header className="space-y-3 md:flex md:flex-wrap md:items-end md:justify-between md:gap-4 md:space-y-0">
           <div className="min-w-0">
             <div className="flex items-baseline gap-2.5">
-              <h1 className="font-display text-[34px] md:text-[46px] font-semibold leading-none tracking-[-0.01em]">Library</h1>
-              <span className="text-[13px] tabular-nums text-muted-foreground">{songs.length} tracks</span>
+              <h1 className="font-display text-[44px] md:text-[56px] font-semibold leading-[0.95] tracking-[-0.01em]">Library</h1>
+              <span className="type-data mb-2 rounded-[6px] border border-border bg-card px-2 py-0.5 text-muted-foreground">
+                {songs.length} tracks
+              </span>
             </div>
-            <p className="mt-1 hidden text-[15px] text-muted-foreground md:block">Cue, edit, and fade for game day.</p>
+            <p className="type-meta mt-1 hidden md:block">Cue, edit, and fade for game day.</p>
           </div>
           <div className="flex items-center gap-1.5 md:gap-2">
             <SongUploader onUploaded={handleUploaded} />
@@ -118,7 +120,7 @@ export default function Library() {
             />
           </section>
           <section className="lg:sticky lg:top-6">
-            <div className="flex h-[280px] flex-col overflow-hidden border-y border-border md:h-[380px] md:rounded-[14px] md:border md:bg-card lg:h-[calc(100vh-8rem)]">
+            <div className="flex h-[280px] flex-col overflow-hidden rounded-[10px] border border-border bg-card md:h-[380px] lg:h-[calc(100vh-8rem)]">
               <Queue />
             </div>
           </section>

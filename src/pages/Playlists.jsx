@@ -100,7 +100,7 @@ export default function Playlists() {
         <div className="min-w-0">
           <div className="flex items-center gap-3">
             <h1 className="font-display text-[44px] md:text-[56px] font-semibold leading-[0.95] tracking-[-0.01em]">Setlists</h1>
-            <span className="mb-2 rounded-full border border-border px-2.5 py-0.5 text-xs tabular-nums text-muted-foreground">
+            <span className="type-data mb-2 rounded-[6px] border border-border bg-card px-2 py-0.5 text-muted-foreground">
               {playlists.length}
             </span>
           </div>
@@ -128,10 +128,10 @@ export default function Playlists() {
       )}
 
       {loading ? (
-        <div className="border-y border-border divide-y divide-border">
+        <div className="flex flex-col gap-1.5">
           {[0, 1].map((i) => (
-            <div key={i} className="h-[72px] flex items-center gap-3 px-3">
-              <div className="w-9 h-9 rounded-full bg-secondary animate-pulse" />
+            <div key={i} className="flex min-h-14 items-center gap-3 rounded-[8px] border border-border bg-card py-2 pl-4 pr-2">
+              <div className="w-9 h-9 rounded-[8px] bg-secondary animate-pulse" />
               <div className="flex-1 space-y-2">
                 <div className="h-3 w-32 rounded-full bg-secondary animate-pulse" />
                 <div className="h-2.5 w-20 rounded-full bg-secondary/70 animate-pulse" />
@@ -140,25 +140,33 @@ export default function Playlists() {
           ))}
         </div>
       ) : playlists.length === 0 ? (
-        <div className="border-t border-border pt-16">
-          <p className="font-display text-[32px] font-semibold leading-none">No setlists yet</p>
-          <p className="mt-2 text-sm text-muted-foreground">Create one to save a reusable queue.</p>
+        <div className="rounded-[10px] border border-dashed border-border px-4 py-12 text-center">
+          <p className="text-[16px] font-semibold leading-tight">No setlists yet</p>
+          <p className="type-meta mt-1.5">Create one to save a reusable queue.</p>
         </div>
       ) : (
-        <div className="border-y border-border divide-y divide-border">
+        <div className="flex flex-col gap-1.5">
           {playlists.map((pl) => {
             const count = (pl.song_ids || []).length;
             const isGoal = dj.goalSetlistId === pl.id;
             return (
               <div
                 key={pl.id}
-                className={`flex flex-wrap items-center gap-3 px-3 py-3 md:min-h-[72px] transition-colors ${
-                  isGoal ? 'bg-primary/10' : 'hover:bg-secondary/60'
+                className={`relative flex flex-wrap items-center gap-2.5 min-h-14 rounded-[8px] border py-2 pl-4 pr-2 transition-colors ${
+                  isGoal
+                    ? 'border-signal/40 bg-signal/5'
+                    : 'border-border bg-card hover:bg-secondary'
                 }`}
               >
+                {isGoal && (
+                  <span
+                    className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-signal"
+                    aria-hidden="true"
+                  />
+                )}
                 <button
                   onClick={() => loadPlaylist(pl)}
-                  className="shrink-0 w-9 h-9 rounded-full border border-border text-primary flex items-center justify-center hover:border-primary/60 transition-colors"
+                  className="shrink-0 w-9 h-9 rounded-[8px] border border-border text-primary flex items-center justify-center hover:border-primary/60 hover:bg-primary/10 transition-colors"
                   title="Play setlist"
                   aria-label={`Play ${pl.name}`}
                 >
@@ -166,19 +174,19 @@ export default function Playlists() {
                 </button>
                 <button
                   onClick={() => shufflePlaylist(pl)}
-                  className="shrink-0 w-9 h-9 rounded-full text-muted-foreground flex items-center justify-center hover:text-foreground hover:bg-secondary transition-colors"
+                  className="shrink-0 w-9 h-9 rounded-[8px] text-muted-foreground flex items-center justify-center hover:text-foreground hover:bg-secondary transition-colors"
                   title="Shuffle setlist"
                   aria-label={`Shuffle ${pl.name}`}
                 >
                   <Shuffle className="w-4 h-4" aria-hidden="true" />
                 </button>
                 <div className="flex-1 min-w-0">
-                  <p className="truncate text-[17px] font-semibold leading-tight">{pl.name}</p>
-                  <div className="mt-1 flex items-center gap-2 text-[13px] text-muted-foreground">
-                    <span className="tabular-nums">{count} tracks</span>
+                  <p className={`type-track truncate ${isGoal ? 'text-signal' : ''}`}>{pl.name}</p>
+                  <div className="mt-0.5 flex items-center gap-2">
+                    <span className="type-data text-muted-foreground">{count} tracks</span>
                     {pl.hotkey && (
-                      <span className="rounded-full border border-border px-2 py-0.5 text-[11px] tabular-nums">
-                        key {pl.hotkey.toUpperCase()}
+                      <span className="type-data rounded-[6px] border border-border px-1.5 py-px text-[11px] text-muted-foreground">
+                        {pl.hotkey.toUpperCase()}
                       </span>
                     )}
                   </div>
