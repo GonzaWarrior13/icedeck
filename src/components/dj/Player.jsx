@@ -4,6 +4,7 @@ import { usePlaylists, useSongs } from '@/hooks/useDjData';
 import { formatTime } from '@/lib/audio';
 import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Waves, Siren, ChevronDown } from 'lucide-react';
 
+// Persistent bottom player bar: 72px tall on desktop, hairline top border, no shadow.
 export default function Player() {
   const dj = useDj();
   const { data: playlists = [] } = usePlaylists();
@@ -27,8 +28,8 @@ export default function Player() {
 
   if (!song) {
     return (
-      <div className="shrink-0 border-t border-border bg-card px-4 md:px-6 py-2.5 md:py-3 pb-[calc(0.625rem+env(safe-area-inset-bottom))] md:pb-3">
-        <div className="flex items-center gap-2.5 text-[13px] md:text-sm text-muted-foreground">
+      <div className="shrink-0 border-t border-border bg-card px-4 md:px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:h-[72px] md:py-0 md:flex md:items-center md:pb-0">
+        <div className="flex items-center gap-2.5 type-meta">
           <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50" aria-hidden="true" />
           Nothing loaded — add a track to the queue.
         </div>
@@ -40,9 +41,9 @@ export default function Player() {
   const pct = dj.duration ? (dj.currentTime / dj.duration) * 100 : 0;
 
   return (
-    <div className="shrink-0 border-t border-border bg-card px-3 md:px-6 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] md:py-3 md:pb-3">
+    <div className="shrink-0 border-t border-border bg-card px-3 md:px-5 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] md:h-[72px] md:pt-0 md:pb-0 md:flex md:items-center">
       <div
-        className="relative -mx-3 mb-2 h-1.5 cursor-pointer bg-border/70 md:hidden"
+        className="relative -mx-3 mb-2 h-1 cursor-pointer bg-border lg:hidden"
         onClick={(e) => {
           const rect = e.currentTarget.getBoundingClientRect();
           const frac = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
@@ -56,25 +57,26 @@ export default function Player() {
       >
         <div className="absolute inset-y-0 left-0 bg-primary" style={{ width: `${pct}%` }} />
       </div>
-      <div className="flex items-center justify-between gap-3 md:gap-6">
-        <div className="hidden sm:block min-w-0 w-48 lg:w-64 shrink-0">
-          <p className="truncate text-[16px] font-semibold leading-tight">{song.title}</p>
-          <p className="truncate text-[13px] text-muted-foreground">{song.artist || 'Unknown'}</p>
+
+      <div className="flex w-full min-w-0 items-center justify-between gap-2 md:gap-4">
+        <div className="hidden sm:block min-w-0 w-36 lg:w-52 shrink-0">
+          <p className="truncate text-[15px] font-semibold leading-tight">{song.title}</p>
+          <p className="truncate type-meta">{song.artist || 'Unknown'}</p>
         </div>
 
-        <div className="flex items-center gap-1 md:gap-1.5 shrink-0">
+        <div className="flex items-center gap-0.5 md:gap-1 shrink-0">
           <button
             onClick={dj.prev}
             aria-label="Previous track"
             title="Previous"
-            className="min-h-11 min-w-11 md:min-h-9 md:min-w-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            className="flex h-10 w-10 items-center justify-center rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
           >
             <SkipBack className="w-4 h-4" aria-hidden="true" />
           </button>
           <button
             onClick={dj.isPlaying ? dj.pause : dj.play}
             aria-label={dj.isPlaying ? 'Pause' : 'Play'}
-            className="w-[52px] h-[52px] shrink-0 rounded-full bg-primary text-primary-foreground flex items-center justify-center transition-transform active:scale-[0.96] hover:bg-primary/90"
+            className="w-12 h-12 md:w-11 md:h-11 shrink-0 rounded-[10px] bg-primary text-primary-foreground flex items-center justify-center transition-transform active:scale-[0.96] hover:bg-primary/90"
           >
             {dj.isPlaying ? <Pause className="w-5 h-5 fill-current" aria-hidden="true" /> : <Play className="w-5 h-5 fill-current" aria-hidden="true" />}
           </button>
@@ -82,18 +84,18 @@ export default function Player() {
             onClick={dj.next}
             aria-label="Next track"
             title="Next"
-            className="min-h-11 min-w-11 md:min-h-9 md:min-w-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            className="flex h-10 w-10 items-center justify-center rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
           >
             <SkipForward className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
 
-        <div className="hidden flex-1 min-w-0 items-center gap-2 md:flex md:gap-3">
-          <span className="hidden sm:inline font-display text-[15px] font-medium tabular-nums w-10 text-right text-foreground">
+        <div className="hidden min-w-0 flex-1 items-center gap-2.5 lg:flex">
+          <span className="type-data w-11 shrink-0 text-right text-foreground">
             {formatTime(dj.currentTime)}
           </span>
           <div
-            className="relative flex-1 h-1 rounded-full bg-border cursor-pointer group"
+            className="relative flex-1 h-1 rounded-full bg-border cursor-pointer transition-all hover:h-1.5"
             onClick={(e) => {
               const rect = e.currentTarget.getBoundingClientRect();
               const frac = (e.clientX - rect.left) / rect.width;
@@ -114,16 +116,20 @@ export default function Player() {
               />
             )}
           </div>
-          <span className="hidden sm:inline font-display text-[15px] font-medium tabular-nums w-12 text-muted-foreground">
+          <span className="type-data w-12 shrink-0 text-muted-foreground">
             -{formatTime(remaining)}
           </span>
         </div>
 
-        <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
+        <div className="flex items-center gap-1 md:gap-1.5 shrink-0">
           <button
             onClick={() => (dj.goalPlaying ? dj.stopGoal() : dj.fadeOut(2, false))}
             disabled={dj.isFading || (!dj.isPlaying && !dj.goalPlaying)}
-            className="hidden sm:flex items-center gap-1.5 min-h-11 px-3 rounded-[10px] border border-border text-xs font-semibold text-foreground hover:bg-secondary disabled:opacity-40 transition-colors"
+            className={`hidden sm:flex items-center gap-1.5 h-10 px-2.5 rounded-[8px] border-[1.5px] text-[11px] font-semibold uppercase tracking-[0.06em] transition-colors disabled:opacity-40 ${
+              dj.isFading
+                ? 'border-destructive bg-destructive text-destructive-foreground'
+                : 'border-destructive/70 text-destructive hover:bg-destructive/10'
+            }`}
             title={dj.goalPlaying ? 'Fade out goal horn' : 'Fade out & pause'}
             aria-label={dj.goalPlaying ? 'Fade out goal horn' : 'Fade out and pause'}
           >
@@ -136,7 +142,7 @@ export default function Player() {
                 if (def) goalWithPlaylist(def);
                 else goalOnly();
               }}
-              className="flex items-center gap-1.5 min-h-11 px-3 rounded-l-[10px] text-[13px] font-bold uppercase tracking-[0.1em] bg-signal text-signal-foreground hover:bg-signal/90 transition-colors"
+              className="flex items-center gap-1.5 h-10 px-2.5 rounded-l-[8px] text-[12px] font-bold uppercase tracking-[0.08em] bg-signal text-signal-foreground hover:bg-signal/90 transition-colors"
               title={defaultPl ? `Goal! Horn + shuffle "${defaultPl.name}"` : 'Goal! Play the goal horn'}
               aria-label={defaultPl ? `Goal horn then ${defaultPl.name}` : 'Play goal horn'}
             >
@@ -144,7 +150,7 @@ export default function Player() {
             </button>
             <button
               onClick={() => setGoalMenuOpen((o) => !o)}
-              className="min-h-11 min-w-11 flex items-center justify-center rounded-r-[10px] bg-signal text-signal-foreground hover:bg-signal/90 transition-colors border-l border-signal-foreground/20"
+              className="flex h-10 w-9 items-center justify-center rounded-r-[8px] bg-signal text-signal-foreground hover:bg-signal/90 transition-colors border-l border-signal-foreground/20"
               title="More goal options"
               aria-label="More goal options"
               aria-expanded={goalMenuOpen}
@@ -182,7 +188,7 @@ export default function Player() {
           </div>
           <button
             onClick={() => dj.setMasterVolume(dj.masterVolume > 0 ? 0 : 1)}
-            className="flex h-10 w-8 items-center justify-center rounded-full text-muted-foreground hover:text-foreground transition-colors md:h-9 md:w-9"
+            className="flex h-10 w-9 items-center justify-center rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
             aria-label={dj.masterVolume > 0 ? 'Mute' : 'Unmute'}
           >
             {dj.masterVolume > 0 ? <Volume2 className="w-4 h-4" aria-hidden="true" /> : <VolumeX className="w-4 h-4" aria-hidden="true" />}
@@ -194,7 +200,7 @@ export default function Player() {
             step={0.01}
             value={dj.masterVolume}
             onChange={(e) => dj.setMasterVolume(Number(e.target.value))}
-            className="hidden lg:block w-24 accent-primary"
+            className="hidden xl:block w-20 accent-primary"
             aria-label="Master volume"
           />
         </div>
