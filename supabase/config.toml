@@ -1,0 +1,3 @@
+# The delete-account function validates Supabase access tokens itself using auth.getUser().
+[functions.delete-account]
+verify_jwt = false
