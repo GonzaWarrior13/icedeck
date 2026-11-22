@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { PLAYLISTS_KEY, playlistsQueryOptions, songsQueryOptions } from '@/hooks/useDjData';
 
-const isSupabasePreview = typeof window !== 'undefined' && window.location.pathname === '/supabase-dj';
+const isSupabasePreview = typeof window !== 'undefined' && ['/supabase-dj','/supabase-original'].includes(window.location.pathname);
 
 const GOAL_HORN_URL = 'https://media.base44.com/files/public/6a8f48cd9a055819d8b79b87/d73c0e5ef_TorontoMapleLeafsGoalHornNoSong.mp3';
 
