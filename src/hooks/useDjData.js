@@ -3,6 +3,9 @@ import { base44 } from '@/api/base44Client';
 import { getTeamSongs, getTeamPlaylists } from '@/api/supabaseClient';
 
 let migrationToken = null;
+let migrationSongs = [];
+let migrationPlaylists = [];
+export const setMigrationData = (songs, playlists) => { migrationSongs = songs; migrationPlaylists = playlists; };
 export const setMigrationToken = (token) => { migrationToken = token; };
 const originalUiTest = () => typeof window !== 'undefined' && window.location.pathname === '/supabase-original';
 
