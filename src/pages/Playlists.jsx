@@ -122,9 +122,7 @@ export default function Playlists({ migrationReadOnly = false }) {
   const shufflePlaylist = async (pl) => {
     const ordered = await resolveSongs(pl);
     if (!ordered.length) return;
-    const weighted = ordered.map((song) => ({ song, count: song.play_count || 0, rand: Math.random() }));
-    weighted.sort((a, b) => a.count - b.count || a.rand - b.rand);
-    dj.playQueueFrom(weighted.map((w) => w.song), 0);
+    dj.playSetlist(pl.id, ordered);
     navigate('/');
   };
 
