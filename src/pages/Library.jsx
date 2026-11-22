@@ -18,7 +18,8 @@ import ConfirmDialog from '@/components/dj/ConfirmDialog';
 // The waveform editor is heavy: it only loads when a track is opened for cueing.
 const StartPointEditor = lazy(() => import('@/components/dj/StartPointEditor'));
 
-export default function Library({ migrationReadOnly = false }) {
+export default function Library({ migrationReadOnly = false, canEdit = true }) {
+  const allowEdits = !migrationReadOnly || canEdit;
   const dj = useDj();
   const queryClient = useQueryClient();
   const { data: songs = [], isLoading: loading, refetch } = useSongs();
@@ -54,7 +55,7 @@ export default function Library({ migrationReadOnly = false }) {
 
   const confirmDelete = async () => {
     const song = deleteTarget;
-    if (!song || deleteBusy) return;
+    if (!song || deleteBusy || !allowEdits) return;
     if (migrationReadOnly) {
       setDeleteBusy(true);
       setDeleteError('');
@@ -122,7 +123,7 @@ export default function Library({ migrationReadOnly = false }) {
             <p className="type-meta mt-1 hidden md:block">Cue, edit, and fade for game day.</p>
           </div>
           <div className="flex items-center gap-1.5 md:gap-2">
-            <SongUploader onUploaded={handleUploaded} useSupabase={migrationReadOnly} />
+            {allowEdits && <SongUploader onUploaded={handleUploaded} useSupabase={migrationReadOnly} />}
             {!migrationReadOnly && <SpotifyImport
               existingSongs={songs}
               onImported={(created) => queryClient.setQueryData(SONGS_KEY, (prev = []) => [...created, ...prev])}
@@ -149,8 +150,8 @@ export default function Library({ migrationReadOnly = false }) {
               currentSongId={currentSongId}
               onPlay={dj.playNow}
               onAddQueue={dj.addToQueue}
-              onEdit={setEditorSong}
-              onDelete={handleDelete}
+              onEdit={allowEdits ? setEditorSong : undefined}
+              onDelete={allowEdits ? handleDelete : undefined}
               onToggleQuick={migrationReadOnly ? undefined : (s) => toggleTag(s, 'quick')}
             />
           </section>
@@ -164,7 +165,7 @@ export default function Library({ migrationReadOnly = false }) {
 
       <Player />
 
-      {editorSong && (
+      {allowEdits && editorSong && (
         <Suspense fallback={null}>
           <StartPointEditor
             song={editorSong}
