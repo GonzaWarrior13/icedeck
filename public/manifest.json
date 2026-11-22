@@ -1,0 +1,17 @@
+{
+  "name": "IceDeck — Hockey Game Music Controller",
+  "short_name": "IceDeck",
+  "description": "Game-day DJ controller with setlists and goal horn",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#121212",
+  "theme_color": "#121212",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any"
+    }
+  ]
+}
