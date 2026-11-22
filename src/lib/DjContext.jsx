@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useRef, useState, useEffect, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { createPrivateAudioUrl, getFreshPreviewToken } from '@/api/supabaseClient';
-import { PLAYLISTS_KEY, playlistsQueryOptions, songsQueryOptions } from '@/hooks/useDjData';
+import { createPrivateAudioUrl, getFreshPreviewToken, getSelectedTeamId } from '@/api/supabaseClient';
+import { PLAYLISTS_KEY, playlistsQueryOptions, songsQueryOptions, getMigrationSongs, getMigrationPlaylists } from '@/hooks/useDjData';
 
 const isSupabasePreview = import.meta.env.VITE_ICEDECK_STANDALONE === 'true' || (typeof window !== 'undefined' && ['/supabase-dj','/supabase-original'].includes(window.location.pathname));
 
@@ -12,6 +12,7 @@ const ORIGINAL_GOAL_HORN_URL = 'https://media.base44.com/files/public/6a8f48cd9a
 const MIGRATION_GOAL_HORN_URL = import.meta.env.VITE_ICEDECK_GOAL_HORN_URL || '/goal-horn.mp3';
 const GOAL_HORN_FADE_SECONDS = 1.2;
 const GOAL_SONG_EARLY_SECONDS = 0.6;
+const teamPrefKey = key => isSupabasePreview ? `${key}:team:${getSelectedTeamId() || 'none'}` : key;
 
 const defaultDj = {
   queue: [], currentIndex: -1, currentSong: null, isPlaying: false,
@@ -41,10 +42,21 @@ export function DjProvider({ children }) {
   const goalResumeRef = useRef(null);
 
   const [queue, setQueue] = useState(() => {
-    try { return isSupabasePreview ? [] : JSON.parse(localStorage.getItem('dj_queue') || '[]'); } catch { return []; }
+    try {
+      if (!isSupabasePreview) return JSON.parse(localStorage.getItem('dj_queue') || '[]');
+      // Keep only IDs in storage. Never persist private signed audio URLs.
+      const ids = JSON.parse(localStorage.getItem(teamPrefKey('dj_queue_ids')) || '[]');
+      const available = new Map(getMigrationSongs().map(song => [song.id, song]));
+      return Array.isArray(ids) ? ids.map(id => available.get(id)).filter(Boolean) : [];
+    } catch { return []; }
   });
   const [currentIndex, setCurrentIndex] = useState(() => {
-    try { if (isSupabasePreview) return -1; const v = Number(localStorage.getItem('dj_index')); return Number.isFinite(v) ? v : -1; } catch { return -1; }
+    try {
+      const raw = localStorage.getItem(teamPrefKey('dj_index'));
+      if (raw === null) return -1;
+      const v = Number(raw);
+      return Number.isInteger(v) && v >= -1 ? v : -1;
+    } catch { return -1; }
   });
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -53,11 +65,11 @@ export function DjProvider({ children }) {
   const [isFading, setIsFading] = useState(false);
   const [goalPlaying, setGoalPlaying] = useState(false);
   const [goalSetlistId, setGoalSetlistIdState] = useState(() => {
-    try { return localStorage.getItem('dj_goalSetlistId') || null; } catch { return null; }
+    try { return localStorage.getItem(teamPrefKey('dj_goalSetlistId')) || null; } catch { return null; }
   });
   const setGoalSetlist = useCallback((id) => {
     setGoalSetlistIdState(id);
-    try { if (id) localStorage.setItem('dj_goalSetlistId', id); else localStorage.removeItem('dj_goalSetlistId'); } catch {}
+    try { if (id) localStorage.setItem(teamPrefKey('dj_goalSetlistId'), id); else localStorage.removeItem(teamPrefKey('dj_goalSetlistId')); } catch {}
   }, []);
 
   const queueRef = useRef([]);
@@ -100,10 +112,19 @@ export function DjProvider({ children }) {
     })();
     return () => { cancelled = true; };
   }, [hotkeyVersion, queryClient]);
-  useEffect(() => { queueRef.current = queue; try { if (!isSupabasePreview) localStorage.setItem('dj_queue', JSON.stringify(queue)); } catch {} }, [queue]);
-  useEffect(() => { indexRef.current = currentIndex; try { if (!isSupabasePreview) localStorage.setItem('dj_index', String(currentIndex)); } catch {} }, [currentIndex]);
+  useEffect(() => {
+    queueRef.current = queue;
+    try {
+      if (isSupabasePreview) localStorage.setItem(teamPrefKey('dj_queue_ids'), JSON.stringify(queue.map(song => song.id)));
+      else localStorage.setItem('dj_queue', JSON.stringify(queue));
+    } catch {}
+  }, [queue]);
+  useEffect(() => {
+    indexRef.current = currentIndex;
+    try { localStorage.setItem(teamPrefKey('dj_index'), String(currentIndex)); } catch {}
+  }, [currentIndex]);
 
-  const currentSong = currentIndex >= 0 ? queue[currentIndex] : null;
+  const currentSong = currentIndex >= 0 ? (queue[currentIndex] || null) : null;
 
   const applyVolume = useCallback(() => {
     const sv = currentSong && currentSong.volume != null ? currentSong.volume / 100 : 1;
