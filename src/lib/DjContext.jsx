@@ -82,7 +82,7 @@ export function DjProvider({ children }) {
           const ids = pl.song_ids || [];
           if (ids.length) songsMap[pl.id] = ids;
           if (!pl.hotkey) return;
-          if (ids.length) map[pl.hotkey] = { songIds: ids, playlistId: pl.id };
+          if (ids.length) map[String(pl.hotkey).toLowerCase()] = { songIds: ids, playlistId: pl.id };
         });
         hotkeysRef.current = map;
         playlistSongsRef.current = songsMap;
