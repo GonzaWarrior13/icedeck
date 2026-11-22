@@ -63,7 +63,7 @@ export default function SongCard({ song, isActive, onPlay, onAddQueue, onEdit, o
       </div>
 
       <div className="-mr-1 flex items-center gap-0.5 md:mr-0 md:opacity-70 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
-        <button
+        {onToggleQuick && <button
           onClick={() => onToggleQuick(song)}
           title="Quick access"
           aria-label={isQuick ? `Remove ${song.title} from quick access` : `Add ${song.title} to quick access`}
@@ -71,7 +71,7 @@ export default function SongCard({ song, isActive, onPlay, onAddQueue, onEdit, o
           className={`${iconButton} ${isQuick ? 'text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
         >
           <Star className={`w-4 h-4 ${isQuick ? 'fill-current' : ''}`} aria-hidden="true" />
-        </button>
+        </button>}
         <button
           onClick={() => onAddQueue(song)}
           title="Add to queue"
@@ -80,22 +80,22 @@ export default function SongCard({ song, isActive, onPlay, onAddQueue, onEdit, o
         >
           <Plus className="w-4 h-4" aria-hidden="true" />
         </button>
-        <button
+        {onEdit && <button
           onClick={() => onEdit(song)}
           title="Edit start point"
           aria-label={`Edit start point for ${song.title}`}
           className={`${iconButton} text-muted-foreground hover:text-foreground hover:bg-secondary`}
         >
           <Scissors className="w-4 h-4" aria-hidden="true" />
-        </button>
-        <button
+        </button>}
+        {onDelete && <button
           onClick={() => onDelete(song)}
           title="Delete"
           aria-label={`Delete ${song.title}`}
           className={`${iconButton} text-muted-foreground hover:text-destructive hover:bg-destructive/10`}
         >
           <Trash2 className="w-4 h-4" aria-hidden="true" />
-        </button>
+        </button>}
       </div>
     </div>
   );
