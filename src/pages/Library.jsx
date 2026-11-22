@@ -12,6 +12,7 @@ import QuickAccess from '@/components/dj/QuickAccess';
 import SpotifyImport from '@/components/dj/SpotifyImport';
 import NormalizeButton from '@/components/dj/NormalizeButton';
 import PullToRefresh from '@/components/dj/PullToRefresh';
+import ConfirmDialog from '@/components/dj/ConfirmDialog';
 
 // The waveform editor is heavy: it only loads when a track is opened for cueing.
 const StartPointEditor = lazy(() => import('@/components/dj/StartPointEditor'));
@@ -23,6 +24,7 @@ export default function Library() {
   const [filter, setFilter] = useState('');
   const [activeTag, setActiveTag] = useState('All');
   const [editorSong, setEditorSong] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const refresh = useCallback(() => refetch(), [refetch]);
 
@@ -43,8 +45,12 @@ export default function Library() {
     setEditorSong(null);
   };
 
-  const handleDelete = async (song) => {
-    if (!confirm(`Delete "${song.title}"?`)) return;
+  const handleDelete = (song) => setDeleteTarget(song);
+
+  const confirmDelete = async () => {
+    const song = deleteTarget;
+    setDeleteTarget(null);
+    if (!song) return;
     const previous = queryClient.getQueryData(SONGS_KEY) || [];
     // Optimistic: the row disappears now, and comes back if the server refuses.
     queryClient.setQueryData(SONGS_KEY, previous.filter((s) => s.id !== song.id));
@@ -138,6 +144,14 @@ export default function Library() {
           />
         </Suspense>
       )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete track?"
+        description={deleteTarget ? `"${deleteTarget.title}" will be removed from your library.` : ''}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 }

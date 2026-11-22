@@ -69,7 +69,7 @@ export default function Player() {
             onClick={dj.prev}
             aria-label="Previous track"
             title="Previous"
-            className="flex h-10 w-10 items-center justify-center rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            className="flex h-11 w-11 items-center justify-center rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors md:h-10 md:w-10"
           >
             <SkipBack className="w-4 h-4" aria-hidden="true" />
           </button>
@@ -84,7 +84,7 @@ export default function Player() {
             onClick={dj.next}
             aria-label="Next track"
             title="Next"
-            className="flex h-10 w-10 items-center justify-center rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            className="flex h-11 w-11 items-center justify-center rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors md:h-10 md:w-10"
           >
             <SkipForward className="w-4 h-4" aria-hidden="true" />
           </button>
@@ -188,7 +188,7 @@ export default function Player() {
           </div>
           <button
             onClick={() => dj.setMasterVolume(dj.masterVolume > 0 ? 0 : 1)}
-            className="flex h-10 w-9 items-center justify-center rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            className="flex h-11 w-11 items-center justify-center rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors md:h-10 md:w-9"
             aria-label={dj.masterVolume > 0 ? 'Mute' : 'Unmute'}
           >
             {dj.masterVolume > 0 ? <Volume2 className="w-4 h-4" aria-hidden="true" /> : <VolumeX className="w-4 h-4" aria-hidden="true" />}

@@ -25,7 +25,7 @@ export default function TagFilter({ filter, setFilter, tags, activeTag, setActiv
               key={t}
               onClick={() => setActiveTag(t)}
               aria-pressed={active}
-              className={`min-h-8 shrink-0 rounded-[8px] border px-2.5 text-[12px] font-medium transition-colors ${
+              className={`min-h-8 shrink-0 rounded-[8px] border px-2.5 text-[14px] font-medium transition-colors md:text-[12px] ${
                 active
                   ? 'border-primary bg-primary/15 text-primary'
                   : 'border-border bg-card text-muted-foreground hover:bg-secondary hover:text-foreground'

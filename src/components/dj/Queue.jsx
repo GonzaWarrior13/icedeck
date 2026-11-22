@@ -21,14 +21,14 @@ export default function Queue() {
       <div className="flex items-center justify-between gap-3 px-3 h-12 md:px-4 md:h-14 border-b border-border shrink-0">
         <div className="flex items-center gap-2">
           <span className="section-label">Queue</span>
-          <span className="type-data rounded-[6px] bg-secondary px-1.5 py-0.5 text-[11px] text-muted-foreground">
+          <span className="type-data rounded-[6px] bg-secondary px-1.5 py-0.5 text-[14px] text-muted-foreground md:text-[11px]">
             {dj.queue.length}
           </span>
         </div>
         {dj.queue.length > 0 && (
           <button
             onClick={dj.clearQueue}
-            className="min-h-11 px-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className="min-h-11 px-2 text-[14px] text-muted-foreground hover:text-foreground transition-colors md:text-xs"
           >
             Clear
           </button>
@@ -69,7 +69,7 @@ export default function Queue() {
                         </span>
                         <button
                           onClick={() => dj.playQueueFrom(dj.queue, i)}
-                          className="shrink-0 w-9 h-9 rounded-[8px] border border-border text-primary flex items-center justify-center hover:border-primary/60 hover:bg-primary/10 transition-colors"
+                          className="shrink-0 h-11 w-11 rounded-[8px] border border-border text-primary flex items-center justify-center hover:border-primary/60 hover:bg-primary/10 transition-colors md:h-9 md:w-9"
                           aria-label={`Play ${song.title} from queue`}
                         >
                           <Play className="w-3.5 h-3.5 fill-current" aria-hidden="true" />

@@ -17,7 +17,7 @@ export default function BrandMark({ size = 'md', className = '' }) {
         className={`${height} w-auto`}
         style={{ mixBlendMode: 'screen' }}
       />
-      <span className="mt-1 text-[9px] font-medium tracking-[0.14em] text-muted-foreground/55">
+      <span className="mt-1 text-[14px] font-medium tracking-[0.14em] text-muted-foreground/55 md:text-[9px]">
         By Gonzalo Coco
       </span>
     </span>

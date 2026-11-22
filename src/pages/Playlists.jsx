@@ -9,6 +9,7 @@ import { Plus, Trash2, Play, Pencil, Shuffle, Target } from 'lucide-react';
 import SetlistEditor from '@/components/dj/SetlistEditor';
 import Player from '@/components/dj/Player';
 import PullToRefresh from '@/components/dj/PullToRefresh';
+import ConfirmDialog from '@/components/dj/ConfirmDialog';
 
 export default function Playlists() {
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ export default function Playlists() {
   const { data: playlists = [], isLoading: loading } = usePlaylists();
   const { data: songs = [] } = useSongs();
   const [editor, setEditor] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const refresh = useCallback(
     () => Promise.all([
@@ -50,8 +52,12 @@ export default function Playlists() {
     dj.refreshHotkeys();
   };
 
-  const deletePlaylist = async (pl) => {
-    if (!confirm(`Delete setlist "${pl.name}"?`)) return;
+  const deletePlaylist = (pl) => setDeleteTarget(pl);
+
+  const confirmDelete = async () => {
+    const pl = deleteTarget;
+    setDeleteTarget(null);
+    if (!pl) return;
     const previous = queryClient.getQueryData(PLAYLISTS_KEY) || [];
     queryClient.setQueryData(PLAYLISTS_KEY, previous.filter((p) => p.id !== pl.id));
     try {
@@ -186,7 +192,7 @@ export default function Playlists() {
                     <div className="mt-0.5 flex items-center gap-2">
                       <span className="type-data text-muted-foreground">{count} tracks</span>
                       {pl.hotkey && (
-                        <span className="type-data rounded-[6px] border border-border px-1.5 py-px text-[11px] text-muted-foreground">
+                        <span className="type-data rounded-[6px] border border-border px-1.5 py-px text-[14px] text-muted-foreground md:text-[11px]">
                           {pl.hotkey.toUpperCase()}
                         </span>
                       )}
@@ -229,6 +235,14 @@ export default function Playlists() {
       </PullToRefresh>
 
       <Player />
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete setlist?"
+        description={deleteTarget ? `"${deleteTarget.name}" will be removed.` : ''}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 }

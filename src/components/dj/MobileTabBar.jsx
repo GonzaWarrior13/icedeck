@@ -55,7 +55,7 @@ export default function MobileTabBar() {
               onClick={() => go({ key, to })}
               aria-label={label}
               aria-current={active ? 'page' : undefined}
-              className={`relative flex flex-col items-center justify-center gap-0.5 min-h-[3.25rem] py-1.5 text-[10.5px] font-medium tracking-wide no-select transition-colors ${
+              className={`relative flex flex-col items-center justify-center gap-0.5 min-h-[3.25rem] py-1.5 text-[14px] font-medium tracking-wide no-select transition-colors ${
                 active ? 'text-primary' : 'text-muted-foreground'
               }`}
             >

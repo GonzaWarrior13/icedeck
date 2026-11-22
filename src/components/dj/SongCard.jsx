@@ -2,8 +2,9 @@ import React from 'react';
 import { formatTime } from '@/lib/audio';
 import { Play, Plus, Scissors, Star, Trash2 } from 'lucide-react';
 
+// 44px touch targets on phones; the denser 36px buttons return at md.
 const iconButton =
-  'flex h-9 w-9 items-center justify-center rounded-[8px] transition-colors';
+  'flex h-11 w-11 items-center justify-center rounded-[8px] transition-colors md:h-9 md:w-9';
 
 export default function SongCard({ song, isActive, onPlay, onAddQueue, onEdit, onDelete, onToggleQuick }) {
   const tags = song.tags || [];
@@ -22,7 +23,7 @@ export default function SongCard({ song, isActive, onPlay, onAddQueue, onEdit, o
       <button
         onClick={() => onPlay(song)}
         disabled={!playable}
-        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] border transition-colors disabled:opacity-40 ${
+        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[8px] border transition-colors disabled:opacity-40 md:h-9 md:w-9 ${
           isActive
             ? 'border-primary bg-primary text-primary-foreground'
             : 'border-border text-primary hover:border-primary/60 hover:bg-primary/10'
@@ -37,7 +38,7 @@ export default function SongCard({ song, isActive, onPlay, onAddQueue, onEdit, o
         <div className="flex items-center gap-1.5">
           <p className={`type-track truncate ${isActive ? 'text-primary' : 'text-foreground'}`}>{song.title}</p>
           {song.start_point > 0 && (
-            <span className="type-data shrink-0 rounded-[6px] bg-primary/15 px-1.5 py-px text-[11px] text-primary">
+            <span className="type-data shrink-0 rounded-[6px] bg-primary/15 px-1.5 py-px text-[14px] text-primary md:text-[11px]">
               {formatTime(song.start_point)}
             </span>
           )}
