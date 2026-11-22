@@ -1,4 +1,4 @@
-import React, { useState, Suspense } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes, Navigate } from 'react-router-dom';
 import { queryClientInstance } from '@/lib/query-client';
@@ -19,7 +19,8 @@ function OriginalInterface() {
   const [teams,setTeams] = useState([]);
   const [session,setSession] = useState(null);
   const [activeTeam,setActiveTeam] = useState(null);
-  const canEdit = activeTeam && ['owner','admin','dj'].includes(activeTeam.role);
+  const teamRole = activeTeam?.role?.trim()?.toLowerCase() || '';
+  const canEdit = ['owner','admin','dj'].includes(teamRole);
   const [busy,setBusy] = useState(false);
   const [error,setError] = useState('');
   async function connect(e) {
@@ -72,6 +73,34 @@ function OriginalInterface() {
     finally { setBusy(false); }
   }
 
+  // Recheck privileges when the user returns to the tab, without requiring logout.
+  useEffect(() => {
+    if (!ready || !activeTeam || !session) return;
+    let cancelled = false;
+    const checkRole = async () => {
+      try {
+        const available = await getMyTeams(session.access_token);
+        if (cancelled) return;
+        const membership = available.find(t => t.id === activeTeam.id);
+        if (!membership) {
+          leaveTeam();
+          setTeams(available);
+          setError('You no longer belong to that team.');
+          return;
+        }
+        if (membership.role !== activeTeam.role) {
+          setActiveTeam(membership);
+          setTeams(available);
+        }
+      } catch {
+        // Database RLS still enforces permissions even when temporarily offline.
+      }
+    };
+    window.addEventListener('focus', checkRole);
+    const timer = window.setInterval(checkRole, 15000);
+    return () => { cancelled = true; window.removeEventListener('focus', checkRole); window.clearInterval(timer); };
+  }, [ready, activeTeam?.id, activeTeam?.role, session]);
+
   function leaveTeam() {
     setReady(false);
     setActiveTeam(null);
@@ -101,7 +130,7 @@ function OriginalInterface() {
   </main>;
   return <MemoryRouter initialEntries={['/']}>
     <div className="fixed top-0 right-0 z-50 flex items-center gap-2 rounded-bl bg-background/95 border border-border p-1 text-xs shadow">
-      <span className="max-w-48 truncate">{activeTeam?.name} · {activeTeam?.role}{!canEdit ? ' · Read only' : ''}</span>
+      <span className="max-w-48 truncate">{activeTeam?.name} · {teamRole} · {canEdit ? 'Editor access' : 'READ ONLY'}</span>
       <button className="rounded bg-secondary px-2 py-1 hover:bg-secondary/70" onClick={leaveTeam}>Switch team</button>
     </div>
     <Suspense fallback={<div className="p-6">Loading IceDeck…</div>}>
