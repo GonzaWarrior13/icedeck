@@ -27,7 +27,7 @@ export function removeMigrationSong(id) {
 export function updateMigrationSong(updated) {
   migrationSongs = migrationSongs.map(song => song.id === updated.id ? { ...song, ...updated } : song);
 }
-const originalUiTest = () => typeof window !== 'undefined' && window.location.pathname === '/supabase-original';
+const originalUiTest = () => import.meta.env.VITE_ICEDECK_STANDALONE === 'true' || (typeof window !== 'undefined' && window.location.pathname === '/supabase-original');
 export const fetchSongs = () => originalUiTest() ? Promise.resolve(migrationSongs) : base44.entities.Song.list('-updated_date', 200);
 export const fetchPlaylists = () => originalUiTest() ? Promise.resolve(migrationPlaylists) : base44.entities.Playlist.list('-updated_date', 100);
 
