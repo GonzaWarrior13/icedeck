@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
-import { uploadTeamMp3, MAX_MP3_BYTES, getFreshPreviewToken } from '@/api/supabaseClient';
+import { uploadTeamMp3, MAX_MP3_BYTES, SUPPORTED_AUDIO, getFreshPreviewToken } from '@/api/supabaseClient';
 import { getMigrationToken } from '@/hooks/useDjData';
 import { Loader2, UploadCloud } from 'lucide-react';
 import { analyzeLoudness, referenceDb, volumeForDb } from '@/lib/audio';
@@ -20,8 +20,9 @@ export default function SongUploader({ onUploaded, useSupabase = false }) {
       try {
         const token = await getFreshPreviewToken();
         for (const file of list) {
-          if (!/\.mp3$/i.test(file.name) || file.size > MAX_MP3_BYTES || !file.size) {
-            throw new Error('MP3 files must be 50 MB or smaller (your Supabase plan may set a lower limit).');
+          const ext = file.name.split('.').pop().toLowerCase();
+          if (!SUPPORTED_AUDIO[ext] || file.size > MAX_MP3_BYTES || !file.size) {
+            throw new Error('Supported formats: MP3, M4A, MP4, WAV, OGG up to 50 MB (plan limits may be lower).');
           }
           setProgress(`Preparing ${file.name}…`);
           const localUrl = URL.createObjectURL(file);
@@ -123,7 +124,7 @@ export default function SongUploader({ onUploaded, useSupabase = false }) {
       <input
         ref={inputRef}
         type="file"
-        accept={useSupabase ? '.mp3,audio/mpeg' : 'audio/*,video/mp4,.mp3,.mp4,.m4a,.wav,.ogg'}
+        accept="audio/*,video/mp4,.mp3,.mp4,.m4a,.wav,.ogg"
         multiple
         className="hidden"
         onChange={(e) => handleFiles(e.target.files)}
