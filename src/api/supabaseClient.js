@@ -147,3 +147,50 @@ export async function getFreshPreviewToken() {
   previewSession = { ...refreshed, _receivedAt: Date.now() / 1000 };
   return previewSession.access_token;
 }
+
+/**
+ * Delete a team song from the database (playlist_items cascade automatically)
+ * then clean up the associated private MP3 through the Storage API.
+ * Database deletion happens first, so a failed file cleanup cannot leave a
+ * playable library entry pointing to a missing object.
+ */
+export async function deleteTeamSong(id) {
+  if (!TEAM_ID || !id) throw new Error('Missing team or song ID');
+  const token = await getFreshPreviewToken();
+  const query = new URLSearchParams({
+    id: `eq.${id}`,
+    team_id: `eq.${TEAM_ID}`,
+    scope: 'eq.team',
+    select: 'id,storage_path',
+  });
+  const deleted = await request(`/rest/v1/songs?${query}`, token, {
+    method: 'DELETE',
+    headers: { Prefer: 'return=representation' },
+  });
+  if (!Array.isArray(deleted) || deleted.length !== 1) {
+    throw new Error('Song was not deleted. Check team permissions.');
+  }
+  const path = deleted[0].storage_path;
+  let cleanupError = null;
+  if (path) {
+    if (!path.startsWith(`${TEAM_ID}/`)) {
+      cleanupError = 'Unexpected audio path; manual Storage cleanup is needed.';
+    } else {
+      try {
+        const storageToken = await getFreshPreviewToken();
+        const response = await fetch(`${url}/storage/v1/object/${AUDIO_BUCKET}`, {
+          method: 'DELETE',
+          headers: headers(storageToken, { 'Content-Type': 'application/json' }),
+          body: JSON.stringify({ prefixes: [path] }),
+        });
+        if (!response.ok) {
+          const result = await response.json().catch(() => null);
+          throw new Error(result?.message || result?.error || `HTTP ${response.status}`);
+        }
+      } catch (error) {
+        cleanupError = error.message || 'Storage removal failed';
+      }
+    }
+  }
+  return { removed: true, cleanupError };
+}
