@@ -9,6 +9,7 @@ In the existing Supabase project, run the contents of these files in the SQL Edi
 
 - `supabase/migrations/20261122_008_team_management.sql` — secure team membership, nicknames, and owner transfer
 - `supabase/migrations/20261122_009_play_tracking.sql` — song UPDATE grants and atomic play counts
+- `supabase/migrations/20261122_010_audio_formats.sql` — private upload permission for MP3, M4A, MP4, WAV, OGG
 
 The original migrations 001–007 should already exist; do not rerun 001 because it creates the original schema.
 New management RPCs work only after migration 008 is applied.
@@ -97,7 +98,7 @@ the hosted horn URL will not exist.
 - Test Spotify OAuth with a development-allowlisted user.
 - Test Quick Access stars, queue restore after sign-in/reload, Simple Mode,
   goal-shuffle, and refreshing after another DJ makes a change.
-- Test uploading a disposable >6 MB MP3; actual Supabase project size limits apply.
+- Test uploading a disposable >6 MB MP3 and one M4A/WAV file; actual Supabase project size and browser codec limits apply.
 - Test 65+ minute playback and recovery from dropped internet.
 - Check song deletion removes both the song row and private storage object.
 - Review music licensing/arena playback rights before any paid product launch.
@@ -108,5 +109,5 @@ the hosted horn URL will not exist.
 - The hosted goal horn requires `public/goal-horn.mp3` from the user.
 - Existing Base44 code and SDK remain in the source branch to preserve the
   original app, even though standalone mode bypasses its authentication and APIs.
-- Large MP3 TUS uploads and new account flows are not yet runtime-verified.
+- Larger multi-format TUS uploads and new account flows are not yet runtime-verified.
 - Queue restores by song ID after selecting a team, but autoplay is intentionally not triggered.
