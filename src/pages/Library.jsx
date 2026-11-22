@@ -11,6 +11,7 @@ import Player from '@/components/dj/Player';
 import TagFilter from '@/components/dj/TagFilter';
 import QuickAccess from '@/components/dj/QuickAccess';
 import SpotifyImport from '@/components/dj/SpotifyImport';
+import SpotifySetupNotice from '@/components/dj/SpotifySetupNotice';
 import NormalizeButton from '@/components/dj/NormalizeButton';
 import PullToRefresh from '@/components/dj/PullToRefresh';
 import ConfirmDialog from '@/components/dj/ConfirmDialog';
@@ -124,11 +125,13 @@ export default function Library({ migrationReadOnly = false, canEdit = true }) {
           </div>
           <div className="flex items-center gap-1.5 md:gap-2">
             {allowEdits && <SongUploader onUploaded={handleUploaded} useSupabase={migrationReadOnly} />}
-            {!migrationReadOnly && <SpotifyImport
-              existingSongs={songs}
-              onImported={(created) => queryClient.setQueryData(SONGS_KEY, (prev = []) => [...created, ...prev])}
-            />}
-            {!migrationReadOnly && <NormalizeButton />}
+            {allowEdits && (migrationReadOnly
+              ? <SpotifySetupNotice />
+              : <SpotifyImport
+                  existingSongs={songs}
+                  onImported={(created) => queryClient.setQueryData(SONGS_KEY, (prev = []) => [...created, ...prev])}
+                />)}
+            {allowEdits && <NormalizeButton useSupabase={migrationReadOnly} />}
           </div>
         </header>
 
