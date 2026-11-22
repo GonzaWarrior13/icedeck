@@ -7,7 +7,7 @@ import DjLayout from '@/components/dj/DjLayout';
 import Library from '@/pages/Library';
 import Playlists from '@/pages/Playlists';
 import { SONGS_KEY, PLAYLISTS_KEY, setMigrationData, setMigrationToken } from '@/hooks/useDjData';
-import { signIn, getTeamSongs, getTeamPlaylists, createPrivateAudioUrl } from '@/api/supabaseClient';
+import { signIn, getTeamSongs, getTeamPlaylists, createPrivateAudioUrl, setPreviewSession } from '@/api/supabaseClient';
 
 // The original IceDeck layout and pages, isolated from production Base44.
 // MemoryRouter keeps navigation within the test URL.
@@ -40,6 +40,7 @@ function OriginalInterface() {
           songs[i]={...song,preview_url:'',file_url};
         }
       }));
+      setPreviewSession(session);
       setMigrationToken(session.access_token);
       setMigrationData(songs, playlists);
       queryClient.setQueryData(SONGS_KEY,songs);
