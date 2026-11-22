@@ -18,6 +18,12 @@ export function setMigrationPlaylists(playlists) { migrationPlaylists = playlist
 export function addMigrationSong(song) {
   migrationSongs = [song, ...migrationSongs.filter(s => s.id !== song.id)];
 }
+export function removeMigrationSong(id) {
+  migrationSongs = migrationSongs.filter(song => song.id !== id);
+  migrationPlaylists = migrationPlaylists.map(playlist => ({
+    ...playlist, song_ids: (playlist.song_ids || []).filter(songId => songId !== id),
+  }));
+}
 export function updateMigrationSong(updated) {
   migrationSongs = migrationSongs.map(song => song.id === updated.id ? { ...song, ...updated } : song);
 }
