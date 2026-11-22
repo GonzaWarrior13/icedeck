@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Mail, ShieldCheck } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
@@ -7,11 +8,14 @@ import { useSimpleMode } from '@/lib/simpleMode';
 
 // Supabase settings use verified session data; never call Base44 auth.
 export default function SupabaseSettings({ user, team }) {
+  const navigate = useNavigate();
   const { data: playlists = [] } = usePlaylists();
   const { enabled, playlistIds, setEnabled, setPlaylistIds, togglePlaylist } = useSimpleMode();
   const toggleSimpleMode = (on) => {
     if (on && playlistIds.length === 0) setPlaylistIds(playlists.map((p) => p.id));
     setEnabled(on);
+    // Switch immediately to the home route so the console is visible.
+    if (on) navigate('/');
   };
 
   return (
