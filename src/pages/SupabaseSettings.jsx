@@ -1,14 +1,26 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, ShieldCheck } from 'lucide-react';
+import TeamManager from '@/components/dj/TeamManager';
+import { requestPasswordReset, changePassword, deleteMyAccount, getFreshPreviewToken } from '@/api/supabaseClient';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { usePlaylists } from '@/hooks/useDjData';
 import { useSimpleMode } from '@/lib/simpleMode';
 
 // Supabase settings use verified session data; never call Base44 auth.
-export default function SupabaseSettings({ user, team }) {
+export default function SupabaseSettings({ user, team, onLogout, onTeamsChanged }) {
   const navigate = useNavigate();
+  const [newPassword,setNewPassword] = useState('');
+  const [accountBusy,setAccountBusy] = useState(false);
+  const [accountMessage,setAccountMessage] = useState('');
+  const [accountError,setAccountError] = useState('');
+  const runAccount = async (task, success) => {
+    setAccountBusy(true); setAccountError(''); setAccountMessage('');
+    try { await task(); setAccountMessage(success); }
+    catch (error) { setAccountError(error.message || 'Account action failed'); }
+    finally { setAccountBusy(false); }
+  };
   const { data: playlists = [] } = usePlaylists();
   const { enabled, playlistIds, setEnabled, setPlaylistIds, togglePlaylist } = useSimpleMode();
   const toggleSimpleMode = (on) => {
@@ -89,12 +101,43 @@ export default function SupabaseSettings({ user, team }) {
         )}
       </section>
 
-      <section className="border-t border-border pt-8 space-y-2">
+      <TeamManager team={team} user={user} onTeamsChanged={onTeamsChanged} />
+
+      <section className="border-t border-border pt-8 space-y-4">
         <p className="section-label">Account management</p>
-        <p className="text-sm text-muted-foreground">
-          Account deletion and password management are not available in this migration test.
-          They require independent Supabase account-management workflows; the former Base44 actions have not been reused.
-        </p>
+        {accountError && <p role="alert" className="text-sm text-destructive">{accountError}</p>}
+        {accountMessage && <p role="status" className="text-sm text-primary">{accountMessage}</p>}
+        <button type="button" disabled={accountBusy} onClick={onLogout}
+          className="rounded border border-border p-3 text-sm disabled:opacity-50">Sign out</button>
+        <div className="space-y-2">
+          <button type="button" disabled={accountBusy || !user?.email}
+            onClick={() => runAccount(() => requestPasswordReset(user.email), 'Password reset email requested.')}
+            className="rounded border border-border p-3 text-sm disabled:opacity-50">Email password reset link</button>
+          <form onSubmit={event => {
+            event.preventDefault();
+            runAccount(async () => {
+              await changePassword(await getFreshPreviewToken(), newPassword);
+              setNewPassword('');
+            }, 'Password updated.');
+          }} className="flex gap-2">
+            <input className="min-w-0 flex-1 rounded border border-border bg-background p-2" type="password" autoComplete="new-password"
+              minLength={6} placeholder="New password" value={newPassword} onChange={event => setNewPassword(event.target.value)} required />
+            <button className="rounded border border-border px-3 disabled:opacity-50" disabled={accountBusy}>Change password</button>
+          </form>
+        </div>
+        <div className="space-y-2 border-t border-destructive/30 pt-4">
+          <p className="text-sm text-destructive font-semibold">Delete account</p>
+          <p className="text-xs text-muted-foreground">Permanently removes your login and memberships. Transfer ownership of your teams first. Requires the secure delete-account Supabase Edge Function to be deployed.</p>
+          <button type="button" disabled={accountBusy}
+            onClick={() => {
+              if (window.prompt('Type DELETE to permanently remove your account') !== 'DELETE') return;
+              runAccount(async () => {
+                await deleteMyAccount();
+                await onLogout?.();
+              }, 'Account deleted.');
+            }}
+            className="rounded border border-destructive/50 text-destructive p-3 text-sm disabled:opacity-50">Delete my account</button>
+        </div>
       </section>
     </div>
   );
