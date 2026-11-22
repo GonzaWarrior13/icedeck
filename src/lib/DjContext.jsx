@@ -2,7 +2,7 @@ import React, { createContext, useContext, useRef, useState, useEffect, useCallb
 import { useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { createPrivateAudioUrl, getFreshPreviewToken, getSelectedTeamId, recordTeamSongPlay } from '@/api/supabaseClient';
-import { PLAYLISTS_KEY, songsQueryOptions, usePlaylists, getMigrationSongs, getMigrationPlaylists } from '@/hooks/useDjData';
+import { PLAYLISTS_KEY, songsQueryOptions, usePlaylists, useSongs, getMigrationSongs, getMigrationPlaylists } from '@/hooks/useDjData';
 
 const isSupabasePreview = import.meta.env.VITE_ICEDECK_STANDALONE === 'true' || (typeof window !== 'undefined' && ['/supabase-dj','/supabase-original'].includes(window.location.pathname));
 
@@ -29,6 +29,7 @@ export const useDj = () => useContext(DjContext);
 export function DjProvider({ children }) {
   const queryClient = useQueryClient();
   const { data: livePlaylists = [] } = usePlaylists();
+  const { data: liveSongs = [] } = useSongs();
   const audioRef = useRef(null);
   if (typeof Audio !== 'undefined' && !audioRef.current) {
     audioRef.current = new Audio();
@@ -126,6 +127,24 @@ export function DjProvider({ children }) {
     hotkeysRef.current = map;
     playlistSongsRef.current = songsMap;
   }, [livePlaylists, hotkeyVersion]);
+  // Refresh queued metadata (cue points, volume, title, fresh signed links)
+  // when another DJ edits songs and this user pulls to refresh.
+  useEffect(() => {
+    if (!isSupabasePreview || !liveSongs.length) return;
+    const fresh = new Map(liveSongs.map(song => [song.id, song]));
+    setQueue(previous => {
+      let changed = false;
+      const next = previous.map(song => {
+        const updated = fresh.get(song.id);
+        if (updated && (updated.updated_at !== song.updated_at || updated.file_url !== song.file_url)) {
+          changed = true;
+          return updated;
+        }
+        return song;
+      });
+      return changed ? next : previous;
+    });
+  }, [liveSongs]);
   useEffect(() => {
     queueRef.current = queue;
     try {
