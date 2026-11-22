@@ -200,11 +200,12 @@ export async function deleteTeamPlaylist(accessToken, id) {
 
 // The project may impose a lower global limit than this bucket.
 export const MAX_MP3_BYTES = 50 * 1024 * 1024;
+export const SUPPORTED_AUDIO = { mp3: 'audio/mpeg', m4a: 'audio/mp4', mp4: 'video/mp4', wav: 'audio/wav', ogg: 'audio/ogg' };
 const TUS_CHUNK_BYTES = 6 * 1024 * 1024;
 
 // Use native TUS 1.0 for larger files. Each chunk can be retried by reading
 // the server's authoritative Upload-Offset rather than repeating bytes.
-async function uploadResumableMp3(file, storagePath) {
+async function uploadResumableMp3(file, storagePath, contentType) {
   const origin = new URL(url);
   const storageHost = origin.hostname.replace('.supabase.co', '.storage.supabase.co');
   const endpoint = origin.protocol + '//' + storageHost + '/storage/v1/upload/resumable';
@@ -212,7 +213,7 @@ async function uploadResumableMp3(file, storagePath) {
   const metadata = {
     bucketName: AUDIO_BUCKET,
     objectName: storagePath,
-    contentType: 'audio/mpeg',
+    contentType,
     cacheControl: '3600',
   };
   const token = await getFreshPreviewToken();
@@ -263,21 +264,23 @@ async function uploadResumableMp3(file, storagePath) {
 }
 
 /**
- * Team-only MP3 upload. The songs row is created FIRST because the private
+ * Team-only audio upload. The songs row is created FIRST because the private
  * Storage INSERT policy checks songs.storage_path and legacy_id.
  * Uses ordinary upload for <= 6 MiB and TUS for larger recordings.
  */
 export async function uploadTeamMp3(accessToken, file, metadata = {}) {
   if (!getSelectedTeamId()) throw new Error('Supabase team ID missing');
   if (!file || file.size < 1 || file.size > MAX_MP3_BYTES) {
-    throw new Error('Select an MP3 smaller than 50 MB (your Supabase plan may set a lower limit).');
+    throw new Error('Select an audio file smaller than 50 MB (your Supabase plan may set a lower limit).');
   }
-  if (!/\.mp3$/i.test(file.name)) throw new Error('Only MP3 uploads are enabled for this test.');
+  const extension = file.name.split('.').pop().toLowerCase();
+  const contentType = SUPPORTED_AUDIO[extension];
+  if (!contentType) throw new Error('Supported formats: MP3, M4A, MP4, WAV, OGG.');
   const legacyId = crypto.randomUUID();
-  const storagePath = `${getSelectedTeamId()}/${legacyId}.mp3`;
+  const storagePath = `${getSelectedTeamId()}/${legacyId}.${extension}`;
   const payload = {
     team_id: getSelectedTeamId(), scope: 'team', legacy_id: legacyId,
-    title: file.name.replace(/\.mp3$/i, '').slice(0, 250),
+    title: file.name.replace(/\.[^.]+$/i, '').slice(0, 250),
     artist: 'Unknown', source: 'local', storage_path: storagePath,
     duration: Math.max(0, Math.round(metadata.duration || 0)),
     start_point: 0, volume: metadata.volume ?? 100, tags: [],
@@ -293,13 +296,13 @@ export async function uploadTeamMp3(accessToken, file, metadata = {}) {
   }
   try {
     if (file.size > TUS_CHUNK_BYTES) {
-      await uploadResumableMp3(file, storagePath);
+      await uploadResumableMp3(file, storagePath, contentType);
     } else {
       const encodedPath = storagePath.split('/').map(encodeURIComponent).join('/');
       const response = await fetch(`${url}/storage/v1/object/${AUDIO_BUCKET}/${encodedPath}`, {
         method: 'POST',
         headers: headers(await getFreshPreviewToken(), {
-          'Content-Type': 'audio/mpeg',
+          'Content-Type': contentType,
           'x-upsert': 'false',
         }),
         body: file,
@@ -312,7 +315,7 @@ export async function uploadTeamMp3(accessToken, file, metadata = {}) {
   } catch (error) {
     // Preserve the row for manual recovery: the storage upload might have
     // completed while the network response was lost.
-    throw new Error('Song entry created, but MP3 upload failed: ' + error.message + '. Check Storage before retrying.');
+    throw new Error('Song entry created, but audio upload failed: ' + error.message + '. Check Storage before retrying.');
   }
   const file_url = await createPrivateAudioUrl(storagePath, accessToken, 3600);
   return { ...created[0], file_url, preview_url: '' };
