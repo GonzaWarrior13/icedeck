@@ -2,7 +2,7 @@ import React, { useState, useCallback, lazy, Suspense } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
 import { useDj } from '@/lib/DjContext';
-import { SONGS_KEY, useSongs, updateMigrationSong } from '@/hooks/useDjData';
+import { SONGS_KEY, useSongs, updateMigrationSong, addMigrationSong } from '@/hooks/useDjData';
 import SongUploader from '@/components/dj/SongUploader';
 import SongLibrary from '@/components/dj/SongLibrary';
 import Queue from '@/components/dj/Queue';
@@ -37,6 +37,7 @@ export default function Library({ migrationReadOnly = false }) {
   });
 
   const handleUploaded = (song) => {
+    if (migrationReadOnly) addMigrationSong(song);
     queryClient.setQueryData(SONGS_KEY, (prev = []) => [song, ...prev]);
   };
 
@@ -95,7 +96,7 @@ export default function Library({ migrationReadOnly = false }) {
             <p className="type-meta mt-1 hidden md:block">Cue, edit, and fade for game day.</p>
           </div>
           <div className="flex items-center gap-1.5 md:gap-2">
-            {!migrationReadOnly && <SongUploader onUploaded={handleUploaded} />}
+            <SongUploader onUploaded={handleUploaded} useSupabase={migrationReadOnly} />
             {!migrationReadOnly && <SpotifyImport
               existingSongs={songs}
               onImported={(created) => queryClient.setQueryData(SONGS_KEY, (prev = []) => [...created, ...prev])}
