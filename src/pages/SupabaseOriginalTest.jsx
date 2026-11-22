@@ -5,12 +5,18 @@ import { queryClientInstance } from '@/lib/query-client';
 import { ThemeProvider } from '@/lib/ThemeProvider';
 import DjLayout from '@/components/dj/DjLayout';
 import Library from '@/pages/Library';
+import SimpleConsole from '@/components/dj/SimpleConsole';
+import { useSimpleMode } from '@/lib/simpleMode';
 import Playlists from '@/pages/Playlists';
 import SupabaseSettings from '@/pages/SupabaseSettings';
 import { SONGS_KEY, PLAYLISTS_KEY, setMigrationData, setMigrationToken } from '@/hooks/useDjData';
 import { signIn, getTeamSongs, getTeamPlaylists, createPrivateAudioUrl, setPreviewSession, getMyTeams, setSelectedTeamId, getSignedInUser } from '@/api/supabaseClient';
 
 // The original IceDeck layout and pages, isolated from production Base44.
+function SupabaseHome({ canEdit }) {
+  const { enabled } = useSimpleMode();
+  return enabled ? <SimpleConsole /> : <Library migrationReadOnly canEdit={canEdit} />;
+}
 // MemoryRouter keeps navigation within the test URL.
 function OriginalInterface() {
   const queryClient = useQueryClient();
@@ -141,7 +147,7 @@ function OriginalInterface() {
     <Suspense fallback={<div className="p-6">Loading IceDeck…</div>}>
       <Routes>
         <Route element={<DjLayout/>}>
-          <Route path="/" element={<Library migrationReadOnly canEdit={canEdit}/>}/>
+          <Route path="/" element={<SupabaseHome canEdit={canEdit}/>}/>
           <Route path="/playlists" element={<Playlists migrationReadOnly canEdit={canEdit}/>}/>
           <Route path="/settings" element={<SupabaseSettings user={signedInUser} team={activeTeam}/>}/>
         </Route>
