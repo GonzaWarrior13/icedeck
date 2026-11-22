@@ -2,7 +2,7 @@ import React, { useState, useCallback, lazy, Suspense } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
 import { useDj } from '@/lib/DjContext';
-import { SONGS_KEY, useSongs } from '@/hooks/useDjData';
+import { SONGS_KEY, useSongs, updateMigrationSong } from '@/hooks/useDjData';
 import SongUploader from '@/components/dj/SongUploader';
 import SongLibrary from '@/components/dj/SongLibrary';
 import Queue from '@/components/dj/Queue';
@@ -41,6 +41,7 @@ export default function Library({ migrationReadOnly = false }) {
   };
 
   const handleUpdated = (updated) => {
+    if (migrationReadOnly) updateMigrationSong(updated);
     queryClient.setQueryData(SONGS_KEY, (prev = []) => prev.map((s) => (s.id === updated.id ? { ...s, ...updated } : s)));
     setEditorSong(null);
   };
@@ -120,7 +121,7 @@ export default function Library({ migrationReadOnly = false }) {
               currentSongId={currentSongId}
               onPlay={dj.playNow}
               onAddQueue={dj.addToQueue}
-              onEdit={migrationReadOnly ? undefined : setEditorSong}
+              onEdit={setEditorSong}
               onDelete={migrationReadOnly ? undefined : handleDelete}
               onToggleQuick={migrationReadOnly ? undefined : (s) => toggleTag(s, 'quick')}
             />
@@ -135,10 +136,11 @@ export default function Library({ migrationReadOnly = false }) {
 
       <Player />
 
-      {!migrationReadOnly && editorSong && (
+      {editorSong && (
         <Suspense fallback={null}>
           <StartPointEditor
             song={editorSong}
+            useSupabase={migrationReadOnly}
             onClose={() => setEditorSong(null)}
             onSave={handleUpdated}
           />
