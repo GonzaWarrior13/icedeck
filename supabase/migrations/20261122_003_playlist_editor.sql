@@ -1,7 +1,7 @@
 -- IceDeck playlist editor: transactional writes, restricted to team editors.
 -- Run in the EXISTING Supabase project after initial schema.
 begin;
-grant select, insert, update (name, hotkey), delete on public.playlists to authenticated;
+grant select, insert, update (name, hotkey, updated_at), delete on public.playlists to authenticated;
 grant select, insert, delete on public.playlist_items to authenticated;
 
 create or replace function public.save_team_playlist(
