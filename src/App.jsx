@@ -72,6 +72,8 @@ const AuthenticatedApp = () => {
 
 
 function App() {
+  // Hosting mode: IceDeck opens directly in Supabase without Base44 auth.
+  if (import.meta.env.VITE_ICEDECK_STANDALONE === 'true') return <SupabaseOriginalTest />;
   // Standalone migration test: bypass Base44 public-settings/auth calls.
   if (window.location.pathname === '/supabase-test') return <SupabaseConnectionTest />;
   if (window.location.pathname === '/supabase-dj') return <SupabaseDjPreview />;
