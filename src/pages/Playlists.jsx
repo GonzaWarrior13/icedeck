@@ -11,7 +11,7 @@ import Player from '@/components/dj/Player';
 import PullToRefresh from '@/components/dj/PullToRefresh';
 import ConfirmDialog from '@/components/dj/ConfirmDialog';
 
-export default function Playlists() {
+export default function Playlists({ migrationReadOnly = false }) {
   const navigate = useNavigate();
   const dj = useDj();
   const queryClient = useQueryClient();
@@ -115,15 +115,15 @@ export default function Playlists() {
               Save and reuse queues for intermissions, warmups, and celebrations.
             </p>
           </div>
-          <Button
+          {!migrationReadOnly && <Button
             onClick={openCreate}
             className="min-h-10 rounded-[8px] bg-foreground text-background hover:bg-foreground/90 font-semibold"
           >
             <Plus className="w-4 h-4 mr-1.5" aria-hidden="true" /> New setlist
-          </Button>
+          </Button>}
         </header>
 
-        {editor && (
+        {!migrationReadOnly && editor && (
           <SetlistEditor
             initialName={editor.name}
             initialSongIds={editor.songIds}
@@ -210,22 +210,22 @@ export default function Playlists() {
                     >
                       <Target className="w-4 h-4" aria-hidden="true" />
                     </button>
-                    <button
+                    {!migrationReadOnly && <button
                       onClick={() => openEdit(pl)}
                       className="min-h-11 min-w-11 md:min-h-9 md:min-w-9 flex items-center justify-center rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
                       title="Edit setlist"
                       aria-label={`Edit ${pl.name}`}
                     >
                       <Pencil className="w-4 h-4" aria-hidden="true" />
-                    </button>
-                    <button
+                    </button>}
+                    {!migrationReadOnly && <button
                       onClick={() => deletePlaylist(pl)}
                       className="min-h-11 min-w-11 md:min-h-9 md:min-w-9 flex items-center justify-center rounded-[8px] text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                       title="Delete setlist"
                       aria-label={`Delete ${pl.name}`}
                     >
                       <Trash2 className="w-4 h-4" aria-hidden="true" />
-                    </button>
+                    </button>}
                   </div>
                 </div>
               );
@@ -236,13 +236,13 @@ export default function Playlists() {
 
       <Player />
 
-      <ConfirmDialog
+      {!migrationReadOnly && <ConfirmDialog
         open={!!deleteTarget}
         title="Delete setlist?"
         description={deleteTarget ? `"${deleteTarget.name}" will be removed.` : ''}
         onCancel={() => setDeleteTarget(null)}
         onConfirm={confirmDelete}
-      />
+      />}
     </div>
   );
 }
