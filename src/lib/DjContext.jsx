@@ -3,6 +3,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { PLAYLISTS_KEY, playlistsQueryOptions, songsQueryOptions } from '@/hooks/useDjData';
 
+const isSupabasePreview = typeof window !== 'undefined' && window.location.pathname === '/supabase-dj';
+
 const GOAL_HORN_URL = 'https://media.base44.com/files/public/6a8f48cd9a055819d8b79b87/d73c0e5ef_TorontoMapleLeafsGoalHornNoSong.mp3';
 
 const defaultDj = {
@@ -29,10 +31,10 @@ export function DjProvider({ children }) {
   const goalAudioRef = useRef(null);
 
   const [queue, setQueue] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('dj_queue') || '[]'); } catch { return []; }
+    try { return isSupabasePreview ? [] : JSON.parse(localStorage.getItem('dj_queue') || '[]'); } catch { return []; }
   });
   const [currentIndex, setCurrentIndex] = useState(() => {
-    try { const v = Number(localStorage.getItem('dj_index')); return Number.isFinite(v) ? v : -1; } catch { return -1; }
+    try { if (isSupabasePreview) return -1; const v = Number(localStorage.getItem('dj_index')); return Number.isFinite(v) ? v : -1; } catch { return -1; }
   });
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -88,8 +90,8 @@ export function DjProvider({ children }) {
     })();
     return () => { cancelled = true; };
   }, [hotkeyVersion, queryClient]);
-  useEffect(() => { queueRef.current = queue; try { localStorage.setItem('dj_queue', JSON.stringify(queue)); } catch {} }, [queue]);
-  useEffect(() => { indexRef.current = currentIndex; try { localStorage.setItem('dj_index', String(currentIndex)); } catch {} }, [currentIndex]);
+  useEffect(() => { queueRef.current = queue; try { if (!isSupabasePreview) localStorage.setItem('dj_queue', JSON.stringify(queue)); } catch {} }, [queue]);
+  useEffect(() => { indexRef.current = currentIndex; try { if (!isSupabasePreview) localStorage.setItem('dj_index', String(currentIndex)); } catch {} }, [currentIndex]);
 
   const currentSong = currentIndex >= 0 ? queue[currentIndex] : null;
 
@@ -140,7 +142,7 @@ export function DjProvider({ children }) {
     setCurrentIndex(index);
     setCurrentTime(0);
     if (song.id) {
-      base44.entities.Song.update(song.id, { play_count: (song.play_count || 0) + 1 }).catch(() => {});
+      if (!isSupabasePreview) base44.entities.Song.update(song.id, { play_count: (song.play_count || 0) + 1 }).catch(() => {});
       const sid = activeSetlistIdRef.current;
       if (sid) {
         let played = setlistPlayedRef.current[sid];
