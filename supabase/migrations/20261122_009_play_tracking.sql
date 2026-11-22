@@ -3,7 +3,12 @@
 BEGIN;
 
 GRANT USAGE ON SCHEMA public TO authenticated;
-GRANT SELECT, INSERT, DELETE ON public.songs TO authenticated;
+GRANT SELECT, DELETE ON public.songs TO authenticated;
+REVOKE INSERT ON public.songs FROM authenticated;
+GRANT INSERT (
+ team_id, scope, legacy_id, title, artist, source, storage_path,
+ duration, start_point, volume, tags, loudness_db
+) ON public.songs TO authenticated;
 -- Undo any earlier blanket UPDATE grant; keep sensitive ownership and
 -- Storage path columns immutable from the public browser API.
 REVOKE UPDATE ON public.songs FROM authenticated;
