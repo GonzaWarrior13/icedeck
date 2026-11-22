@@ -40,7 +40,12 @@ function OriginalInterface() {
     if (!session || !teams.some(t => t.id === team.id)) return;
     setBusy(true); setError('');
     try {
-      setSelectedTeamId(team.id);
+      // Fetch the membership again: a role may have changed since sign-in.
+      const freshTeams = await getMyTeams(session.access_token);
+      setTeams(freshTeams);
+      const currentTeam = freshTeams.find(t => t.id === team.id);
+      if (!currentTeam) throw new Error('You no longer belong to this team.');
+      setSelectedTeamId(currentTeam.id);
       const [rawSongs, playlists] = await Promise.all([
         getTeamSongs(session.access_token, team.id),
         getTeamPlaylists(session.access_token, team.id),
@@ -61,7 +66,7 @@ function OriginalInterface() {
       setMigrationData(songs, playlists);
       queryClient.setQueryData(SONGS_KEY, songs);
       queryClient.setQueryData(PLAYLISTS_KEY, playlists);
-      setActiveTeam(team);
+      setActiveTeam(currentTeam);
       setReady(true);
     } catch(err) { setSelectedTeamId(''); setError(err.message || 'Unable to load team'); }
     finally { setBusy(false); }
@@ -96,7 +101,7 @@ function OriginalInterface() {
   </main>;
   return <MemoryRouter initialEntries={['/']}>
     <div className="fixed top-0 right-0 z-50 flex items-center gap-2 rounded-bl bg-background/95 border border-border p-1 text-xs shadow">
-      <span className="max-w-36 truncate">{activeTeam?.name} · {activeTeam?.role}</span>
+      <span className="max-w-48 truncate">{activeTeam?.name} · {activeTeam?.role}{!canEdit ? ' · Read only' : ''}</span>
       <button className="rounded bg-secondary px-2 py-1 hover:bg-secondary/70" onClick={leaveTeam}>Switch team</button>
     </div>
     <Suspense fallback={<div className="p-6">Loading IceDeck…</div>}>
