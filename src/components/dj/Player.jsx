@@ -14,8 +14,8 @@ export default function Player() {
   const goalWithPlaylist = (pl) => {
     setGoalMenuOpen(false);
     const songs = (pl.song_ids || []).map((id) => librarySongs.find((s) => s.id === id)).filter(Boolean);
-    const startIdx = songs.length ? Math.floor(Math.random() * songs.length) : 0;
-    dj.triggerGoal(songs, startIdx);
+    // Pass the setlist ID so the goal sequence uses the no-repeat shuffle bag.
+    dj.triggerGoal(songs, 0, pl.id);
   };
 
   const goalOnly = () => {
