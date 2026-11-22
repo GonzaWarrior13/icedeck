@@ -241,8 +241,22 @@ export async function uploadTeamMp3(accessToken, file, metadata = {}) {
 
 /** In-memory session for the migration preview; never stored in localStorage. */
 let previewSession = null;
-export function setPreviewSession(session) { previewSession = session ? { ...session, _receivedAt: Date.now() / 1000 } : null; }
+const SESSION_STORAGE_KEY = 'icedeck_supabase_session';
+export function getStoredPreviewSession() {
+  try {
+    const stored = JSON.parse(sessionStorage.getItem(SESSION_STORAGE_KEY) || 'null');
+    return stored?.access_token && stored?.refresh_token ? stored : null;
+  } catch { return null; }
+}
+export function setPreviewSession(session) {
+  previewSession = session ? { ...session, _receivedAt: Date.now() / 1000 } : null;
+  try {
+    if (previewSession) sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(previewSession));
+    else sessionStorage.removeItem(SESSION_STORAGE_KEY);
+  } catch {}
+}
 export async function getFreshPreviewToken() {
+  if (!previewSession) previewSession = getStoredPreviewSession();
   if (!previewSession?.access_token) throw new Error('Sign in to Supabase again.');
   const expiresAt = previewSession.expires_at ||
     (previewSession.issued_at ? previewSession.issued_at + previewSession.expires_in : 0);
@@ -251,7 +265,7 @@ export async function getFreshPreviewToken() {
   if (!expiresAt && previewSession._receivedAt && Date.now() / 1000 < previewSession._receivedAt + (previewSession.expires_in || 3600) - 120) return previewSession.access_token;
   if (!previewSession.refresh_token) throw new Error('Session expired. Sign in again.');
   const refreshed = await refreshSession(previewSession.refresh_token);
-  previewSession = { ...refreshed, _receivedAt: Date.now() / 1000 };
+  setPreviewSession(refreshed);
   return previewSession.access_token;
 }
 
