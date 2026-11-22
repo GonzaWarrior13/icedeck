@@ -1,0 +1,24 @@
+name: IceDeck Supabase migration build
+on:
+  push:
+    branches:
+      - migration/supabase-schema-2026-11-22
+  pull_request:
+    branches:
+      - migration/supabase-schema-2026-11-22
+
+jobs:
+  standalone-build:
+    runs-on: ubuntu-latest
+    env:
+      VITE_ICEDECK_STANDALONE: "true"
+      VITE_SUPABASE_URL: "https://example.supabase.co"
+      VITE_SUPABASE_PUBLISHABLE_KEY: "public-placeholder-build-only"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
