@@ -131,3 +131,19 @@ export async function uploadTeamMp3(accessToken, file, metadata = {}) {
   const file_url = await createPrivateAudioUrl(storagePath, accessToken, 3600);
   return { ...created[0], file_url, preview_url: '' };
 }
+
+/** In-memory session for the migration preview; never stored in localStorage. */
+let previewSession = null;
+export function setPreviewSession(session) { previewSession = session ? { ...session, _receivedAt: Date.now() / 1000 } : null; }
+export async function getFreshPreviewToken() {
+  if (!previewSession?.access_token) throw new Error('Sign in to Supabase again.');
+  const expiresAt = previewSession.expires_at ||
+    (previewSession.issued_at ? previewSession.issued_at + previewSession.expires_in : 0);
+  // Normal Supabase sessions include expires_at; the initial login may not.
+  if (expiresAt && Date.now() / 1000 < expiresAt - 120) return previewSession.access_token;
+  if (!expiresAt && previewSession._receivedAt && Date.now() / 1000 < previewSession._receivedAt + (previewSession.expires_in || 3600) - 120) return previewSession.access_token;
+  if (!previewSession.refresh_token) throw new Error('Session expired. Sign in again.');
+  const refreshed = await refreshSession(previewSession.refresh_token);
+  previewSession = { ...refreshed, _receivedAt: Date.now() / 1000 };
+  return previewSession.access_token;
+}
