@@ -9,6 +9,7 @@ import SimpleConsole from '@/components/dj/SimpleConsole';
 import { useSimpleMode } from '@/lib/simpleMode';
 import Playlists from '@/pages/Playlists';
 import SupabaseSettings from '@/pages/SupabaseSettings';
+import { completeSpotifyStandaloneAuth } from '@/lib/spotifyStandalone';
 import { SONGS_KEY, PLAYLISTS_KEY, setMigrationData, setMigrationToken } from '@/hooks/useDjData';
 import { signIn, signUp, requestPasswordReset, changePassword, signOut, startGoogleSignIn, createTeam, getStoredPreviewSession, getFreshPreviewToken, getTeamSongs, getTeamPlaylists, createPrivateAudioUrl, setPreviewSession, getMyTeams, setSelectedTeamId, getSignedInUser } from '@/api/supabaseClient';
 
@@ -51,6 +52,15 @@ function OriginalInterface() {
     let cancelled = false;
     (async () => {
       try {
+        if (window.location.pathname === '/spotify-callback') {
+          try {
+            await completeSpotifyStandaloneAuth();
+            if (!cancelled) setAuthNotice('Spotify connected. Open the Spotify button to browse your playlists.');
+          } catch (spotifyError) {
+            if (!cancelled) setAuthNotice('Spotify: ' + spotifyError.message);
+            window.history.replaceState({}, '', '/');
+          }
+        }
         const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
         const oauthToken = hash.get('access_token');
         const oauthRefresh = hash.get('refresh_token');
