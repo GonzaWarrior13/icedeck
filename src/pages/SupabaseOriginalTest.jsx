@@ -6,6 +6,7 @@ import { ThemeProvider } from '@/lib/ThemeProvider';
 import DjLayout from '@/components/dj/DjLayout';
 import Library from '@/pages/Library';
 import Playlists from '@/pages/Playlists';
+import SupabaseSettings from '@/pages/SupabaseSettings';
 import { SONGS_KEY, PLAYLISTS_KEY, setMigrationData, setMigrationToken } from '@/hooks/useDjData';
 import { signIn, getTeamSongs, getTeamPlaylists, createPrivateAudioUrl, setPreviewSession, getMyTeams, setSelectedTeamId, getSignedInUser } from '@/api/supabaseClient';
 
@@ -142,7 +143,7 @@ function OriginalInterface() {
         <Route element={<DjLayout/>}>
           <Route path="/" element={<Library migrationReadOnly canEdit={canEdit}/>}/>
           <Route path="/playlists" element={<Playlists migrationReadOnly canEdit={canEdit}/>}/>
-          <Route path="/settings" element={<div className="p-8 text-muted-foreground">Settings are disabled in this migration test.</div>}/>
+          <Route path="/settings" element={<SupabaseSettings user={signedInUser} team={activeTeam}/>}/>
         </Route>
         <Route path="*" element={<Navigate to="/" replace/>}/>
       </Routes>
