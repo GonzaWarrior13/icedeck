@@ -1,5 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { getTeamSongs, getTeamPlaylists } from '@/api/supabaseClient';
+
+let migrationToken = null;
+export const setMigrationToken = (token) => { migrationToken = token; };
+const originalUiTest = () => typeof window !== 'undefined' && window.location.pathname === '/supabase-original';
 
 export const SONGS_KEY = ['songs'];
 export const PLAYLISTS_KEY = ['playlists'];
