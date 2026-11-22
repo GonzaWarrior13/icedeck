@@ -1,8 +1,9 @@
 import React, { useState, useCallback, lazy, Suspense } from 'react';
 import { base44 } from '@/api/base44Client';
+import { deleteTeamSong } from '@/api/supabaseClient';
 import { useQueryClient } from '@tanstack/react-query';
 import { useDj } from '@/lib/DjContext';
-import { SONGS_KEY, useSongs, updateMigrationSong, addMigrationSong } from '@/hooks/useDjData';
+import { SONGS_KEY, PLAYLISTS_KEY, useSongs, updateMigrationSong, addMigrationSong, removeMigrationSong } from '@/hooks/useDjData';
 import SongUploader from '@/components/dj/SongUploader';
 import SongLibrary from '@/components/dj/SongLibrary';
 import Queue from '@/components/dj/Queue';
@@ -25,6 +26,8 @@ export default function Library({ migrationReadOnly = false }) {
   const [activeTag, setActiveTag] = useState('All');
   const [editorSong, setEditorSong] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   const refresh = useCallback(() => refetch(), [refetch]);
 
@@ -47,14 +50,37 @@ export default function Library({ migrationReadOnly = false }) {
     setEditorSong(null);
   };
 
-  const handleDelete = (song) => setDeleteTarget(song);
+  const handleDelete = (song) => { setDeleteError(''); setDeleteTarget(song); };
 
   const confirmDelete = async () => {
     const song = deleteTarget;
+    if (!song || deleteBusy) return;
+    if (migrationReadOnly) {
+      setDeleteBusy(true);
+      setDeleteError('');
+      try {
+        const result = await deleteTeamSong(song.id);
+        removeMigrationSong(song.id);
+        queryClient.setQueryData(SONGS_KEY, (prev = []) => prev.filter(s => s.id !== song.id));
+        queryClient.setQueryData(PLAYLISTS_KEY, (prev = []) => prev.map(pl => ({
+          ...pl, song_ids: (pl.song_ids || []).filter(id => id !== song.id),
+        })));
+        if (dj.queue.some(queued => queued.id === song.id)) dj.clearQueue();
+        dj.refreshHotkeys();
+        setDeleteTarget(null);
+        if (result.cleanupError) {
+          setDeleteError('Song removed from the library, but MP3 storage cleanup needs attention: ' + result.cleanupError);
+        }
+      } catch (err) {
+        setDeleteError(err.message || 'Could not delete song.');
+      } finally {
+        setDeleteBusy(false);
+      }
+      return;
+    }
     setDeleteTarget(null);
-    if (!song) return;
     const previous = queryClient.getQueryData(SONGS_KEY) || [];
-    // Optimistic: the row disappears now, and comes back if the server refuses.
+    // Original Base44 operation unchanged.
     queryClient.setQueryData(SONGS_KEY, previous.filter((s) => s.id !== song.id));
     try {
       await base44.entities.Song.delete(song.id);
@@ -105,6 +131,7 @@ export default function Library({ migrationReadOnly = false }) {
           </div>
         </header>
 
+        {deleteError && <p role="alert" className="text-sm text-destructive">{deleteError}</p>}
         <QuickAccess songs={quickSongs} onPlay={dj.playNow} />
 
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_336px] gap-6 lg:gap-7">
@@ -123,7 +150,7 @@ export default function Library({ migrationReadOnly = false }) {
               onPlay={dj.playNow}
               onAddQueue={dj.addToQueue}
               onEdit={setEditorSong}
-              onDelete={migrationReadOnly ? undefined : handleDelete}
+              onDelete={handleDelete}
               onToggleQuick={migrationReadOnly ? undefined : (s) => toggleTag(s, 'quick')}
             />
           </section>
@@ -148,13 +175,13 @@ export default function Library({ migrationReadOnly = false }) {
         </Suspense>
       )}
 
-      {!migrationReadOnly && <ConfirmDialog
+      <ConfirmDialog
         open={!!deleteTarget}
         title="Delete track?"
-        description={deleteTarget ? `"${deleteTarget.title}" will be removed from your library.` : ''}
-        onCancel={() => setDeleteTarget(null)}
+        description={deleteTarget ? `"${deleteTarget.title}" will be removed from your library and playlists, and its private MP3 will be deleted.` : ''}
+        onCancel={() => { if (!deleteBusy) setDeleteTarget(null); }}
         onConfirm={confirmDelete}
-      />}
+      />
     </div>
   );
 }
