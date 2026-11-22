@@ -2,7 +2,7 @@ import React, { createContext, useContext, useRef, useState, useEffect, useCallb
 import { useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { createPrivateAudioUrl, getFreshPreviewToken, getSelectedTeamId, recordTeamSongPlay } from '@/api/supabaseClient';
-import { PLAYLISTS_KEY, songsQueryOptions, usePlaylists, getMigrationSongs } from '@/hooks/useDjData';
+import { PLAYLISTS_KEY, songsQueryOptions, usePlaylists, getMigrationSongs, getMigrationPlaylists } from '@/hooks/useDjData';
 
 const isSupabasePreview = import.meta.env.VITE_ICEDECK_STANDALONE === 'true' || (typeof window !== 'undefined' && ['/supabase-dj','/supabase-original'].includes(window.location.pathname));
 
@@ -72,7 +72,20 @@ export function DjProvider({ children }) {
   const [isFading, setIsFading] = useState(false);
   const [goalPlaying, setGoalPlaying] = useState(false);
   const [goalSetlistId, setGoalSetlistIdState] = useState(() => {
-    try { return localStorage.getItem(teamPrefKey('dj_goalSetlistId')) || null; } catch { return null; }
+    try {
+      const scoped = localStorage.getItem(teamPrefKey('dj_goalSetlistId'));
+      if (scoped) return scoped;
+      if (isSupabasePreview) {
+        // Migrate the previously selected global preference only when the
+        // matching playlist belongs to this team.
+        const previous = localStorage.getItem('dj_goalSetlistId');
+        if (previous && getMigrationPlaylists().some(pl => pl.id === previous)) {
+          localStorage.setItem(teamPrefKey('dj_goalSetlistId'), previous);
+          return previous;
+        }
+      }
+      return null;
+    } catch { return null; }
   });
   const setGoalSetlist = useCallback((id) => {
     setGoalSetlistIdState(id);
