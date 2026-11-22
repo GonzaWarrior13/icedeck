@@ -2,7 +2,7 @@ import React, { createContext, useContext, useRef, useState, useEffect, useCallb
 import { useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { createPrivateAudioUrl, getFreshPreviewToken, getSelectedTeamId } from '@/api/supabaseClient';
-import { PLAYLISTS_KEY, playlistsQueryOptions, songsQueryOptions, getMigrationSongs, getMigrationPlaylists } from '@/hooks/useDjData';
+import { PLAYLISTS_KEY, songsQueryOptions, usePlaylists, getMigrationSongs } from '@/hooks/useDjData';
 
 const isSupabasePreview = import.meta.env.VITE_ICEDECK_STANDALONE === 'true' || (typeof window !== 'undefined' && ['/supabase-dj','/supabase-original'].includes(window.location.pathname));
 
@@ -28,12 +28,19 @@ export const useDj = () => useContext(DjContext);
 
 export function DjProvider({ children }) {
   const queryClient = useQueryClient();
+  const { data: livePlaylists = [] } = usePlaylists();
   const audioRef = useRef(null);
   if (typeof Audio !== 'undefined' && !audioRef.current) {
     audioRef.current = new Audio();
     audioRef.current.preload = 'auto';
   }
   const audio = audioRef.current;
+  // Stop all audio when changing teams or signing out.
+  useEffect(() => () => {
+    if (audio) { audio.pause(); audio.removeAttribute('src'); audio.load(); }
+    if (goalAudioRef.current) { goalAudioRef.current.pause(); goalAudioRef.current.src = ''; }
+    if (goalTimerRef.current) clearTimeout(goalTimerRef.current);
+  }, [audio]);
   const playbackRequestRef = useRef(0);
   const [playbackError, setPlaybackError] = useState('');
   const prefetchRef = useRef(null);
@@ -91,27 +98,21 @@ export function DjProvider({ children }) {
     setHotkeyVersion((v) => v + 1);
   }, [queryClient]);
 
-  // load playlists + songs and build a hotkey -> resolved songs map
+  // Derive keyboard shortcuts from live query data, including remote edits
+  // fetched through pull-to-refresh. No stale cached hotkey mapping.
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const pls = await queryClient.fetchQuery(playlistsQueryOptions);
-        if (cancelled) return;
-        const map = {};
-        const songsMap = {};
-        pls.forEach((pl) => {
-          const ids = pl.song_ids || [];
-          if (ids.length) songsMap[pl.id] = ids;
-          if (!pl.hotkey) return;
-          if (ids.length) map[String(pl.hotkey).toLowerCase()] = { songIds: ids, playlistId: pl.id };
-        });
-        hotkeysRef.current = map;
-        playlistSongsRef.current = songsMap;
-      } catch {}
-    })();
-    return () => { cancelled = true; };
-  }, [hotkeyVersion, queryClient]);
+    const map = {};
+    const songsMap = {};
+    livePlaylists.forEach(pl => {
+      const ids = pl.song_ids || [];
+      if (ids.length) songsMap[pl.id] = ids;
+      if (pl.hotkey && ids.length) {
+        map[String(pl.hotkey).toLowerCase()] = { songIds: ids, playlistId: pl.id };
+      }
+    });
+    hotkeysRef.current = map;
+    playlistSongsRef.current = songsMap;
+  }, [livePlaylists, hotkeyVersion]);
   useEffect(() => {
     queueRef.current = queue;
     try {
