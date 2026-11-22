@@ -50,7 +50,7 @@ function OriginalInterface() {
   }
   if (!ready) return <main className="mx-auto max-w-md p-8 space-y-4 bg-background text-foreground min-h-screen">
     <h1 className="text-3xl font-bold">IceDeck · Supabase interface test</h1>
-    <p className="text-muted-foreground">The original IceDeck layout will load after sign-in. Cue-point and volume editing enabled in Supabase. Other changes disabled; Base44 production unchanged.</p>
+    <p className="text-muted-foreground">The original IceDeck layout will load after sign-in. Supabase cue points and setlist editing enabled. Song uploads and deletes remain disabled; Base44 production unchanged.</p>
     <form onSubmit={connect} className="grid gap-3">
       <label>Email<input className="block w-full rounded border p-3 text-black bg-white" type="email" autoComplete="email" required value={email} onChange={e=>setEmail(e.target.value)}/></label>
       <label>Password<input className="block w-full rounded border p-3 text-black bg-white" type="password" autoComplete="current-password" required value={password} onChange={e=>setPassword(e.target.value)}/></label>
@@ -59,7 +59,7 @@ function OriginalInterface() {
     {error && <p role="alert" className="text-destructive">{error}</p>}
   </main>;
   return <MemoryRouter initialEntries={['/']}>
-    <div className="fixed top-0 right-0 z-50 pointer-events-none px-2 py-1 text-[10px] bg-primary/10 text-primary">SUPABASE TEST · CUE EDITING</div>
+    <div className="fixed top-0 right-0 z-50 pointer-events-none px-2 py-1 text-[10px] bg-primary/10 text-primary">SUPABASE TEST · EDITING</div>
     <Suspense fallback={<div className="p-6">Loading IceDeck…</div>}>
       <Routes>
         <Route element={<DjLayout/>}>
