@@ -40,8 +40,8 @@ function Preview() {
     <h1>IceDeck · Supabase DJ preview</h1>
     <p>Read-only migration test. Base44 production remains unchanged.</p>
     {!token ? <form onSubmit={connect} style={{display:'grid',gap:10,maxWidth:440}}>
-      <label>Email <input type="email" required value={email} onChange={e=>setEmail(e.target.value)}/></label>
-      <label>Password <input type="password" required value={password} onChange={e=>setPassword(e.target.value)}/></label>
+      <label>Email <input type="email" required autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} style={{display:"block",width:"100%",padding:10,color:"#111",background:"#fff",border:"1px solid #888",borderRadius:4}}/></label>
+      <label>Password <input type="password" required autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} style={{display:"block",width:"100%",padding:10,color:"#111",background:"#fff",border:"1px solid #888",borderRadius:4}}/></label>
       <button disabled={busy}>Sign in</button>
     </form> : <>
       <p>{songs.length} songs · {playlists.length} playlists</p>
