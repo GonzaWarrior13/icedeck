@@ -19,6 +19,7 @@ function OriginalInterface() {
   const [teams,setTeams] = useState([]);
   const [session,setSession] = useState(null);
   const [activeTeam,setActiveTeam] = useState(null);
+  const canEdit = activeTeam && ['owner','admin','dj'].includes(activeTeam.role);
   const [busy,setBusy] = useState(false);
   const [error,setError] = useState('');
   async function connect(e) {
@@ -95,14 +96,14 @@ function OriginalInterface() {
   </main>;
   return <MemoryRouter initialEntries={['/']}>
     <div className="fixed top-0 right-0 z-50 flex items-center gap-2 rounded-bl bg-background/95 border border-border p-1 text-xs shadow">
-      <span className="max-w-36 truncate">{activeTeam?.name}</span>
+      <span className="max-w-36 truncate">{activeTeam?.name} · {activeTeam?.role}</span>
       <button className="rounded bg-secondary px-2 py-1 hover:bg-secondary/70" onClick={leaveTeam}>Switch team</button>
     </div>
     <Suspense fallback={<div className="p-6">Loading IceDeck…</div>}>
       <Routes>
         <Route element={<DjLayout/>}>
-          <Route path="/" element={<Library migrationReadOnly/>}/>
-          <Route path="/playlists" element={<Playlists migrationReadOnly/>}/>
+          <Route path="/" element={<Library migrationReadOnly canEdit={canEdit}/>}/>
+          <Route path="/playlists" element={<Playlists migrationReadOnly canEdit={canEdit}/>}/>
           <Route path="/settings" element={<div className="p-8 text-muted-foreground">Settings are disabled in this migration test.</div>}/>
         </Route>
         <Route path="*" element={<Navigate to="/" replace/>}/>
