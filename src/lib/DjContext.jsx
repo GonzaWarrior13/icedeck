@@ -253,12 +253,18 @@ export function DjProvider({ children }) {
       const songs = queueSongs;
       const idx = startIndex ?? 0;
       const resume = () => {
-        if (setlistId) playSetlistRef.current(setlistId, songs);
-        else playQueueFromRef.current(songs, idx);
+        if (setlistId) {
+          // Start a new shuffled selection from the goal playlist immediately
+          // after the horn ends; playSetlist also avoids early repeats.
+          playSetlistRef.current(setlistId, songs);
+        } else {
+          playQueueFromRef.current(songs, idx);
+        }
       };
       if (isSupabasePreview && MIGRATION_GOAL_HORN_URL) {
-        // This supplied MP3 includes music after the horn: finish the clip
-        // before playing the normal goal setlist, avoiding overlapping songs.
+        // The locally hosted recording contains only the horn.
+        // The audio 'ended' event starts the shuffled goal setlist immediately,
+        // not after a fixed four-second delay.
         goalResumeRef.current = resume;
       } else {
         goalTimerRef.current = setTimeout(() => {
