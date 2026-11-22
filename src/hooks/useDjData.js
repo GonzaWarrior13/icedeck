@@ -14,6 +14,7 @@ export function setMigrationData(songs, playlists) {
   migrationSongs = songs;
   migrationPlaylists = playlists;
 }
+export function setMigrationPlaylists(playlists) { migrationPlaylists = playlists; }
 export function updateMigrationSong(updated) {
   migrationSongs = migrationSongs.map(song => song.id === updated.id ? { ...song, ...updated } : song);
 }
