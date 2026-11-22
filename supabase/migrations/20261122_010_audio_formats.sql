@@ -12,7 +12,7 @@ BEGIN
   ON storage.objects FOR INSERT TO authenticated
   WITH CHECK (
     bucket_id = 'icedeck-audio'
-    AND name ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.(mp3|m4a|mp4|wav|ogg)$'
+    AND name ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}[.](mp3|m4a|mp4|wav|ogg)$'
     AND EXISTS (
       SELECT 1 FROM public.songs AS s
       WHERE s.storage_path = name
