@@ -7,7 +7,7 @@ import DjLayout from '@/components/dj/DjLayout';
 import Library from '@/pages/Library';
 import Playlists from '@/pages/Playlists';
 import { SONGS_KEY, PLAYLISTS_KEY, setMigrationData, setMigrationToken } from '@/hooks/useDjData';
-import { signIn, getTeamSongs, getTeamPlaylists, createPrivateAudioUrl, setPreviewSession, getMyTeams, setSelectedTeamId } from '@/api/supabaseClient';
+import { signIn, getTeamSongs, getTeamPlaylists, createPrivateAudioUrl, setPreviewSession, getMyTeams, setSelectedTeamId, getSignedInUser } from '@/api/supabaseClient';
 
 // The original IceDeck layout and pages, isolated from production Base44.
 // MemoryRouter keeps navigation within the test URL.
@@ -18,6 +18,7 @@ function OriginalInterface() {
   const [ready,setReady] = useState(false);
   const [teams,setTeams] = useState([]);
   const [session,setSession] = useState(null);
+  const [signedInUser,setSignedInUser] = useState(null);
   const [activeTeam,setActiveTeam] = useState(null);
   const teamRole = activeTeam?.role?.trim()?.toLowerCase() || '';
   const canEdit = ['owner','admin','dj'].includes(teamRole);
@@ -27,7 +28,9 @@ function OriginalInterface() {
     e.preventDefault(); setBusy(true); setError('');
     try {
       const signedIn = await signIn(email,password);
-      const available = await getMyTeams(signedIn.access_token);
+      const verifiedUser = await getSignedInUser(signedIn.access_token);
+      const available = await getMyTeams(signedIn.access_token, verifiedUser);
+      setSignedInUser(verifiedUser);
       setPassword('');
       setSession(signedIn);
       setPreviewSession(signedIn);
@@ -42,7 +45,7 @@ function OriginalInterface() {
     setBusy(true); setError('');
     try {
       // Fetch the membership again: a role may have changed since sign-in.
-      const freshTeams = await getMyTeams(session.access_token);
+      const freshTeams = await getMyTeams(session.access_token, signedInUser);
       setTeams(freshTeams);
       const currentTeam = freshTeams.find(t => t.id === team.id);
       if (!currentTeam) throw new Error('You no longer belong to this team.');
@@ -79,7 +82,7 @@ function OriginalInterface() {
     let cancelled = false;
     const checkRole = async () => {
       try {
-        const available = await getMyTeams(session.access_token);
+        const available = await getMyTeams(session.access_token, signedInUser);
         if (cancelled) return;
         const membership = available.find(t => t.id === activeTeam.id);
         if (!membership) {
@@ -119,12 +122,13 @@ function OriginalInterface() {
       <button className="rounded bg-primary text-primary-foreground p-3" disabled={busy}>{busy?'Preparing private audio links…':'Sign in'}</button>
     </form> : <div className="grid gap-3">
       <h2 className="font-semibold">Choose your team</h2>
+      <p className="text-xs text-muted-foreground">Signed in as {signedInUser?.email || signedInUser?.id}</p>
       {teams.map(team => <button
         key={team.id} type="button" disabled={busy}
         className="rounded border border-border bg-card p-3 text-left hover:bg-secondary disabled:opacity-50"
         onClick={() => openTeam(team)}
       >{team.name} <span className="text-xs text-muted-foreground">({team.role})</span></button>)}
-      <button type="button" className="text-sm underline" onClick={() => { setSession(null); setTeams([]); setPreviewSession(null); setSelectedTeamId(''); setError(''); }}>Use another account</button>
+      <button type="button" className="text-sm underline" onClick={() => { setSession(null); setSignedInUser(null); setTeams([]); setPreviewSession(null); setSelectedTeamId(''); setError(''); }}>Use another account</button>
     </div>}
     {error && <p role="alert" className="text-destructive">{error}</p>}
   </main>;
