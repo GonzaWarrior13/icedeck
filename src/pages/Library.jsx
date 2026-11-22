@@ -17,7 +17,7 @@ import ConfirmDialog from '@/components/dj/ConfirmDialog';
 // The waveform editor is heavy: it only loads when a track is opened for cueing.
 const StartPointEditor = lazy(() => import('@/components/dj/StartPointEditor'));
 
-export default function Library() {
+export default function Library({ migrationReadOnly = false }) {
   const dj = useDj();
   const queryClient = useQueryClient();
   const { data: songs = [], isLoading: loading, refetch } = useSongs();
@@ -94,12 +94,12 @@ export default function Library() {
             <p className="type-meta mt-1 hidden md:block">Cue, edit, and fade for game day.</p>
           </div>
           <div className="flex items-center gap-1.5 md:gap-2">
-            <SongUploader onUploaded={handleUploaded} />
-            <SpotifyImport
+            {!migrationReadOnly && <SongUploader onUploaded={handleUploaded} />}
+            {!migrationReadOnly && <SpotifyImport
               existingSongs={songs}
               onImported={(created) => queryClient.setQueryData(SONGS_KEY, (prev = []) => [...created, ...prev])}
-            />
-            <NormalizeButton />
+            />}
+            {!migrationReadOnly && <NormalizeButton />}
           </div>
         </header>
 
@@ -120,9 +120,9 @@ export default function Library() {
               currentSongId={currentSongId}
               onPlay={dj.playNow}
               onAddQueue={dj.addToQueue}
-              onEdit={setEditorSong}
-              onDelete={handleDelete}
-              onToggleQuick={(s) => toggleTag(s, 'quick')}
+              onEdit={migrationReadOnly ? undefined : setEditorSong}
+              onDelete={migrationReadOnly ? undefined : handleDelete}
+              onToggleQuick={migrationReadOnly ? undefined : (s) => toggleTag(s, 'quick')}
             />
           </section>
           <section className="lg:sticky lg:top-6">
@@ -135,7 +135,7 @@ export default function Library() {
 
       <Player />
 
-      {editorSong && (
+      {!migrationReadOnly && editorSong && (
         <Suspense fallback={null}>
           <StartPointEditor
             song={editorSong}
@@ -145,13 +145,13 @@ export default function Library() {
         </Suspense>
       )}
 
-      <ConfirmDialog
+      {!migrationReadOnly && <ConfirmDialog
         open={!!deleteTarget}
         title="Delete track?"
         description={deleteTarget ? `"${deleteTarget.title}" will be removed from your library.` : ''}
         onCancel={() => setDeleteTarget(null)}
         onConfirm={confirmDelete}
-      />
+      />}
     </div>
   );
 }
