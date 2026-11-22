@@ -32,7 +32,8 @@ export default function TeamManager({ team, user, onTeamsChanged }) {
       if (reload) await loadMembers();
       await onTeamsChanged?.();
       setNotice(success);
-    } catch (err) { setError(err.message || 'Action failed'); }
+      return true;
+    } catch (err) { setError(err.message || 'Action failed'); return false; }
     finally { setBusy(false); }
   };
   return (
@@ -59,7 +60,7 @@ export default function TeamManager({ team, user, onTeamsChanged }) {
       <form onSubmit={e => {
         e.preventDefault();
         run(() => createTeam(newTeam.trim()), 'Team created. Use Switch team to open it.')
-          .then(() => setNewTeam(''));
+          .then(ok => { if (ok) setNewTeam(''); });
       }} className="space-y-2">
         <label className="block text-sm font-medium">Create another team</label>
         <div className="flex gap-2">
@@ -92,7 +93,7 @@ export default function TeamManager({ team, user, onTeamsChanged }) {
         </div>
         <form className="space-y-2" onSubmit={e => {
           e.preventDefault();
-          run(() => manageTeamMember(email.trim(), role), 'Membership saved.', true).then(() => setEmail(''));
+          run(() => manageTeamMember(email.trim(), role), 'Membership saved.', true).then(ok => { if (ok) setEmail(''); });
         }}>
           <label className="block text-sm font-medium">Add or update a member</label>
           <input required type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Registered user's email"
