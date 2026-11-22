@@ -4,8 +4,12 @@ import { base44 } from '@/api/base44Client';
 export const SONGS_KEY = ['songs'];
 export const PLAYLISTS_KEY = ['playlists'];
 
-export const fetchSongs = () => base44.entities.Song.list('-updated_date', 200);
-export const fetchPlaylists = () => base44.entities.Playlist.list('-updated_date', 100);
+let previewSongs = [];
+let previewPlaylists = [];
+export function setSupabasePreviewData(songs, playlists) { previewSongs = songs; previewPlaylists = playlists; }
+const isOriginalPreview = () => typeof window !== 'undefined' && window.location.pathname === '/supabase-original';
+export const fetchSongs = () => isOriginalPreview() ? Promise.resolve(previewSongs) : base44.entities.Song.list('-updated_date', 200);
+export const fetchPlaylists = () => isOriginalPreview() ? Promise.resolve(previewPlaylists) : base44.entities.Playlist.list('-updated_date', 100);
 
 export const songsQueryOptions = {
   queryKey: SONGS_KEY,
