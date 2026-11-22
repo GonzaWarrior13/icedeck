@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
-import { uploadTeamMp3 } from '@/api/supabaseClient';
+import { uploadTeamMp3, MAX_MP3_BYTES, getFreshPreviewToken } from '@/api/supabaseClient';
 import { getMigrationToken } from '@/hooks/useDjData';
 import { Loader2, UploadCloud } from 'lucide-react';
 import { analyzeLoudness, referenceDb, volumeForDb } from '@/lib/audio';
@@ -18,11 +18,10 @@ export default function SongUploader({ onUploaded, useSupabase = false }) {
     setError('');
     if (useSupabase) {
       try {
-        const token = getMigrationToken();
-        if (!token) throw new Error('Please sign in to Supabase again.');
+        const token = await getFreshPreviewToken();
         for (const file of list) {
-          if (!/\.mp3$/i.test(file.name) || file.size > 6 * 1024 * 1024 || !file.size) {
-            throw new Error('This test supports MP3 files up to 6 MB. Use a smaller MP3.');
+          if (!/\.mp3$/i.test(file.name) || file.size > MAX_MP3_BYTES || !file.size) {
+            throw new Error('MP3 files must be 50 MB or smaller (your Supabase plan may set a lower limit).');
           }
           setProgress(`Preparing ${file.name}…`);
           const localUrl = URL.createObjectURL(file);
@@ -36,7 +35,9 @@ export default function SongUploader({ onUploaded, useSupabase = false }) {
               a.addEventListener('error', () => finish(0), { once: true });
               a.src = localUrl;
             });
-            try { loudness = await analyzeLoudness(localUrl); } catch { /* optional */ }
+            if (file.size <= 20 * 1024 * 1024) {
+              try { loudness = await analyzeLoudness(localUrl); } catch { /* optional */ }
+            }
           } finally { URL.revokeObjectURL(localUrl); }
           setProgress(`Uploading ${file.name}…`);
           const created = await uploadTeamMp3(token, file, {
