@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Save, X, ChevronUp, ChevronDown, Trash2, Plus, Search } from 'lucide-react';
 import { formatTime } from '@/lib/audio';
 
-export default function SetlistEditor({ initialName = '', initialSongIds = [], initialHotkey = '', songs = [], onCancel, onSave }) {
+export default function SetlistEditor({ initialName = '', initialSongIds = [], initialHotkey = '', songs = [], onCancel, onSave, saving = false, error = '' }) {
   const [name, setName] = useState(initialName);
   const [ids, setIds] = useState(initialSongIds);
   const [hotkey, setHotkey] = useState(initialHotkey);
@@ -58,14 +58,15 @@ export default function SetlistEditor({ initialName = '', initialSongIds = [], i
         </div>
         <Button
           onClick={() => onSave(name.trim(), ids, hotkey)}
-          disabled={!name.trim()}
+          disabled={!name.trim() || saving}
           className="min-h-10 rounded-[10px] bg-foreground text-background hover:bg-foreground/90 font-semibold"
         >
-          <Save className="w-4 h-4 mr-1.5" aria-hidden="true" /> Save
+          <Save className="w-4 h-4 mr-1.5" aria-hidden="true" /> {saving ? 'Saving…' : 'Save'}
         </Button>
         <Button
           variant="outline"
           onClick={onCancel}
+          disabled={saving}
           aria-label="Cancel setlist editing"
           className="min-h-10 min-w-10 rounded-[10px] bg-transparent border-border text-muted-foreground hover:bg-card hover:text-foreground"
         >
@@ -73,6 +74,7 @@ export default function SetlistEditor({ initialName = '', initialSongIds = [], i
         </Button>
       </div>
 
+      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
       <div className="flex flex-wrap items-center gap-3">
         <Label className="section-label shrink-0">Hotkey</Label>
         <button
