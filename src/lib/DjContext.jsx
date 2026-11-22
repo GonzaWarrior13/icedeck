@@ -6,7 +6,10 @@ import { PLAYLISTS_KEY, playlistsQueryOptions, songsQueryOptions } from '@/hooks
 
 const isSupabasePreview = typeof window !== 'undefined' && ['/supabase-dj','/supabase-original'].includes(window.location.pathname);
 
-const GOAL_HORN_URL = 'https://media.base44.com/files/public/6a8f48cd9a055819d8b79b87/d73c0e5ef_TorontoMapleLeafsGoalHornNoSong.mp3';
+// The original Base44 branch still uses its existing sound. Supabase preview
+// uses local audio when configured, otherwise generates a temporary horn.
+const ORIGINAL_GOAL_HORN_URL = 'https://media.base44.com/files/public/6a8f48cd9a055819d8b79b87/d73c0e5ef_TorontoMapleLeafsGoalHornNoSong.mp3';
+const MIGRATION_GOAL_HORN_URL = import.meta.env.VITE_ICEDECK_GOAL_HORN_URL || '';
 
 const defaultDj = {
   queue: [], currentIndex: -1, currentSong: null, isPlaying: false,
@@ -32,6 +35,7 @@ export function DjProvider({ children }) {
   const [playbackError, setPlaybackError] = useState('');
   const prefetchRef = useRef(null);
   const goalAudioRef = useRef(null);
+  const generatedHornRef = useRef(null);
 
   const [queue, setQueue] = useState(() => {
     try { return isSupabasePreview ? [] : JSON.parse(localStorage.getItem('dj_queue') || '[]'); } catch { return []; }
@@ -252,9 +256,56 @@ export function DjProvider({ children }) {
         else playQueueFromRef.current(songs, idx);
       }, 4000);
     }
+    if (isSupabasePreview && !MIGRATION_GOAL_HORN_URL) {
+      // Temporary self-contained browser-generated horn. No Base44 request.
+      // Replace with a licensed, locally hosted MP3 using the env variable.
+      try {
+        generatedHornRef.current?.stop(0);
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) throw new Error('Browser audio generator unavailable');
+        const context = new AudioCtx();
+        const now = context.currentTime;
+        const gain = context.createGain();
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.exponentialRampToValueAtTime(0.16, now + 0.12);
+        gain.gain.setValueAtTime(0.16, now + 2.1);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.65);
+        gain.connect(context.destination);
+        const oscillators = [196, 247, 294].map(frequency => {
+          const oscillator = context.createOscillator();
+          oscillator.type = 'sawtooth';
+          oscillator.frequency.setValueAtTime(frequency, now);
+          oscillator.connect(gain);
+          oscillator.start(now);
+          oscillator.stop(now + 2.7);
+          return oscillator;
+        });
+        let stopped = false;
+        const horn = {
+          stop: (fadeSeconds = 0.2) => {
+            if (stopped) return;
+            stopped = true;
+            const t = context.currentTime;
+            gain.gain.cancelScheduledValues(t);
+            gain.gain.setValueAtTime(Math.max(gain.gain.value, 0.0001), t);
+            gain.gain.exponentialRampToValueAtTime(0.0001, t + Math.max(0.03, fadeSeconds));
+            window.setTimeout(() => context.close().catch(() => {}), Math.ceil(Math.max(0.03, fadeSeconds) * 1000) + 70);
+            if (generatedHornRef.current === horn) generatedHornRef.current = null;
+            setGoalPlaying(false);
+          },
+        };
+        generatedHornRef.current = horn;
+        oscillators[0].addEventListener('ended', () => horn.stop(0.03), { once: true });
+        setGoalPlaying(true);
+      } catch (error) {
+        console.error('Local goal horn could not start:', error);
+        setGoalPlaying(false);
+      }
+      return;
+    }
     let ga = goalAudioRef.current;
     if (!ga) {
-      ga = typeof Audio !== 'undefined' ? new Audio(GOAL_HORN_URL) : null;
+      ga = typeof Audio !== 'undefined' ? new Audio(isSupabasePreview ? MIGRATION_GOAL_HORN_URL : ORIGINAL_GOAL_HORN_URL) : null;
       if (ga) { ga.volume = 1; goalAudioRef.current = ga; }
     }
     if (ga) {
@@ -271,6 +322,11 @@ export function DjProvider({ children }) {
   }, [audio]);
 
   const stopGoal = useCallback((sec = 1.5) => {
+    if (isSupabasePreview && generatedHornRef.current) {
+      generatedHornRef.current.stop(sec);
+      if (goalTimerRef.current) { clearTimeout(goalTimerRef.current); goalTimerRef.current = null; }
+      return;
+    }
     const ga = goalAudioRef.current;
     if (!ga || ga.paused) return;
     const startVol = ga.volume || 1;
