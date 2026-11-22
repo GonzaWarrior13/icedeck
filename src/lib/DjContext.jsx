@@ -10,6 +10,8 @@ const isSupabasePreview = typeof window !== 'undefined' && ['/supabase-dj','/sup
 // uses local audio when configured, otherwise generates a temporary horn.
 const ORIGINAL_GOAL_HORN_URL = 'https://media.base44.com/files/public/6a8f48cd9a055819d8b79b87/d73c0e5ef_TorontoMapleLeafsGoalHornNoSong.mp3';
 const MIGRATION_GOAL_HORN_URL = import.meta.env.VITE_ICEDECK_GOAL_HORN_URL || '/goal-horn.mp3';
+const GOAL_HORN_FADE_SECONDS = 1.2;
+const GOAL_SONG_EARLY_SECONDS = 0.6;
 
 const defaultDj = {
   queue: [], currentIndex: -1, currentSong: null, isPlaying: false,
@@ -262,9 +264,8 @@ export function DjProvider({ children }) {
         }
       };
       if (isSupabasePreview && MIGRATION_GOAL_HORN_URL) {
-        // The locally hosted recording contains only the horn.
-        // The audio 'ended' event starts the shuffled goal setlist immediately,
-        // not after a fixed four-second delay.
+        // Crossfade: lower the horn over its final 1.2 seconds and start
+        // the shuffled goal setlist 0.6 seconds before its natural end.
         goalResumeRef.current = resume;
       } else {
         goalTimerRef.current = setTimeout(() => {
@@ -327,8 +328,22 @@ export function DjProvider({ children }) {
     }
     if (ga) {
       if (!ga._wired) {
+        ga.addEventListener('timeupdate', () => {
+          if (!isSupabasePreview || !MIGRATION_GOAL_HORN_URL) return;
+          const remaining = ga.duration - ga.currentTime;
+          if (!Number.isFinite(remaining) || remaining < 0) return;
+          ga.volume = Math.min(1, Math.max(0, remaining / GOAL_HORN_FADE_SECONDS));
+          if (remaining <= GOAL_SONG_EARLY_SECONDS) {
+            // Clear the callback first: timeupdate and ended may both fire.
+            const resume = goalResumeRef.current;
+            goalResumeRef.current = null;
+            resume?.();
+          }
+        });
         ga.addEventListener('ended', () => {
           setGoalPlaying(false);
+          ga.volume = 1;
+          // Fallback if timeupdate skipped the final crossfade window.
           const resume = goalResumeRef.current;
           goalResumeRef.current = null;
           resume?.();
