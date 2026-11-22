@@ -1,12 +1,17 @@
+import { getSelectedTeamId } from '@/api/supabaseClient';
 import { useCallback, useEffect, useState } from 'react';
 
 const ENABLED_KEY = 'dj_simple_mode';
 const IDS_KEY = 'dj_simple_playlists';
 const EVENT = 'dj-simple-mode-change';
+const scoped = key => {
+  const isMigration = import.meta.env.VITE_ICEDECK_STANDALONE === 'true' || ['/supabase-original','/supabase-dj'].includes(window.location.pathname);
+  return isMigration ? `${key}:team:${getSelectedTeamId() || 'none'}` : key;
+};
 
 export const readSimpleMode = () => {
   try {
-    return localStorage.getItem(ENABLED_KEY) === '1';
+    return localStorage.getItem(scoped(ENABLED_KEY)) === '1';
   } catch {
     return false;
   }
@@ -14,7 +19,7 @@ export const readSimpleMode = () => {
 
 export const readSimplePlaylistIds = () => {
   try {
-    const stored = JSON.parse(localStorage.getItem(IDS_KEY));
+    const stored = JSON.parse(localStorage.getItem(scoped(IDS_KEY)));
     return Array.isArray(stored) ? stored : [];
   } catch {
     return [];
@@ -23,7 +28,7 @@ export const readSimplePlaylistIds = () => {
 
 const write = (key, value) => {
   try {
-    localStorage.setItem(key, value);
+    localStorage.setItem(scoped(key), value);
   } catch {
     /* storage unavailable in some WebViews */
   }
