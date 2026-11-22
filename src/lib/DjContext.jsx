@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useRef, useState, useEffect, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { createPrivateAudioUrl, getFreshPreviewToken, getSelectedTeamId } from '@/api/supabaseClient';
+import { createPrivateAudioUrl, getFreshPreviewToken, getSelectedTeamId, recordTeamSongPlay } from '@/api/supabaseClient';
 import { PLAYLISTS_KEY, songsQueryOptions, usePlaylists, getMigrationSongs } from '@/hooks/useDjData';
 
 const isSupabasePreview = import.meta.env.VITE_ICEDECK_STANDALONE === 'true' || (typeof window !== 'undefined' && ['/supabase-dj','/supabase-original'].includes(window.location.pathname));
@@ -178,7 +178,8 @@ export function DjProvider({ children }) {
     setCurrentTime(0);
     setPlaybackError('');
     if (song.id) {
-      if (!isSupabasePreview) base44.entities.Song.update(song.id, { play_count: (song.play_count || 0) + 1 }).catch(() => {});
+      if (isSupabasePreview) recordTeamSongPlay(song.id).catch(() => {});
+      else base44.entities.Song.update(song.id, { play_count: (song.play_count || 0) + 1 }).catch(() => {});
       const sid = activeSetlistIdRef.current;
       if (sid) {
         let played = setlistPlayedRef.current[sid];
