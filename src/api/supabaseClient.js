@@ -66,3 +66,20 @@ export async function updateTeamSong(accessToken, id, changes) {
     method:'PATCH', headers:{'Content-Type':'application/json','Prefer':'return=representation'}, body:JSON.stringify(patch),
   });
 }
+
+export async function saveTeamPlaylist(accessToken, { id = null, name, hotkey = '', song_ids = [] }) {
+  return request('/rest/v1/rpc/save_team_playlist', accessToken, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      p_team_id: TEAM_ID, p_playlist_id: id,
+      p_name: name, p_hotkey: hotkey || '', p_song_ids: song_ids,
+    }),
+  });
+}
+
+export async function deleteTeamPlaylist(accessToken, id) {
+  return request('/rest/v1/rpc/delete_team_playlist', accessToken, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ p_team_id: TEAM_ID, p_playlist_id: id }),
+  });
+}
