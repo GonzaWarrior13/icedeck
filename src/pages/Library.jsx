@@ -97,9 +97,17 @@ export default function Library({ migrationReadOnly = false, canEdit = true }) {
     const previous = queryClient.getQueryData(SONGS_KEY) || [];
     queryClient.setQueryData(SONGS_KEY, previous.map((s) => (s.id === song.id ? { ...s, tags: newTags } : s)));
     try {
-      await base44.entities.Song.update(song.id, { tags: newTags });
-    } catch {
+      if (migrationReadOnly) {
+        const { updateTeamSong, getFreshPreviewToken } = await import('@/api/supabaseClient');
+        const updated = await updateTeamSong(await getFreshPreviewToken(), song.id, { tags: newTags });
+        if (!Array.isArray(updated) || updated.length !== 1) throw new Error('Could not update this song');
+        updateMigrationSong(updated[0]);
+      } else {
+        await base44.entities.Song.update(song.id, { tags: newTags });
+      }
+    } catch (error) {
       queryClient.setQueryData(SONGS_KEY, previous);
+      setDeleteError(error.message || 'Could not update Quick Access.');
     }
   };
 
@@ -155,7 +163,7 @@ export default function Library({ migrationReadOnly = false, canEdit = true }) {
               onAddQueue={dj.addToQueue}
               onEdit={allowEdits ? setEditorSong : undefined}
               onDelete={allowEdits ? handleDelete : undefined}
-              onToggleQuick={migrationReadOnly ? undefined : (s) => toggleTag(s, 'quick')}
+              onToggleQuick={allowEdits ? (s) => toggleTag(s, 'quick') : undefined}
             />
           </section>
           <section className="lg:sticky lg:top-6">
