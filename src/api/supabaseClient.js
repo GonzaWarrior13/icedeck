@@ -49,7 +49,14 @@ export async function createPrivateAudioUrl(storagePath, accessToken, expiresIn 
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ expiresIn }),
   });
-  return new URL(result.signedURL || result.signedUrl, url).toString();
+  const signedPath = result.signedURL || result.signedUrl;
+  if (!signedPath) throw new Error('Supabase did not return a signed audio URL');
+  // Storage returns /object/sign/... (relative to /storage/v1), not the project root.
+  if (/^https?:\/\//i.test(signedPath)) return signedPath;
+  const normalizedPath = signedPath.startsWith('/storage/v1/')
+    ? signedPath
+    : '/storage/v1/' + signedPath.replace(/^\//, '');
+  return new URL(normalizedPath, url).toString();
 }
 export async function updateTeamSong(accessToken, id, changes) {
   const allowed = ['title','artist','start_point','end_point','volume','tags','category','notes','play_count','loudness_db'];
