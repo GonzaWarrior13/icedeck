@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useRef, useState, useEffect, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { createPrivateAudioUrl, getFreshPreviewToken } from '@/api/supabaseClient';
 import { PLAYLISTS_KEY, playlistsQueryOptions, songsQueryOptions } from '@/hooks/useDjData';
 
 const isSupabasePreview = typeof window !== 'undefined' && ['/supabase-dj','/supabase-original'].includes(window.location.pathname);
@@ -27,6 +28,8 @@ export function DjProvider({ children }) {
     audioRef.current.preload = 'auto';
   }
   const audio = audioRef.current;
+  const playbackRequestRef = useRef(0);
+  const [playbackError, setPlaybackError] = useState('');
   const prefetchRef = useRef(null);
   const goalAudioRef = useRef(null);
 
@@ -109,6 +112,7 @@ export function DjProvider({ children }) {
     const ni = indexRef.current + 1;
     const nextSong = ni < q.length ? q[ni] : null;
     if (!nextSong) return;
+    if (isSupabasePreview) return; // Preview signs each new track just before playing it.
     const url = nextSong.preview_url || nextSong.file_url;
     if (!url) return;
     if (!prefetchRef.current && typeof Audio !== 'undefined') {
@@ -139,8 +143,11 @@ export function DjProvider({ children }) {
     const q = queueRef.current;
     if (index < 0 || index >= q.length) return;
     const song = q[index];
+    const requestId = ++playbackRequestRef.current;
     setCurrentIndex(index);
+    indexRef.current = index;
     setCurrentTime(0);
+    setPlaybackError('');
     if (song.id) {
       if (!isSupabasePreview) base44.entities.Song.update(song.id, { play_count: (song.play_count || 0) + 1 }).catch(() => {});
       const sid = activeSetlistIdRef.current;
@@ -152,20 +159,42 @@ export function DjProvider({ children }) {
       }
     }
     if (!audio) return;
-    const url = song.preview_url || song.file_url;
-    if (!url) return;
-    audio.src = url;
-    audio.play().catch(() => {});
-    const start = song.start_point || 0;
-    if (start > 0) {
-      const onMeta = () => {
-        audio.removeEventListener('loadedmetadata', onMeta);
-        if (start < (audio.duration || 0)) audio.currentTime = start;
-      };
-      audio.addEventListener('loadedmetadata', onMeta);
+
+    const startPlayback = (url) => {
+      if (requestId !== playbackRequestRef.current) return;
+      if (!url) { setPlaybackError('This track has no playable audio.'); return; }
+      audio.pause();
+      audio.src = url;
+      const start = song.start_point || 0;
+      if (start > 0) {
+        const onMeta = () => {
+          audio.removeEventListener('loadedmetadata', onMeta);
+          if (requestId !== playbackRequestRef.current) return;
+          if (start < (audio.duration || 0)) audio.currentTime = start;
+        };
+        audio.addEventListener('loadedmetadata', onMeta);
+      }
+      audio.play().catch((err) => {
+        if (requestId === playbackRequestRef.current) setPlaybackError('Playback failed: ' + err.message);
+      });
+      prefetchNext();
+    };
+    if (isSupabasePreview && song.storage_path) {
+      // Create a fresh signed URL for EACH track switch, even hours after login.
+      // Refresh Supabase Auth first when needed. Never persist the signed URL.
+      (async () => {
+        try {
+          const token = await getFreshPreviewToken();
+          const signedUrl = await createPrivateAudioUrl(song.storage_path, token, 3600);
+          startPlayback(signedUrl);
+        } catch (err) {
+          if (requestId === playbackRequestRef.current) setPlaybackError('Could not renew private audio: ' + err.message);
+        }
+      })();
+    } else {
+      startPlayback(song.preview_url || song.file_url);
     }
-    prefetchNext();
-  }, [audio]);
+  }, [audio, prefetchNext]);
 
   const nextRef = useRef(() => {});
   nextRef.current = () => {
@@ -387,10 +416,12 @@ export function DjProvider({ children }) {
     if (!played) { played = new Set(); setlistPlayedRef.current[setlistId] = played; }
     let available = songs.filter((s) => !played.has(s.id));
     if (!available.length) { played.clear(); available = songs; }
-    // weighted: least-played first, random tiebreak
-    const weighted = available.map((s) => ({ song: s, count: s.play_count || 0, rand: Math.random() }));
-    weighted.sort((a, b) => a.count - b.count || a.rand - b.rand);
-    const arr = weighted.map((w) => w.song);
+    // Fisher-Yates: genuinely random order, no bias from old play_count values.
+    const arr = [...available];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
     // don't start a fresh cycle with the song that ended the previous one
     const lastId = setlistLastRef.current[setlistId];
     if (lastId && arr.length > 1 && arr[0].id === lastId) {
@@ -406,7 +437,7 @@ export function DjProvider({ children }) {
   playSetlistRef.current = playSetlist;
 
   const value = {
-    queue, currentIndex, currentSong, isPlaying, currentTime, duration,
+    queue, currentIndex, currentSong, isPlaying, currentTime, duration, playbackError,
     masterVolume, isFading, audio, goalPlaying, goalSetlistId, setGoalSetlist, refreshHotkeys,
     play, pause, next, prev, seek, setMasterVolume, fadeOut, triggerGoal, stopGoal,
     addToQueue, addManyToQueue, removeFromQueue, reorderQueue, clearQueue, playNow, playQueueFrom, playSetlist,
