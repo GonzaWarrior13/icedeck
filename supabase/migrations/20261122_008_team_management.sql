@@ -56,8 +56,8 @@ DECLARE v_caller_role text; v_target uuid; v_existing_role text;
 BEGIN
   SELECT m.role INTO v_caller_role FROM public.team_memberships m
   WHERE m.team_id=p_team_id AND m.user_id=(SELECT auth.uid());
-  IF v_caller_role NOT IN ('owner','admin') THEN RAISE EXCEPTION 'Team admin permissions required'; END IF;
-  IF p_role NOT IN ('admin','dj','viewer') THEN RAISE EXCEPTION 'Invalid role'; END IF;
+  IF coalesce(v_caller_role, '') NOT IN ('owner','admin') THEN RAISE EXCEPTION 'Team admin permissions required'; END IF;
+  IF coalesce(p_role, '') NOT IN ('admin','dj','viewer') THEN RAISE EXCEPTION 'Invalid role'; END IF;
   IF p_role='admin' AND v_caller_role <> 'owner' THEN RAISE EXCEPTION 'Only owners can promote admins'; END IF;
   SELECT u.id INTO v_target FROM auth.users u
   WHERE lower(u.email)=lower(trim(coalesce(p_email,''))) LIMIT 1;
@@ -77,7 +77,7 @@ DECLARE v_caller_role text; v_target_role text;
 BEGIN
   SELECT m.role INTO v_caller_role FROM public.team_memberships m
   WHERE m.team_id=p_team_id AND m.user_id=(SELECT auth.uid());
-  IF v_caller_role NOT IN ('owner','admin') THEN RAISE EXCEPTION 'Team admin permissions required'; END IF;
+  IF coalesce(v_caller_role, '') NOT IN ('owner','admin') THEN RAISE EXCEPTION 'Team admin permissions required'; END IF;
   IF p_user_id=(SELECT auth.uid()) THEN RAISE EXCEPTION 'Cannot remove yourself'; END IF;
   SELECT m.role INTO v_target_role FROM public.team_memberships m
   WHERE m.team_id=p_team_id AND m.user_id=p_user_id;
