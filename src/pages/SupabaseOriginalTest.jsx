@@ -153,7 +153,11 @@ function OriginalInterface() {
   async function syncTeams() {
     const available = await getMyTeams(await getFreshPreviewToken(), signedInUser);
     setTeams(available);
-    if (activeTeam) setActiveTeam(available.find(t => t.id === activeTeam.id) || null);
+    if (activeTeam) {
+      const updated = available.find(t => t.id === activeTeam.id);
+      if (!updated) leaveTeam();
+      else setActiveTeam(updated);
+    }
   }
 
   async function openTeam(team) {
@@ -232,7 +236,7 @@ function OriginalInterface() {
 
   if (!ready) return <main className="mx-auto max-w-md p-8 space-y-4 bg-background text-foreground min-h-screen">
     <h1 className="text-3xl font-bold">IceDeck · Supabase interface test</h1>
-    <p className="text-muted-foreground">The original IceDeck layout will load after sign-in. Supabase cue points and setlist editing enabled. MP3 uploads are enabled (6 MB test limit); song deletion is enabled with confirmation; Goal horn uses a temporary built-in sound unless a local MP3 is configured. Base44 production unchanged.</p>
+    <p className="text-muted-foreground">The original IceDeck layout will load after sign-in. Supabase cue points and setlist editing enabled. MP3 uploads support up to 50 MB where your Supabase plan allows it; song deletion uses confirmation; the locally hosted goal horn is /goal-horn.mp3. Base44 production unchanged.</p>
     {!session ? <form onSubmit={connect} className="grid gap-3">
       <h2 className="font-semibold">{authMode === 'signup' ? 'Create your account' : authMode === 'forgot' ? 'Reset your password' : authMode === 'reset' ? 'Choose a new password' : 'Sign in'}</h2>
       {authMode !== 'reset' && <label>Email<input className="block w-full rounded border p-3 text-black bg-white" type="email" autoComplete="email" required value={email} onChange={e=>setEmail(e.target.value)}/></label>}
