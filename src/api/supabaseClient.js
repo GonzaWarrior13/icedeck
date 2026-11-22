@@ -45,7 +45,7 @@ export async function getTeamSongs(accessToken, teamId = getSelectedTeamId()) {
   const query = new URLSearchParams({ select: '*', team_id: `eq.${teamId}`, scope: 'eq.team', order: 'updated_at.desc' });
   return request(`/rest/v1/songs?${query}`, accessToken);
 }
-export async function getTeamPlaylists(accessToken, teamId = TEAM_ID) {
+export async function getTeamPlaylists(accessToken, teamId = getSelectedTeamId()) {
   if (!teamId) throw new Error('Team ID not configured');
   const query = new URLSearchParams({ select: '*,playlist_items(song_id,position)', team_id: `eq.${teamId}`, scope: 'eq.team', order: 'updated_at.desc' });
   const rows = await request(`/rest/v1/playlists?${query}`, accessToken);
@@ -166,11 +166,11 @@ export async function getFreshPreviewToken() {
  * playable library entry pointing to a missing object.
  */
 export async function deleteTeamSong(id) {
-  if (!TEAM_ID || !id) throw new Error('Missing team or song ID');
+  if (!getSelectedTeamId() || !id) throw new Error('Missing team or song ID');
   const token = await getFreshPreviewToken();
   const query = new URLSearchParams({
     id: `eq.${id}`,
-    team_id: `eq.${TEAM_ID}`,
+    team_id: `eq.${getSelectedTeamId()}`,
     scope: 'eq.team',
     select: 'id,storage_path',
   });
