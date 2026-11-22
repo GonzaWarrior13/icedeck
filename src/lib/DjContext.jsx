@@ -2,6 +2,16 @@ import React, { createContext, useContext, useRef, useState, useEffect, useCallb
 import { useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { PLAYLISTS_KEY, playlistsQueryOptions, songsQueryOptions } from '@/hooks/useDjData';
+import { hasSpotifyStreaming } from '@/lib/spotify';
+import {
+  playSpotifyTrack,
+  pauseSpotify,
+  resumeSpotify,
+  seekSpotify,
+  setSpotifyVolume,
+  getSpotifyState,
+} from '@/lib/spotifyPlayer';
+import { toast } from '@/components/ui/use-toast';
 
 const GOAL_HORN_URL = 'https://media.base44.com/files/public/6a8f48cd9a055819d8b79b87/d73c0e5ef_TorontoMapleLeafsGoalHornNoSong.mp3';
 
@@ -27,6 +37,12 @@ export function DjProvider({ children }) {
   const audio = audioRef.current;
   const prefetchRef = useRef(null);
   const goalAudioRef = useRef(null);
+  // true while the current track is streamed by the Spotify player instead of the audio element
+  const spotifyModeRef = useRef(false);
+
+  const isSpotifySong = (song) => !!(
+    song && song.source === 'spotify' && song.spotify_uri && hasSpotifyStreaming()
+  );
 
   const [queue, setQueue] = useState(() => {
     try { return JSON.parse(localStorage.getItem('dj_queue') || '[]'); } catch { return []; }
@@ -97,6 +113,7 @@ export function DjProvider({ children }) {
     const sv = currentSong && currentSong.volume != null ? currentSong.volume / 100 : 1;
     const vol = Math.min(1, Math.max(0, sv * masterVolume));
     if (audio) audio.volume = vol;
+    if (spotifyModeRef.current) setSpotifyVolume(vol);
   }, [audio, currentSong, masterVolume]);
 
   useEffect(() => { applyVolume(); }, [applyVolume]);
@@ -133,6 +150,28 @@ export function DjProvider({ children }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const startSpotify = useCallback(async (song) => {
+    try {
+      if (audio) audio.pause();
+      const startSeconds = song.start_point || 0;
+      await playSpotifyTrack(song.spotify_uri, Math.round(startSeconds * 1000));
+      spotifyModeRef.current = true;
+      setIsPlaying(true);
+      setCurrentTime(startSeconds);
+      if (song.duration) setDuration(song.duration);
+      const songVolume = song.volume != null ? song.volume / 100 : 1;
+      setSpotifyVolume(Math.min(1, Math.max(0, songVolume * masterVolume)));
+    } catch (e) {
+      spotifyModeRef.current = false;
+      setIsPlaying(false);
+      toast({
+        title: 'Spotify playback',
+        description: e?.message || 'Spotify could not start that track',
+        variant: 'destructive',
+      });
+    }
+  }, [audio, masterVolume]);
+
   const playIndex = useCallback((index) => {
     const q = queueRef.current;
     if (index < 0 || index >= q.length) return;
@@ -149,6 +188,14 @@ export function DjProvider({ children }) {
         setlistLastRef.current[sid] = song.id;
       }
     }
+    if (isSpotifySong(song)) {
+      startSpotify(song);
+      return;
+    }
+    if (spotifyModeRef.current) {
+      spotifyModeRef.current = false;
+      pauseSpotify().catch(() => {});
+    }
     if (!audio) return;
     const url = song.preview_url || song.file_url;
     if (!url) return;
@@ -163,7 +210,7 @@ export function DjProvider({ children }) {
       audio.addEventListener('loadedmetadata', onMeta);
     }
     prefetchNext();
-  }, [audio]);
+  }, [audio, startSpotify]);
 
   const nextRef = useRef(() => {});
   nextRef.current = () => {
@@ -172,11 +219,23 @@ export function DjProvider({ children }) {
     if (ni < q.length) playIndex(ni);
     else {
       if (audio) audio.pause();
+      if (spotifyModeRef.current) pauseSpotify().catch(() => {});
       setIsPlaying(false);
     }
   };
 
-  const play = useCallback(() => { audio?.play().catch(() => {}); }, [audio]);
+  const play = useCallback(() => {
+    if (spotifyModeRef.current) {
+      resumeSpotify().then(() => setIsPlaying(true)).catch(() => {});
+      return;
+    }
+    const song = queueRef.current[indexRef.current];
+    if (isSpotifySong(song)) {
+      startSpotify(song);
+      return;
+    }
+    audio?.play().catch(() => {});
+  }, [audio, startSpotify]);
   const pause = useCallback(() => { fadeOutRef.current(2, false); }, []);
   const next = useCallback(() => nextRef.current(), []);
   const prev = useCallback(() => {
@@ -184,14 +243,43 @@ export function DjProvider({ children }) {
     if (pi >= 0) playIndex(pi);
   }, [playIndex]);
 
-  const seek = useCallback((t) => { if (audio) audio.currentTime = t; setCurrentTime(t); }, [audio]);
+  const seek = useCallback((t) => {
+    if (spotifyModeRef.current) {
+      seekSpotify(t * 1000);
+      setCurrentTime(t);
+      return;
+    }
+    if (audio) audio.currentTime = t;
+    setCurrentTime(t);
+  }, [audio]);
   const setMasterVolume = useCallback((v) => setMasterVolumeState(v), []);
 
   const fadeOut = useCallback((sec = 2, thenNext = true) => {
-    if (isFading || !audio) return;
-    setIsFading(true);
+    if (isFading) return;
     const sv = currentSong && currentSong.volume != null ? currentSong.volume / 100 : 1;
     const startVol = Math.min(1, Math.max(0, sv * masterVolume)) || 1;
+
+    if (spotifyModeRef.current) {
+      setIsFading(true);
+      const fadeStart = performance.now();
+      const spotifyStep = () => {
+        const frac = Math.min(1, (performance.now() - fadeStart) / (sec * 1000));
+        setSpotifyVolume(startVol * (1 - frac));
+        if (frac < 1) requestAnimationFrame(spotifyStep);
+        else {
+          pauseSpotify().catch(() => {});
+          setSpotifyVolume(startVol);
+          setIsFading(false);
+          setIsPlaying(false);
+          if (thenNext) next();
+        }
+      };
+      requestAnimationFrame(spotifyStep);
+      return;
+    }
+
+    if (!audio) return;
+    setIsFading(true);
     const t0 = performance.now();
     const step = () => {
       const frac = Math.min(1, (performance.now() - t0) / (sec * 1000));
@@ -210,6 +298,7 @@ export function DjProvider({ children }) {
 
   const triggerGoal = useCallback((queueSongs, startIndex, setlistId) => {
     audio?.pause();
+    if (spotifyModeRef.current) pauseSpotify().catch(() => {});
     setIsPlaying(false);
     if (goalTimerRef.current) { clearTimeout(goalTimerRef.current); goalTimerRef.current = null; }
     if (queueSongs && queueSongs.length) {
@@ -348,6 +437,33 @@ export function DjProvider({ children }) {
     };
   }, [audio, next]);
 
+  // Spotify streams through the Web Playback SDK: poll it for progress and track end.
+  useEffect(() => {
+    if (!isPlaying) return;
+    let cancelled = false;
+    const tick = async () => {
+      if (!spotifyModeRef.current) return;
+      const state = await getSpotifyState();
+      if (cancelled || !state) return;
+      const position = (state.position || 0) / 1000;
+      const total = (state.duration || 0) / 1000;
+      const song = queueRef.current[indexRef.current];
+      setCurrentTime(position);
+      if (total) setDuration(total);
+      if (song && song.end_point && position >= song.end_point) {
+        nextRef.current();
+        return;
+      }
+      if (!state.paused && total && position >= total - 0.6) nextRef.current();
+    };
+    const id = setInterval(tick, 500);
+    tick();
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [isPlaying]);
+
   // queue ops
   const addToQueue = useCallback((song) => setQueue((q) => [...q, song]), []);
   const addManyToQueue = useCallback((songs) => setQueue((q) => [...q, ...songs]), []);
@@ -358,6 +474,7 @@ export function DjProvider({ children }) {
   const reorderQueue = useCallback((newQueue) => setQueue(newQueue), []);
   const clearQueue = useCallback(() => {
     audio?.pause();
+    if (spotifyModeRef.current) pauseSpotify().catch(() => {});
     setQueue([]);
     setCurrentIndex(-1);
     setIsPlaying(false);

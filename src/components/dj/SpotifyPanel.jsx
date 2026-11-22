@@ -8,6 +8,7 @@ import {
   fetchSpotifyPlaylists,
   fetchSpotifyPlaylistTracks,
   spotifyRedirectUri,
+  hasSpotifyStreaming,
 } from '@/lib/spotify';
 
 const MAX_PER_IMPORT = 200;
@@ -15,6 +16,7 @@ const MAX_PER_IMPORT = 200;
 // Spotify import: sign in, pick a playlist, pull its tracks into the library.
 export default function SpotifyPanel({ existingSongs = [], onImported }) {
   const [connected, setConnected] = useState(() => isSpotifyConnected());
+  const [streaming, setStreaming] = useState(() => hasSpotifyStreaming());
   const [playlists, setPlaylists] = useState([]);
   const [loading, setLoading] = useState(false);
   const [connecting, setConnecting] = useState(false);
@@ -104,6 +106,7 @@ export default function SpotifyPanel({ existingSongs = [], onImported }) {
   const handleDisconnect = () => {
     disconnectSpotify();
     setConnected(false);
+    setStreaming(false);
     setPlaylists([]);
     setMessage('');
     setError('');
@@ -143,6 +146,16 @@ export default function SpotifyPanel({ existingSongs = [], onImported }) {
             <button onClick={handleDisconnect} className="underline hover:text-foreground">Disconnect</button>
           </div>
 
+          {!streaming && (
+            <button
+              onClick={handleConnect}
+              disabled={connecting}
+              className="w-full min-h-9 rounded-[8px] border border-primary/50 bg-primary/10 px-3 text-xs font-semibold text-primary hover:bg-primary/15 disabled:opacity-50 transition-colors"
+            >
+              {connecting ? 'Opening Spotify…' : 'Reconnect for full-song playback'}
+            </button>
+          )}
+
           {loading ? (
             <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
               <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> Loading playlists…
@@ -170,8 +183,8 @@ export default function SpotifyPanel({ existingSongs = [], onImported }) {
           )}
 
           <p className="text-[11px] text-muted-foreground leading-relaxed">
-            Tracks import with their title, artist and length. Spotify only serves audio for some
-            tracks, so those without a preview can be planned into setlists but not played.
+            With Spotify Premium, imported tracks play in full through the console. Without Premium
+            only 30-second previews play, and the waveform and start-point tools stay on uploaded files.
           </p>
         </div>
       )}

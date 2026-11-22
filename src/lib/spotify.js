@@ -54,7 +54,14 @@ export async function completeSpotifyAuth(code, state) {
     access_token: d.access_token,
     refresh_token: d.refresh_token,
     expires_at: Date.now() + ((d.expires_in || 3600) - 60) * 1000,
+    scope: d.scope || '',
   }));
+}
+
+// Full-song playback needs the streaming scope, which older logins did not request.
+export function hasSpotifyStreaming() {
+  const tokens = getSpotifyTokens();
+  return !!(tokens && typeof tokens.scope === 'string' && tokens.scope.split(' ').includes('streaming'));
 }
 
 async function refreshTokens(tokens) {
@@ -71,25 +78,45 @@ async function refreshTokens(tokens) {
     access_token: d.access_token,
     refresh_token: d.refresh_token || tokens.refresh_token,
     expires_at: Date.now() + ((d.expires_in || 3600) - 60) * 1000,
+    scope: d.scope || tokens.scope || '',
   };
   localStorage.setItem(TOKEN_KEY, JSON.stringify(next));
   return next;
 }
 
-export async function spotifyFetch(path) {
+export async function getValidAccessToken() {
+  let tokens = getSpotifyTokens();
+  if (!tokens || !tokens.refresh_token) throw new Error('Connect Spotify first');
+  if (Date.now() >= (tokens.expires_at || 0)) tokens = await refreshTokens(tokens);
+  return tokens.access_token;
+}
+
+export async function spotifyFetch(path, options = {}) {
   let tokens = getSpotifyTokens();
   if (!tokens || !tokens.refresh_token) throw new Error('Connect Spotify first');
   if (Date.now() >= (tokens.expires_at || 0)) tokens = await refreshTokens(tokens);
 
-  const call = (token) => fetch(API + path, { headers: { Authorization: `Bearer ${token}` } });
+  const call = (token) => fetch(API + path, {
+    ...options,
+    headers: { ...(options.headers || {}), Authorization: `Bearer ${token}` },
+  });
   let res = await call(tokens.access_token);
   if (res.status === 401) {
     tokens = await refreshTokens(tokens);
     res = await call(tokens.access_token);
   }
+  if (res.status === 204) return null;
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data?.error?.message || `Spotify error ${res.status}`);
   return data;
+}
+
+export function spotifyRequest(method, path, body) {
+  return spotifyFetch(path, {
+    method,
+    headers: body ? { 'Content-Type': 'application/json' } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+  });
 }
 
 const nextPath = (page) => (page.next ? page.next.replace(API, '') : null);

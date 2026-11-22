@@ -2,7 +2,15 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { secrets } from 'base44:runtime';
 
 const TOKEN_URL = 'https://accounts.spotify.com/api/token';
-const SCOPES = 'playlist-read-private playlist-read-collaborative';
+const SCOPES = [
+  'playlist-read-private',
+  'playlist-read-collaborative',
+  'streaming',
+  'user-read-email',
+  'user-read-private',
+  'user-read-playback-state',
+  'user-modify-playback-state',
+].join(' ');
 
 export default async function(req) {
   try {
@@ -71,7 +79,8 @@ export default async function(req) {
     return Response.json({
       access_token: data.access_token,
       refresh_token: data.refresh_token || null,
-      expires_in: data.expires_in || 3600
+      expires_in: data.expires_in || 3600,
+      scope: data.scope || ''
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
