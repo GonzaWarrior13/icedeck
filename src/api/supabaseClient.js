@@ -50,6 +50,86 @@ export async function signIn(email, password) {
     body: JSON.stringify({ email, password }),
   });
 }
+// Account creation and recovery use Supabase Auth, never Base44.
+export async function signUp(email, password) {
+  return request('/auth/v1/signup', null, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password, options: { email_redirect_to: window.location.origin + '/' } }),
+  });
+}
+export async function requestPasswordReset(email) {
+  const destination = new URL('/', window.location.origin);
+  destination.searchParams.set('password-recovery', '1');
+  return request('/auth/v1/recover?redirect_to=' + encodeURIComponent(destination.toString()), null, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+}
+export async function changePassword(token, newPassword) {
+  return request('/auth/v1/user', token, {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: newPassword }),
+  });
+}
+export async function signOut(accessToken) {
+  if (!accessToken) return;
+  return request('/auth/v1/logout', accessToken, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+  });
+}
+export function startGoogleSignIn() {
+  if (!isSupabaseConfigured) throw new Error('Supabase configuration missing');
+  const redirectTo = new URL('/', window.location.origin).toString();
+  window.location.assign(url + '/auth/v1/authorize?provider=google&redirect_to=' + encodeURIComponent(redirectTo));
+}
+export async function createTeam(name) {
+  return request('/rest/v1/rpc/create_team', await getFreshPreviewToken(), {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ p_name: name }),
+  });
+}
+export async function getTeamMembers(teamId = getSelectedTeamId()) {
+  return request('/rest/v1/rpc/list_team_members', await getFreshPreviewToken(), {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ p_team_id: teamId }),
+  });
+}
+export async function manageTeamMember(email, role, teamId = getSelectedTeamId()) {
+  return request('/rest/v1/rpc/manage_team_member', await getFreshPreviewToken(), {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ p_team_id: teamId, p_email: email, p_role: role }),
+  });
+}
+export async function removeTeamMember(userId, teamId = getSelectedTeamId()) {
+  return request('/rest/v1/rpc/remove_team_member', await getFreshPreviewToken(), {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ p_team_id: teamId, p_user_id: userId }),
+  });
+}
+export async function transferTeamOwnership(userId, teamId = getSelectedTeamId()) {
+  return request('/rest/v1/rpc/transfer_team_ownership', await getFreshPreviewToken(), {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ p_team_id: teamId, p_new_owner_id: userId }),
+  });
+}
+export async function getMyNickname() {
+  return request('/rest/v1/rpc/get_my_nickname', await getFreshPreviewToken(), {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
+  });
+}
+export async function setMyNickname(nickname) {
+  return request('/rest/v1/rpc/set_my_nickname', await getFreshPreviewToken(), {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ p_nickname: nickname }),
+  });
+}
+export async function deleteMyAccount() {
+  // A service-role token is NEVER included in the browser.
+  return request('/functions/v1/delete-account', await getFreshPreviewToken(), {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
+  });
+}
+
 export async function refreshSession(refreshToken) {
   return request('/auth/v1/token?grant_type=refresh_token', null, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
