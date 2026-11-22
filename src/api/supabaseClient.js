@@ -165,6 +165,13 @@ export async function createPrivateAudioUrl(storagePath, accessToken, expiresIn 
     : '/storage/v1/' + signedPath.replace(/^\//, '');
   return new URL(normalizedPath, url).toString();
 }
+export async function recordTeamSongPlay(id) {
+  if (!id || !getSelectedTeamId()) return;
+  return request('/rest/v1/rpc/record_song_play', await getFreshPreviewToken(), {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ p_song_id: id, p_team_id: getSelectedTeamId() }),
+  });
+}
 export async function updateTeamSong(accessToken, id, changes) {
   const allowed = ['title','artist','start_point','end_point','volume','tags','category','notes','play_count','loudness_db'];
   const patch = Object.fromEntries(Object.entries(changes).filter(([k])=>allowed.includes(k)));
