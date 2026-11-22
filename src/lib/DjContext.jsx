@@ -9,7 +9,7 @@ const isSupabasePreview = typeof window !== 'undefined' && ['/supabase-dj','/sup
 // The original Base44 branch still uses its existing sound. Supabase preview
 // uses local audio when configured, otherwise generates a temporary horn.
 const ORIGINAL_GOAL_HORN_URL = 'https://media.base44.com/files/public/6a8f48cd9a055819d8b79b87/d73c0e5ef_TorontoMapleLeafsGoalHornNoSong.mp3';
-const MIGRATION_GOAL_HORN_URL = import.meta.env.VITE_ICEDECK_GOAL_HORN_URL || '';
+const MIGRATION_GOAL_HORN_URL = import.meta.env.VITE_ICEDECK_GOAL_HORN_URL || '/goal-horn.mp3';
 
 const defaultDj = {
   queue: [], currentIndex: -1, currentSong: null, isPlaying: false,
