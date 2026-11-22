@@ -4,7 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { createPrivateAudioUrl, getFreshPreviewToken } from '@/api/supabaseClient';
 import { PLAYLISTS_KEY, playlistsQueryOptions, songsQueryOptions } from '@/hooks/useDjData';
 
-const isSupabasePreview = typeof window !== 'undefined' && ['/supabase-dj','/supabase-original'].includes(window.location.pathname);
+const isSupabasePreview = import.meta.env.VITE_ICEDECK_STANDALONE === 'true' || (typeof window !== 'undefined' && ['/supabase-dj','/supabase-original'].includes(window.location.pathname));
 
 // The original Base44 branch still uses its existing sound. Supabase preview
 // uses local audio when configured, otherwise generates a temporary horn.
