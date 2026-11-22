@@ -42,7 +42,8 @@ export default function Player() {
   const pct = dj.duration ? (dj.currentTime / dj.duration) * 100 : 0;
 
   return (
-    <div className="shrink-0 border-t border-border bg-card px-4 md:px-8 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] md:min-h-[72px] md:pt-0 md:pb-0 md:flex md:flex-col md:justify-center">\n      {playbackError && <p role="alert" className="text-xs text-destructive py-1">{playbackError}</p>}
+    <div className="shrink-0 border-t border-border bg-card px-4 md:px-8 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] md:min-h-[72px] md:pt-0 md:pb-0 md:flex md:flex-col md:justify-center">
+      {playbackError && <p role="alert" className="text-xs text-destructive py-1">{playbackError}</p>}
       <div
         className="relative -mx-4 mb-2 h-1 cursor-pointer bg-border lg:hidden"
         onClick={(e) => {
