@@ -191,15 +191,79 @@ export async function deleteTeamPlaylist(accessToken, id) {
   });
 }
 
+// The project may impose a lower global limit than this bucket.
+export const MAX_MP3_BYTES = 50 * 1024 * 1024;
+const TUS_CHUNK_BYTES = 6 * 1024 * 1024;
+
+// Use native TUS 1.0 for larger files. Each chunk can be retried by reading
+// the server's authoritative Upload-Offset rather than repeating bytes.
+async function uploadResumableMp3(file, storagePath) {
+  const origin = new URL(url);
+  const storageHost = origin.hostname.replace('.supabase.co', '.storage.supabase.co');
+  const endpoint = origin.protocol + '//' + storageHost + '/storage/v1/upload/resumable';
+  const base64 = value => btoa(String(value));
+  const metadata = {
+    bucketName: AUDIO_BUCKET,
+    objectName: storagePath,
+    contentType: 'audio/mpeg',
+    cacheControl: '3600',
+  };
+  const token = await getFreshPreviewToken();
+  const created = await fetch(endpoint, {
+    method: 'POST',
+    headers: headers(token, {
+      'Tus-Resumable': '1.0.0',
+      'Upload-Length': String(file.size),
+      'Upload-Metadata': Object.entries(metadata).map(([k,v]) => k + ' ' + base64(v)).join(','),
+      'x-upsert': 'false',
+    }),
+  });
+  if (!created.ok) throw new Error('Resumable upload could not begin: HTTP ' + created.status);
+  const location = created.headers.get('Location');
+  if (!location) throw new Error('Storage did not return an upload URL.');
+  const target = new URL(location, endpoint);
+  if (target.origin !== new URL(endpoint).origin) throw new Error('Unexpected storage upload destination.');
+
+  let offset = 0;
+  let retries = 0;
+  while (offset < file.size) {
+    const end = Math.min(file.size, offset + TUS_CHUNK_BYTES);
+    try {
+      const response = await fetch(target.toString(), {
+        method: 'PATCH',
+        headers: headers(await getFreshPreviewToken(), {
+          'Tus-Resumable': '1.0.0',
+          'Upload-Offset': String(offset),
+          'Content-Type': 'application/offset+octet-stream',
+        }),
+        body: file.slice(offset, end),
+      });
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+      const advanced = Number(response.headers.get('Upload-Offset'));
+      offset = Number.isFinite(advanced) && advanced > offset ? advanced : end;
+      retries = 0;
+    } catch (error) {
+      if (++retries > 4) throw new Error('Upload interrupted: ' + error.message);
+      const head = await fetch(target.toString(), {
+        method: 'HEAD',
+        headers: headers(await getFreshPreviewToken(), { 'Tus-Resumable': '1.0.0' }),
+      });
+      if (!head.ok) throw new Error('Could not resume upload: HTTP ' + head.status);
+      offset = Number(head.headers.get('Upload-Offset') || offset);
+      await new Promise(resolve => setTimeout(resolve, 500 * retries));
+    }
+  }
+}
+
 /**
  * Team-only MP3 upload. The songs row is created FIRST because the private
  * Storage INSERT policy checks songs.storage_path and legacy_id.
- * Standard Storage upload is limited to 6 MiB in this test; add TUS later.
+ * Uses ordinary upload for <= 6 MiB and TUS for larger recordings.
  */
 export async function uploadTeamMp3(accessToken, file, metadata = {}) {
   if (!getSelectedTeamId()) throw new Error('Supabase team ID missing');
-  if (!file || file.size < 1 || file.size > 6 * 1024 * 1024) {
-    throw new Error('For this test, select an MP3 smaller than 6 MB.');
+  if (!file || file.size < 1 || file.size > MAX_MP3_BYTES) {
+    throw new Error('Select an MP3 smaller than 50 MB (your Supabase plan may set a lower limit).');
   }
   if (!/\.mp3$/i.test(file.name)) throw new Error('Only MP3 uploads are enabled for this test.');
   const legacyId = crypto.randomUUID();
@@ -220,20 +284,28 @@ export async function uploadTeamMp3(accessToken, file, metadata = {}) {
   if (!Array.isArray(created) || created.length !== 1) {
     throw new Error('Unable to create the song database entry.');
   }
-  const encodedPath = storagePath.split('/').map(encodeURIComponent).join('/');
-  const response = await fetch(`${url}/storage/v1/object/${AUDIO_BUCKET}/${encodedPath}`, {
-    method: 'POST',
-    headers: headers(accessToken, {
-      'Content-Type': 'audio/mpeg',
-      'x-upsert': 'false',
-    }),
-    body: file,
-  });
-  const result = await response.json().catch(() => null);
-  if (!response.ok) {
-    // Do not automatically delete a song that may have been uploaded in a
-    // partial network failure. Show an explicit error for manual recovery.
-    throw new Error(`Song entry created, but audio upload failed: ${result?.message || result?.error || response.status}. Avoid uploading this file again until checked.`);
+  try {
+    if (file.size > TUS_CHUNK_BYTES) {
+      await uploadResumableMp3(file, storagePath);
+    } else {
+      const encodedPath = storagePath.split('/').map(encodeURIComponent).join('/');
+      const response = await fetch(`${url}/storage/v1/object/${AUDIO_BUCKET}/${encodedPath}`, {
+        method: 'POST',
+        headers: headers(await getFreshPreviewToken(), {
+          'Content-Type': 'audio/mpeg',
+          'x-upsert': 'false',
+        }),
+        body: file,
+      });
+      if (!response.ok) {
+        const result = await response.json().catch(() => null);
+        throw new Error(result?.message || result?.error || 'HTTP ' + response.status);
+      }
+    }
+  } catch (error) {
+    // Preserve the row for manual recovery: the storage upload might have
+    // completed while the network response was lost.
+    throw new Error('Song entry created, but MP3 upload failed: ' + error.message + '. Check Storage before retrying.');
   }
   const file_url = await createPrivateAudioUrl(storagePath, accessToken, 3600);
   return { ...created[0], file_url, preview_url: '' };
