@@ -5,13 +5,18 @@ export const SONGS_KEY = ['songs'];
 export const PLAYLISTS_KEY = ['playlists'];
 
 // In-memory, read-only preview data; never fetch Base44 during this test.
+let migrationAccessToken = null;
+export const setMigrationToken = (token) => { migrationAccessToken = token; };
+export const getMigrationToken = () => migrationAccessToken;
 let migrationSongs = [];
 let migrationPlaylists = [];
 export function setMigrationData(songs, playlists) {
   migrationSongs = songs;
   migrationPlaylists = playlists;
 }
-export const setMigrationToken = () => {}; // compatibility with the test login
+export function updateMigrationSong(updated) {
+  migrationSongs = migrationSongs.map(song => song.id === updated.id ? { ...song, ...updated } : song);
+}
 const originalUiTest = () => typeof window !== 'undefined' && window.location.pathname === '/supabase-original';
 export const fetchSongs = () => originalUiTest() ? Promise.resolve(migrationSongs) : base44.entities.Song.list('-updated_date', 200);
 export const fetchPlaylists = () => originalUiTest() ? Promise.resolve(migrationPlaylists) : base44.entities.Playlist.list('-updated_date', 100);
