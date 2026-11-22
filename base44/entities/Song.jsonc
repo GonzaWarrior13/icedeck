@@ -20,7 +20,8 @@
         "local",
         "itunes",
         "youtube",
-        "spotify"
+        "spotify",
+        "amazon"
       ],
       "default": "local"
     },
