@@ -36,6 +36,7 @@ export function DjProvider({ children }) {
   const prefetchRef = useRef(null);
   const goalAudioRef = useRef(null);
   const generatedHornRef = useRef(null);
+  const goalResumeRef = useRef(null);
 
   const [queue, setQueue] = useState(() => {
     try { return isSupabasePreview ? [] : JSON.parse(localStorage.getItem('dj_queue') || '[]'); } catch { return []; }
@@ -247,14 +248,24 @@ export function DjProvider({ children }) {
     audio?.pause();
     setIsPlaying(false);
     if (goalTimerRef.current) { clearTimeout(goalTimerRef.current); goalTimerRef.current = null; }
+    goalResumeRef.current = null;
     if (queueSongs && queueSongs.length) {
       const songs = queueSongs;
       const idx = startIndex ?? 0;
-      goalTimerRef.current = setTimeout(() => {
-        goalTimerRef.current = null;
+      const resume = () => {
         if (setlistId) playSetlistRef.current(setlistId, songs);
         else playQueueFromRef.current(songs, idx);
-      }, 4000);
+      };
+      if (isSupabasePreview && MIGRATION_GOAL_HORN_URL) {
+        // This supplied MP3 includes music after the horn: finish the clip
+        // before playing the normal goal setlist, avoiding overlapping songs.
+        goalResumeRef.current = resume;
+      } else {
+        goalTimerRef.current = setTimeout(() => {
+          goalTimerRef.current = null;
+          resume();
+        }, 4000);
+      }
     }
     if (isSupabasePreview && !MIGRATION_GOAL_HORN_URL) {
       // Temporary self-contained browser-generated horn. No Base44 request.
@@ -310,7 +321,12 @@ export function DjProvider({ children }) {
     }
     if (ga) {
       if (!ga._wired) {
-        ga.addEventListener('ended', () => setGoalPlaying(false));
+        ga.addEventListener('ended', () => {
+          setGoalPlaying(false);
+          const resume = goalResumeRef.current;
+          goalResumeRef.current = null;
+          resume?.();
+        });
         ga.addEventListener('pause', () => setGoalPlaying(false));
         ga._wired = true;
       }
@@ -322,6 +338,7 @@ export function DjProvider({ children }) {
   }, [audio]);
 
   const stopGoal = useCallback((sec = 1.5) => {
+    goalResumeRef.current = null;
     if (isSupabasePreview && generatedHornRef.current) {
       generatedHornRef.current.stop(sec);
       if (goalTimerRef.current) { clearTimeout(goalTimerRef.current); goalTimerRef.current = null; }
