@@ -12,7 +12,8 @@ import Player from '@/components/dj/Player';
 import PullToRefresh from '@/components/dj/PullToRefresh';
 import ConfirmDialog from '@/components/dj/ConfirmDialog';
 
-export default function Playlists({ migrationReadOnly = false }) {
+export default function Playlists({ migrationReadOnly = false, canEdit = true }) {
+  const allowEdits = !migrationReadOnly || canEdit;
   const navigate = useNavigate();
   const dj = useDj();
   const queryClient = useQueryClient();
@@ -31,11 +32,11 @@ export default function Playlists({ migrationReadOnly = false }) {
     [queryClient],
   );
 
-  const openCreate = () => { setSaveError(''); setEditor({ id: null, name: '', songIds: [], hotkey: '' }); };
-  const openEdit = (pl) => { setSaveError(''); setEditor({ id: pl.id, name: pl.name, songIds: [...(pl.song_ids || [])], hotkey: pl.hotkey || '' }); };
+  const openCreate = () => { if (!allowEdits) return; setSaveError(''); setEditor({ id: null, name: '', songIds: [], hotkey: '' }); };
+  const openEdit = (pl) => { if (!allowEdits) return; setSaveError(''); setEditor({ id: pl.id, name: pl.name, songIds: [...(pl.song_ids || [])], hotkey: pl.hotkey || '' }); };
 
   const handleSave = async (name, songIds, hotkey) => {
-    if (!name || !editor) return;
+    if (!name || !editor || !allowEdits) return;
     if (migrationReadOnly) {
       setSaveError(''); setSaving(true);
       try {
@@ -70,12 +71,12 @@ export default function Playlists({ migrationReadOnly = false }) {
     dj.refreshHotkeys();
   };
 
-  const deletePlaylist = (pl) => setDeleteTarget(pl);
+  const deletePlaylist = (pl) => { if (allowEdits) setDeleteTarget(pl); };
 
   const confirmDelete = async () => {
     const pl = deleteTarget;
     setDeleteTarget(null);
-    if (!pl) return;
+    if (!pl || !allowEdits) return;
     if (migrationReadOnly) {
       setSaveError(''); setSaving(true);
       try {
@@ -145,15 +146,15 @@ export default function Playlists({ migrationReadOnly = false }) {
               Save and reuse queues for intermissions, warmups, and celebrations.
             </p>
           </div>
-          <Button
+          {allowEdits && <Button
             onClick={openCreate}
             className="min-h-10 rounded-[8px] bg-foreground text-background hover:bg-foreground/90 font-semibold"
           >
             <Plus className="w-4 h-4 mr-1.5" aria-hidden="true" /> New setlist
-          </Button>
+          </Button>}
         </header>
 
-        {editor && (
+        {allowEdits && editor && (
           <SetlistEditor
             initialName={editor.name}
             initialSongIds={editor.songIds}
@@ -244,22 +245,22 @@ export default function Playlists({ migrationReadOnly = false }) {
                     >
                       <Target className="w-4 h-4" aria-hidden="true" />
                     </button>
-                    <button
+                    {allowEdits && <button
                       onClick={() => openEdit(pl)}
                       className="min-h-11 min-w-11 md:min-h-9 md:min-w-9 flex items-center justify-center rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
                       title="Edit setlist"
                       aria-label={`Edit ${pl.name}`}
                     >
                       <Pencil className="w-4 h-4" aria-hidden="true" />
-                    </button>
-                    <button
+                    </button>}
+                    {allowEdits && <button
                       onClick={() => deletePlaylist(pl)}
                       className="min-h-11 min-w-11 md:min-h-9 md:min-w-9 flex items-center justify-center rounded-[8px] text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                       title="Delete setlist"
                       aria-label={`Delete ${pl.name}`}
                     >
                       <Trash2 className="w-4 h-4" aria-hidden="true" />
-                    </button>
+                    </button>}
                   </div>
                 </div>
               );
