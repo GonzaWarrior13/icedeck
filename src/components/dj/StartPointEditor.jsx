@@ -8,6 +8,8 @@ import { Label } from '@/components/ui/label';
 import { motion } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { base44 } from '@/api/base44Client';
+import { updateTeamSong } from '@/api/supabaseClient';
+import { getMigrationToken } from '@/hooks/useDjData';
 import {
   decodeAudioFile, computePeaks, suggestStartPoint, formatTime, parseTime,
 } from '@/lib/audio';
@@ -16,7 +18,7 @@ import { Loader2, Play, Pause, Sparkles, Save, Wand2, Scissors } from 'lucide-re
 // The waveform canvas is the heaviest piece of the editor; it loads with the dialog.
 const Waveform = lazy(() => import('./Waveform'));
 
-export default function StartPointEditor({ song, onClose, onSave }) {
+export default function StartPointEditor({ song, onClose, onSave, useSupabase = false }) {
   const isMobile = useIsMobile();
   const [peaks, setPeaks] = useState(null);
   const [duration, setDuration] = useState(song?.duration || 0);
@@ -101,13 +103,22 @@ export default function StartPointEditor({ song, onClose, onSave }) {
 
   const handleSave = async () => {
     setSaving(true);
+    setError('');
     try {
-      const updated = await base44.entities.Song.update(song.id, {
-        start_point: start,
-        end_point: end,
-        volume,
-      });
-      onSave?.({ id: song.id, start_point: start, end_point: end, volume });
+      if (!Number.isFinite(start) || start < 0 || (end !== null && (!Number.isFinite(end) || end <= start)) || !Number.isFinite(volume) || volume < 0 || volume > 100) {
+        throw new Error('Please enter a valid start point, an end point after the start, and volume between 0 and 100%.');
+      }
+      const changes = { start_point: start, end_point: end, volume };
+      if (useSupabase) {
+        const token = getMigrationToken();
+        if (!token) throw new Error('Supabase session missing; sign in again.');
+        const rows = await updateTeamSong(token, song.id, changes);
+        if (!Array.isArray(rows) || rows.length !== 1) throw new Error('No song was updated. Check team permissions.');
+        onSave?.({ id: song.id, ...changes });
+      } else {
+        await base44.entities.Song.update(song.id, changes);
+        onSave?.({ id: song.id, ...changes });
+      }
     } catch (e) {
       setError('Save failed: ' + (e.message || 'error'));
     } finally {
