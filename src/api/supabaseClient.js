@@ -4,6 +4,17 @@ const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
 export const isSupabaseConfigured = Boolean(url && key);
 export const AUDIO_BUCKET = 'icedeck-audio';
 export const TEAM_ID = import.meta.env.VITE_SUPABASE_TEAM_ID || '';
+// Selected team exists only in this tab; never trust it for authorization.
+let selectedTeamId = '';
+export function setSelectedTeamId(id) { selectedTeamId = id || ''; }
+export function getSelectedTeamId() { return selectedTeamId; }
+export async function getMyTeams(accessToken) {
+  const memberships = await request('/rest/v1/team_memberships?select=team_id,role', accessToken);
+  if (!memberships.length) return [];
+  const ids = memberships.map(m => m.team_id).join(',');
+  const teams = await request('/rest/v1/teams?select=id,name&id=in.(' + encodeURIComponent(ids) + ')', accessToken);
+  return teams.map(team => ({ ...team, role: memberships.find(m => m.team_id === team.id)?.role || 'viewer' }));
+}
 
 function headers(token, extra = {}) {
   return { apikey: key, Authorization: `Bearer ${token || key}`, ...extra };
@@ -29,7 +40,7 @@ export async function refreshSession(refreshToken) {
     body: JSON.stringify({ refresh_token: refreshToken }),
   });
 }
-export async function getTeamSongs(accessToken, teamId = TEAM_ID) {
+export async function getTeamSongs(accessToken, teamId = getSelectedTeamId()) {
   if (!teamId) throw new Error('Team ID not configured');
   const query = new URLSearchParams({ select: '*', team_id: `eq.${teamId}`, scope: 'eq.team', order: 'updated_at.desc' });
   return request(`/rest/v1/songs?${query}`, accessToken);
@@ -62,7 +73,7 @@ export async function updateTeamSong(accessToken, id, changes) {
   const allowed = ['title','artist','start_point','end_point','volume','tags','category','notes','play_count','loudness_db'];
   const patch = Object.fromEntries(Object.entries(changes).filter(([k])=>allowed.includes(k)));
   if (!Object.keys(patch).length) return;
-  return request(`/rest/v1/songs?id=eq.${encodeURIComponent(id)}&team_id=eq.${encodeURIComponent(TEAM_ID)}`, accessToken, {
+  return request(`/rest/v1/songs?id=eq.${encodeURIComponent(id)}&team_id=eq.${encodeURIComponent(getSelectedTeamId())}`, accessToken, {
     method:'PATCH', headers:{'Content-Type':'application/json','Prefer':'return=representation'}, body:JSON.stringify(patch),
   });
 }
@@ -71,7 +82,7 @@ export async function saveTeamPlaylist(accessToken, { id = null, name, hotkey = 
   return request('/rest/v1/rpc/save_team_playlist', accessToken, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      p_team_id: TEAM_ID, p_playlist_id: id,
+      p_team_id: getSelectedTeamId(), p_playlist_id: id,
       p_name: name, p_hotkey: hotkey || '', p_song_ids: song_ids,
     }),
   });
@@ -80,7 +91,7 @@ export async function saveTeamPlaylist(accessToken, { id = null, name, hotkey = 
 export async function deleteTeamPlaylist(accessToken, id) {
   return request('/rest/v1/rpc/delete_team_playlist', accessToken, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ p_team_id: TEAM_ID, p_playlist_id: id }),
+    body: JSON.stringify({ p_team_id: getSelectedTeamId(), p_playlist_id: id }),
   });
 }
 
@@ -90,15 +101,15 @@ export async function deleteTeamPlaylist(accessToken, id) {
  * Standard Storage upload is limited to 6 MiB in this test; add TUS later.
  */
 export async function uploadTeamMp3(accessToken, file, metadata = {}) {
-  if (!TEAM_ID) throw new Error('Supabase team ID missing');
+  if (!getSelectedTeamId()) throw new Error('Supabase team ID missing');
   if (!file || file.size < 1 || file.size > 6 * 1024 * 1024) {
     throw new Error('For this test, select an MP3 smaller than 6 MB.');
   }
   if (!/\.mp3$/i.test(file.name)) throw new Error('Only MP3 uploads are enabled for this test.');
   const legacyId = crypto.randomUUID();
-  const storagePath = `${TEAM_ID}/${legacyId}.mp3`;
+  const storagePath = `${getSelectedTeamId()}/${legacyId}.mp3`;
   const payload = {
-    team_id: TEAM_ID, scope: 'team', legacy_id: legacyId,
+    team_id: getSelectedTeamId(), scope: 'team', legacy_id: legacyId,
     title: file.name.replace(/\.mp3$/i, '').slice(0, 250),
     artist: 'Unknown', source: 'local', storage_path: storagePath,
     duration: Math.max(0, Math.round(metadata.duration || 0)),
@@ -173,7 +184,7 @@ export async function deleteTeamSong(id) {
   const path = deleted[0].storage_path;
   let cleanupError = null;
   if (path) {
-    if (!path.startsWith(`${TEAM_ID}/`)) {
+    if (!path.startsWith(`${getSelectedTeamId()}/`)) {
       cleanupError = 'Unexpected audio path; manual Storage cleanup is needed.';
     } else {
       try {
