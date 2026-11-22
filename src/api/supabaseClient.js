@@ -83,3 +83,51 @@ export async function deleteTeamPlaylist(accessToken, id) {
     body: JSON.stringify({ p_team_id: TEAM_ID, p_playlist_id: id }),
   });
 }
+
+/**
+ * Team-only MP3 upload. The songs row is created FIRST because the private
+ * Storage INSERT policy checks songs.storage_path and legacy_id.
+ * Standard Storage upload is limited to 6 MiB in this test; add TUS later.
+ */
+export async function uploadTeamMp3(accessToken, file, metadata = {}) {
+  if (!TEAM_ID) throw new Error('Supabase team ID missing');
+  if (!file || file.size < 1 || file.size > 6 * 1024 * 1024) {
+    throw new Error('For this test, select an MP3 smaller than 6 MB.');
+  }
+  if (!/\.mp3$/i.test(file.name)) throw new Error('Only MP3 uploads are enabled for this test.');
+  const legacyId = crypto.randomUUID();
+  const storagePath = `${TEAM_ID}/${legacyId}.mp3`;
+  const payload = {
+    team_id: TEAM_ID, scope: 'team', legacy_id: legacyId,
+    title: file.name.replace(/\.mp3$/i, '').slice(0, 250),
+    artist: 'Unknown', source: 'local', storage_path: storagePath,
+    duration: Math.max(0, Math.round(metadata.duration || 0)),
+    start_point: 0, volume: metadata.volume ?? 100, tags: [],
+    ...(Number.isFinite(metadata.loudness_db) ? { loudness_db: metadata.loudness_db } : {}),
+  };
+  const created = await request('/rest/v1/songs?select=*', accessToken, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
+    body: JSON.stringify(payload),
+  });
+  if (!Array.isArray(created) || created.length !== 1) {
+    throw new Error('Unable to create the song database entry.');
+  }
+  const encodedPath = storagePath.split('/').map(encodeURIComponent).join('/');
+  const response = await fetch(`${url}/storage/v1/object/${AUDIO_BUCKET}/${encodedPath}`, {
+    method: 'POST',
+    headers: headers(accessToken, {
+      'Content-Type': 'audio/mpeg',
+      'x-upsert': 'false',
+    }),
+    body: file,
+  });
+  const result = await response.json().catch(() => null);
+  if (!response.ok) {
+    // Do not automatically delete a song that may have been uploaded in a
+    // partial network failure. Show an explicit error for manual recovery.
+    throw new Error(`Song entry created, but audio upload failed: ${result?.message || result?.error || response.status}. Avoid uploading this file again until checked.`);
+  }
+  const file_url = await createPrivateAudioUrl(storagePath, accessToken, 3600);
+  return { ...created[0], file_url, preview_url: '' };
+}
