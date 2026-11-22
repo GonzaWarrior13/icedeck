@@ -8,12 +8,28 @@ export const TEAM_ID = import.meta.env.VITE_SUPABASE_TEAM_ID || '';
 let selectedTeamId = '';
 export function setSelectedTeamId(id) { selectedTeamId = id || ''; }
 export function getSelectedTeamId() { return selectedTeamId; }
-export async function getMyTeams(accessToken) {
-  const memberships = await request('/rest/v1/team_memberships?select=team_id,role', accessToken);
+export async function getSignedInUser(accessToken) {
+  const user = await request('/auth/v1/user', accessToken);
+  if (!user?.id) throw new Error('Supabase could not verify the signed-in user.');
+  return { id: user.id, email: user.email || '' };
+}
+export async function getMyTeams(accessToken, knownUser = null) {
+  // RLS permits members to view their teammates. We must filter memberships
+  // by the *signed-in user's UID* or an unrelated admin's role may be shown.
+  const user = knownUser?.id ? knownUser : await getSignedInUser(accessToken);
+  const params = new URLSearchParams({
+    select: 'team_id,user_id,role',
+    user_id: `eq.${user.id}`,
+  });
+  const memberships = await request(`/rest/v1/team_memberships?${params}`, accessToken);
   if (!memberships.length) return [];
-  const ids = memberships.map(m => m.team_id).join(',');
-  const teams = await request('/rest/v1/teams?select=id,name&id=in.(' + encodeURIComponent(ids) + ')', accessToken);
-  return teams.map(team => ({ ...team, role: memberships.find(m => m.team_id === team.id)?.role || 'viewer' }));
+  const ids = memberships.map(m => m.team_id);
+  const teamParams = new URLSearchParams({ select: 'id,name', id: `in.(${ids.join(',')})` });
+  const teams = await request(`/rest/v1/teams?${teamParams}`, accessToken);
+  return teams.map(team => ({
+    ...team,
+    role: memberships.find(m => m.team_id === team.id && m.user_id === user.id)?.role || 'viewer',
+  }));
 }
 
 function headers(token, extra = {}) {
