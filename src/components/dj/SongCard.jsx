@@ -1,7 +1,6 @@
 import React from 'react';
 import { formatTime } from '@/lib/audio';
 import { Play, Plus, Scissors, Star, Trash2 } from 'lucide-react';
-import { hasSpotifyStreaming } from '@/lib/spotify';
 
 const iconButton =
   'flex h-9 w-9 items-center justify-center rounded-[8px] transition-colors';
@@ -9,10 +8,8 @@ const iconButton =
 export default function SongCard({ song, isActive, onPlay, onAddQueue, onEdit, onDelete, onToggleQuick }) {
   const tags = song.tags || [];
   const isQuick = tags.includes('quick');
-  // Spotify imports carry no audio file unless Spotify serves a preview clip,
-  // or the connected Premium account streams the full track.
-  const spotifyStream = song.source === 'spotify' && !!song.spotify_uri && hasSpotifyStreaming();
-  const playable = !!(song.file_url || song.preview_url || spotifyStream);
+  // Spotify imports carry no audio file unless Spotify serves a preview clip.
+  const playable = !!(song.file_url || song.preview_url);
 
   return (
     <div
