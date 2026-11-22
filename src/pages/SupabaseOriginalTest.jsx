@@ -10,7 +10,7 @@ import { useSimpleMode } from '@/lib/simpleMode';
 import Playlists from '@/pages/Playlists';
 import SupabaseSettings from '@/pages/SupabaseSettings';
 import { SONGS_KEY, PLAYLISTS_KEY, setMigrationData, setMigrationToken } from '@/hooks/useDjData';
-import { signIn, getTeamSongs, getTeamPlaylists, createPrivateAudioUrl, setPreviewSession, getMyTeams, setSelectedTeamId, getSignedInUser } from '@/api/supabaseClient';
+import { signIn, signUp, requestPasswordReset, changePassword, signOut, startGoogleSignIn, createTeam, getStoredPreviewSession, getFreshPreviewToken, getTeamSongs, getTeamPlaylists, createPrivateAudioUrl, setPreviewSession, getMyTeams, setSelectedTeamId, getSignedInUser } from '@/api/supabaseClient';
 
 // The original IceDeck layout and pages, isolated from production Base44.
 function SupabaseHome({ canEdit }) {
@@ -29,22 +29,121 @@ function OriginalInterface() {
   const [activeTeam,setActiveTeam] = useState(null);
   const teamRole = activeTeam?.role?.trim()?.toLowerCase() || '';
   const canEdit = ['owner','admin','dj'].includes(teamRole);
+  const [authMode,setAuthMode] = useState('signin');
+  const [authNotice,setAuthNotice] = useState('');
+  const [recoveryToken,setRecoveryToken] = useState('');
+  const [newTeamName,setNewTeamName] = useState('');
   const [busy,setBusy] = useState(false);
   const [error,setError] = useState('');
+  async function adoptSession(signedIn) {
+    setPreviewSession(signedIn);
+    const verifiedUser = await getSignedInUser(signedIn.access_token);
+    const available = await getMyTeams(signedIn.access_token, verifiedUser);
+    setSignedInUser(verifiedUser);
+    setSession(signedIn);
+    setTeams(available);
+    setPassword('');
+    return available;
+  }
+
+  // Restore only this browser tab's session after reload or OAuth return.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+        const oauthToken = hash.get('access_token');
+        const oauthRefresh = hash.get('refresh_token');
+        if (oauthToken && oauthRefresh) {
+          window.history.replaceState({}, '', window.location.pathname);
+          if (hash.get('type') === 'recovery') {
+            setPreviewSession(null);
+            setRecoveryToken(oauthToken);
+            setAuthMode('reset');
+            return;
+          }
+          if (!cancelled) await adoptSession({
+            access_token: oauthToken,
+            refresh_token: oauthRefresh,
+            expires_in: Number(hash.get('expires_in') || 3600),
+          });
+          return;
+        }
+        const stored = getStoredPreviewSession();
+        if (!stored) return;
+        setPreviewSession(stored);
+        const freshToken = await getFreshPreviewToken();
+        if (!cancelled) await adoptSession({ ...getStoredPreviewSession(), access_token: freshToken });
+      } catch (err) {
+        setPreviewSession(null);
+        if (!cancelled) setError('Session expired. Please sign in again.');
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   async function connect(e) {
+    e.preventDefault(); setBusy(true); setError(''); setAuthNotice('');
+    try {
+      if (authMode === 'signup') {
+        await signUp(email,password);
+        setPassword('');
+        setAuthMode('signin');
+        setAuthNotice('Registration submitted. Check your email for verification, then sign in. You can create a team once verified.');
+      } else if (authMode === 'forgot') {
+        await requestPasswordReset(email);
+        setAuthMode('signin');
+        setAuthNotice('If your account exists, a password reset email has been requested.');
+      } else if (authMode === 'reset') {
+        if (!recoveryToken) throw new Error('The recovery link is missing or expired.');
+        if (password.length < 6) throw new Error('Use a password with at least 6 characters.');
+        await changePassword(recoveryToken,password);
+        setRecoveryToken('');
+        setPassword('');
+        setAuthMode('signin');
+        setAuthNotice('Password updated. Please sign in.');
+      } else {
+        await adoptSession(await signIn(email,password));
+      }
+    } catch(err) { setError(err.message || 'Authentication failed'); }
+    finally { setBusy(false); }
+  }
+
+  async function createNewTeam(e) {
     e.preventDefault(); setBusy(true); setError('');
     try {
-      const signedIn = await signIn(email,password);
-      const verifiedUser = await getSignedInUser(signedIn.access_token);
-      const available = await getMyTeams(signedIn.access_token, verifiedUser);
-      setSignedInUser(verifiedUser);
-      setPassword('');
-      setSession(signedIn);
-      setPreviewSession(signedIn);
+      await createTeam(newTeamName.trim());
+      setNewTeamName('');
+      const available = await getMyTeams(await getFreshPreviewToken(), signedInUser);
       setTeams(available);
-      if (!available.length) setError('This account is not assigned to a team. Ask a team owner to add it in Supabase.');
-    } catch(err) { setError(err.message || 'Sign-in failed'); }
+      setAuthNotice('Team created. Select it below.');
+    } catch(err) { setError(err.message || 'Could not create team'); }
     finally { setBusy(false); }
+  }
+
+  async function logout() {
+    try { await signOut(await getFreshPreviewToken()); } catch {}
+    setPreviewSession(null);
+    setMigrationToken(null);
+    setSelectedTeamId('');
+    setMigrationData([], []);
+    queryClient.removeQueries({ queryKey: SONGS_KEY });
+    queryClient.removeQueries({ queryKey: PLAYLISTS_KEY });
+    setReady(false);
+    setSession(null);
+    setSignedInUser(null);
+    setActiveTeam(null);
+    setTeams([]);
+    setEmail('');
+    setPassword('');
+    setAuthMode('signin');
+    setError('');
+  }
+
+  async function syncTeams() {
+    const available = await getMyTeams(await getFreshPreviewToken(), signedInUser);
+    setTeams(available);
+    if (activeTeam) setActiveTeam(available.find(t => t.id === activeTeam.id) || null);
   }
 
   async function openTeam(team) {
@@ -52,14 +151,15 @@ function OriginalInterface() {
     setBusy(true); setError('');
     try {
       // Fetch the membership again: a role may have changed since sign-in.
-      const freshTeams = await getMyTeams(session.access_token, signedInUser);
+      const token = await getFreshPreviewToken();
+      const freshTeams = await getMyTeams(token, signedInUser);
       setTeams(freshTeams);
       const currentTeam = freshTeams.find(t => t.id === team.id);
       if (!currentTeam) throw new Error('You no longer belong to this team.');
       setSelectedTeamId(currentTeam.id);
       const [rawSongs, playlists] = await Promise.all([
-        getTeamSongs(session.access_token, team.id),
-        getTeamPlaylists(session.access_token, team.id),
+        getTeamSongs(token, team.id),
+        getTeamPlaylists(token, team.id),
       ]);
       const songs = new Array(rawSongs.length);
       let cursor = 0;
@@ -68,12 +168,12 @@ function OriginalInterface() {
           const i = cursor++;
           const song = rawSongs[i];
           const file_url = song.storage_path
-            ? await createPrivateAudioUrl(song.storage_path, session.access_token, 3600)
+            ? await createPrivateAudioUrl(song.storage_path, token, 3600)
             : '';
           songs[i] = {...song, preview_url:'', file_url};
         }
       }));
-      setMigrationToken(session.access_token);
+      setMigrationToken(token);
       setMigrationData(songs, playlists);
       queryClient.setQueryData(SONGS_KEY, songs);
       queryClient.setQueryData(PLAYLISTS_KEY, playlists);
@@ -89,7 +189,7 @@ function OriginalInterface() {
     let cancelled = false;
     const checkRole = async () => {
       try {
-        const available = await getMyTeams(session.access_token, signedInUser);
+        const available = await getMyTeams(await getFreshPreviewToken(), signedInUser);
         if (cancelled) return;
         const membership = available.find(t => t.id === activeTeam.id);
         if (!membership) {
@@ -124,9 +224,18 @@ function OriginalInterface() {
     <h1 className="text-3xl font-bold">IceDeck · Supabase interface test</h1>
     <p className="text-muted-foreground">The original IceDeck layout will load after sign-in. Supabase cue points and setlist editing enabled. MP3 uploads are enabled (6 MB test limit); song deletion is enabled with confirmation; Goal horn uses a temporary built-in sound unless a local MP3 is configured. Base44 production unchanged.</p>
     {!session ? <form onSubmit={connect} className="grid gap-3">
-      <label>Email<input className="block w-full rounded border p-3 text-black bg-white" type="email" autoComplete="email" required value={email} onChange={e=>setEmail(e.target.value)}/></label>
-      <label>Password<input className="block w-full rounded border p-3 text-black bg-white" type="password" autoComplete="current-password" required value={password} onChange={e=>setPassword(e.target.value)}/></label>
-      <button className="rounded bg-primary text-primary-foreground p-3" disabled={busy}>{busy?'Preparing private audio links…':'Sign in'}</button>
+      <h2 className="font-semibold">{authMode === 'signup' ? 'Create your account' : authMode === 'forgot' ? 'Reset your password' : authMode === 'reset' ? 'Choose a new password' : 'Sign in'}</h2>
+      {authMode !== 'reset' && <label>Email<input className="block w-full rounded border p-3 text-black bg-white" type="email" autoComplete="email" required value={email} onChange={e=>setEmail(e.target.value)}/></label>}
+      {authMode !== 'forgot' && <label>{authMode === 'reset' ? 'New password' : 'Password'}<input className="block w-full rounded border p-3 text-black bg-white" type="password" autoComplete={authMode === 'signin' ? 'current-password' : 'new-password'} required minLength={6} value={password} onChange={e=>setPassword(e.target.value)}/></label>}
+      <button className="rounded bg-primary text-primary-foreground p-3 disabled:opacity-60" disabled={busy}>{busy ? 'Working…' : authMode === 'signup' ? 'Register' : authMode === 'forgot' ? 'Email reset link' : authMode === 'reset' ? 'Save new password' : 'Sign in'}</button>
+      {authMode === 'signin' && <>
+        <button type="button" className="rounded border border-border p-2" onClick={() => { setError(''); startGoogleSignIn(); }}>Sign in with Google</button>
+        <div className="flex flex-wrap justify-between gap-3 text-sm">
+          <button type="button" className="underline" onClick={() => { setAuthMode('signup'); setError(''); }}>Create account</button>
+          <button type="button" className="underline" onClick={() => { setAuthMode('forgot'); setError(''); }}>Forgot password?</button>
+        </div>
+      </>}
+      {authMode !== 'signin' && <button type="button" className="text-sm underline" onClick={() => { setAuthMode('signin'); setError(''); }}>Back to sign in</button>}
     </form> : <div className="grid gap-3">
       <h2 className="font-semibold">Choose your team</h2>
       <p className="text-xs text-muted-foreground">Signed in as {signedInUser?.email || signedInUser?.id}</p>
@@ -135,8 +244,13 @@ function OriginalInterface() {
         className="rounded border border-border bg-card p-3 text-left hover:bg-secondary disabled:opacity-50"
         onClick={() => openTeam(team)}
       >{team.name} <span className="text-xs text-muted-foreground">({team.role})</span></button>)}
-      <button type="button" className="text-sm underline" onClick={() => { setSession(null); setSignedInUser(null); setTeams([]); setPreviewSession(null); setSelectedTeamId(''); setError(''); }}>Use another account</button>
+      <form onSubmit={createNewTeam} className="flex gap-2">
+        <input required maxLength={120} className="min-w-0 flex-1 rounded border border-border bg-background p-2" placeholder="New team name" value={newTeamName} onChange={e => setNewTeamName(e.target.value)} />
+        <button disabled={busy || !newTeamName.trim()} className="rounded bg-primary text-primary-foreground px-3 disabled:opacity-50">Create team</button>
+      </form>
+      <button type="button" className="text-sm underline" onClick={logout}>Sign out</button>
     </div>}
+    {authNotice && <p role="status" className="text-primary text-sm">{authNotice}</p>}
     {error && <p role="alert" className="text-destructive">{error}</p>}
   </main>;
   return <MemoryRouter initialEntries={['/']}>
@@ -149,7 +263,7 @@ function OriginalInterface() {
         <Route element={<DjLayout/>}>
           <Route path="/" element={<SupabaseHome canEdit={canEdit}/>}/>
           <Route path="/playlists" element={<Playlists migrationReadOnly canEdit={canEdit}/>}/>
-          <Route path="/settings" element={<SupabaseSettings user={signedInUser} team={activeTeam}/>}/>
+          <Route path="/settings" element={<SupabaseSettings user={signedInUser} team={activeTeam} onLogout={logout} onTeamsChanged={syncTeams}/>}/>
         </Route>
         <Route path="*" element={<Navigate to="/" replace/>}/>
       </Routes>
