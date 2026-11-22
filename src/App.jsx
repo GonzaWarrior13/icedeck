@@ -1,5 +1,6 @@
 import SupabaseConnectionTest from '@/pages/SupabaseConnectionTest';
 import SupabaseDjPreview from '@/pages/SupabaseDjPreview';
+import SupabaseOriginalTest from '@/pages/SupabaseOriginalTest';
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
@@ -74,6 +75,7 @@ function App() {
   // Standalone migration test: bypass Base44 public-settings/auth calls.
   if (window.location.pathname === '/supabase-test') return <SupabaseConnectionTest />;
   if (window.location.pathname === '/supabase-dj') return <SupabaseDjPreview />;
+  if (window.location.pathname === '/supabase-original') return <SupabaseOriginalTest />;
 
   return (
     <ThemeProvider>
