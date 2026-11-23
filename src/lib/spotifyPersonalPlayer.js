@@ -1,22 +1,15 @@
 import {
-  completeSpotifyStandaloneAuth, disconnectSpotifyStandalone, getAccessToken,
+  disconnectSpotifyStandalone, getAccessToken,
   spotifyConnected, startSpotifyStandaloneAuth,
 } from '@/lib/spotifyStandalone';
-import { spotifyTrackId } from '@/lib/spotifyPersonalLibrary';
 
-export function mountPersonalSpotify(root) {
+export function mountPersonalSpotify(root, { setReady, beforePlay }) {
   const listeners = new AbortController();
   const status = root.querySelector('#status');
   const error = root.querySelector('#error');
   const connect = root.querySelector('#connect');
   const controls = root.querySelector('#controls');
-  const play = root.querySelector('#play');
   const toggle = root.querySelector('#toggle');
-  const trackInput = root.querySelector('#track');
-  const selectedTrack = new URLSearchParams(location.search).get('track');
-  trackInput.value = /^[A-Za-z0-9]{22}$/.test(selectedTrack || '')
-    ? 'https://open.spotify.com/track/' + selectedTrack
-    : sessionStorage.getItem('icedeck_personal_track') || '';
   const figure = root.querySelector('figure');
   const cover = figure.querySelector('img');
   const caption = figure.querySelector('figcaption');
@@ -32,7 +25,7 @@ export function mountPersonalSpotify(root) {
   }
 
   function updateButtons() {
-    play.disabled = !deviceId || starting;
+    setReady(Boolean(deviceId) && !starting);
     toggle.disabled = !playing;
   }
 
@@ -96,13 +89,13 @@ export function mountPersonalSpotify(root) {
     await loadSdk();
     if (listeners.signal.aborted) return;
     player = new Spotify.Player({
-      name: 'IceDeck Personal Test',
+      name: 'IceDeck',
       volume: 0.4,
       getOAuthToken: callback => { getAccessToken(true).then(callback).catch(showError); },
     });
     player.addListener('ready', ({device_id}) => {
       deviceId = device_id;
-      status.textContent = 'Player ready. Paste a track link to listen.';
+      status.textContent = 'Spotify connected';
       updateButtons();
     });
     player.addListener('not_ready', () => {
@@ -112,7 +105,7 @@ export function mountPersonalSpotify(root) {
     });
     player.addListener('player_state_changed', showPlayerState);
     player.addListener('player_state_changed', updateProgress);
-    player.addListener('autoplay_failed', () => showError(new Error('Browser playback was blocked. Click Play track again.')));
+    player.addListener('autoplay_failed', () => showError(new Error('Browser playback was blocked. Click Play again.')));
     for (const name of ['initialization_error','authentication_error','account_error','playback_error']) {
       player.addListener(name, showError);
     }
@@ -120,17 +113,14 @@ export function mountPersonalSpotify(root) {
   }
 
   connect.addEventListener('click', () => startSpotifyStandaloneAuth(true).catch(showError), {signal: listeners.signal});
-  root.querySelector('form').addEventListener('submit', async event => {
-    event.preventDefault();
+  async function playTrack(id) {
     if (!deviceId || starting) return;
     error.hidden = true;
     starting = true;
     updateButtons();
     try {
-      let uri;
-      try { uri = 'spotify:track:' + spotifyTrackId(trackInput.value); }
-      catch { throw new Error('Paste the Spotify share link for one track.'); }
-      sessionStorage.setItem('icedeck_personal_track', trackInput.value);
+      const uri = 'spotify:track:' + id;
+      beforePlay();
       await player.activateElement();
       const response = await fetch('https://api.spotify.com/v1/me/player/play?device_id=' + encodeURIComponent(deviceId), {
         method: 'PUT',
@@ -147,25 +137,30 @@ export function mountPersonalSpotify(root) {
       starting = false;
       updateButtons();
     }
-  }, {signal: listeners.signal});
+  }
 
-  toggle.addEventListener('click', () => player.togglePlay().catch(showError), {signal: listeners.signal});
+  toggle.addEventListener('click', async () => {
+    try {
+      if ((await player.getCurrentState())?.paused) beforePlay();
+      await player.togglePlay();
+    } catch (cause) {
+      showError(cause);
+    }
+  }, {signal: listeners.signal});
   root.querySelector('#disconnect').addEventListener('click', () => {
     player?.disconnect();
     disconnectSpotifyStandalone(true);
-    location.replace('/spotify-personal');
+    location.replace('/');
   }, {signal: listeners.signal});
 
   async function initialize() {
     try {
-      if (location.pathname === '/spotify-callback') await completeSpotifyStandaloneAuth(true);
       if (spotifyConnected(true)) await startPlayer();
       else {
         status.textContent = 'Connect your Spotify Premium account.';
         connect.hidden = false;
       }
     } catch (cause) {
-      if (location.pathname === '/spotify-callback') history.replaceState({}, '', '/spotify-personal');
       status.textContent = 'Spotify setup needs attention.';
       connect.hidden = false;
       showError(cause);
@@ -174,9 +169,13 @@ export function mountPersonalSpotify(root) {
   }
   initialize();
   const clock = setInterval(() => player?.getCurrentState().then(updateProgress).catch(showError), 1000);
-  return () => {
-    listeners.abort();
-    clearInterval(clock);
-    player?.disconnect();
+  return {
+    playTrack,
+    pause: () => player?.pause().catch(() => {}),
+    dispose() {
+      listeners.abort();
+      clearInterval(clock);
+      player?.disconnect();
+    },
   };
 }

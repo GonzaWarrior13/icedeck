@@ -9,14 +9,15 @@ import SimpleConsole from '@/components/dj/SimpleConsole';
 import { useSimpleMode } from '@/lib/simpleMode';
 import Playlists from '@/pages/Playlists';
 import SupabaseSettings from '@/pages/SupabaseSettings';
-import { completeSpotifyStandaloneAuth } from '@/lib/spotifyStandalone';
+import { completeSpotifyStandaloneAuth, hasPendingPersonalSpotify, personalSpotifyEnabled } from '@/lib/spotifyStandalone';
 import { SONGS_KEY, PLAYLISTS_KEY, setMigrationData, setMigrationToken } from '@/hooks/useDjData';
 import { signIn, signUp, requestPasswordReset, verifyRecoveryTokenHash, changePassword, signOut, createTeam, getStoredPreviewSession, getFreshPreviewToken, getTeamSongs, getTeamPlaylists, createPrivateAudioUrl, setPreviewSession, getMyTeams, setSelectedTeamId, getSignedInUser } from '@/api/supabaseClient';
 
 // The original IceDeck layout and pages, isolated from production Base44.
 function SupabaseHome({ canEdit }) {
   const { enabled } = useSimpleMode();
-  return enabled ? <SimpleConsole /> : <Library migrationReadOnly canEdit={canEdit} />;
+  const spotifyLibrary = personalSpotifyEnabled && new URLSearchParams(window.location.search).has('spotify');
+  return enabled && !spotifyLibrary ? <SimpleConsole /> : <Library migrationReadOnly canEdit={canEdit} />;
 }
 // MemoryRouter keeps navigation within the test URL.
 function OriginalInterface() {
@@ -54,8 +55,9 @@ function OriginalInterface() {
       try {
         if (window.location.pathname === '/spotify-callback') {
           try {
-            await completeSpotifyStandaloneAuth();
-            if (!cancelled) setAuthNotice('Spotify connected. Open the Spotify button to browse your playlists.');
+            const personal = personalSpotifyEnabled && hasPendingPersonalSpotify();
+            await completeSpotifyStandaloneAuth(personal);
+            if (!cancelled) setAuthNotice(personal ? 'Spotify connected in the Library.' : 'Spotify connected. Open the Spotify button to browse your playlists.');
           } catch (spotifyError) {
             if (!cancelled) setAuthNotice('Spotify: ' + spotifyError.message);
             window.history.replaceState({}, '', '/');

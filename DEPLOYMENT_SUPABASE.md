@@ -64,8 +64,8 @@ Register exact Spotify redirect URIs:
 - hosted: `https://YOUR-DEPLOYMENT-DOMAIN/spotify-callback`
 
 To test full tracks for personal listening, open
-`http://127.0.0.1:5173/spotify-personal` in desktop Chrome or Edge, connect a
-Spotify Premium account, then paste a Spotify track link. This uses a separate
+`http://127.0.0.1:5173/?spotify=1` in desktop Chrome or Edge. Sign into IceDeck,
+connect Spotify Premium from the Library, and add a Spotify track link. This uses a separate
 Spotify session from playlist browsing. The personal player is available only
 from the local development server on this address.
 

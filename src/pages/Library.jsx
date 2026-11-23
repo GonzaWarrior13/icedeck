@@ -22,11 +22,16 @@ const StartPointEditor = lazy(() => import('@/components/dj/StartPointEditor'));
 
 const SpotifyPersonalLibrary = import.meta.env.DEV ? lazy(() => import('@/components/dj/SpotifyPersonalLibrary')) : null;
 
+function spotifyInitiallyOpen() {
+  return personalSpotifyEnabled && new URLSearchParams(window.location.search).has('spotify');
+}
+
 export default function Library({ migrationReadOnly = false, canEdit = true }) {
   const allowEdits = !migrationReadOnly || canEdit;
   const dj = useDj();
   const queryClient = useQueryClient();
   const { data: songs = [], isLoading: loading, refetch } = useSongs();
+  const [spotifyOpen, setSpotifyOpen] = useState(spotifyInitiallyOpen);
   const [filter, setFilter] = useState('');
   const [activeTag, setActiveTag] = useState('All');
   const [editorSong, setEditorSong] = useState(null);
@@ -137,7 +142,11 @@ export default function Library({ migrationReadOnly = false, canEdit = true }) {
           <div className="flex items-center gap-1.5 md:gap-2">
             {allowEdits && <SongUploader onUploaded={handleUploaded} useSupabase={migrationReadOnly} />}
             {allowEdits && (migrationReadOnly
-              ? <SpotifySetupNotice />
+              ? personalSpotifyEnabled
+                ? <button type="button" aria-expanded={spotifyOpen}
+                    className="rounded-md border border-border px-3 py-2 text-sm"
+                    onClick={() => setSpotifyOpen(open => !open)}>Spotify</button>
+                : <SpotifySetupNotice />
               : <SpotifyImport
                   existingSongs={songs}
                   onImported={(created) => queryClient.setQueryData(SONGS_KEY, (prev = []) => [...created, ...prev])}
@@ -146,8 +155,8 @@ export default function Library({ migrationReadOnly = false, canEdit = true }) {
           </div>
         </header>
 
-        {SpotifyPersonalLibrary && personalSpotifyEnabled && (
-          <Suspense fallback={null}><SpotifyPersonalLibrary /></Suspense>
+        {SpotifyPersonalLibrary && spotifyOpen && (
+          <Suspense fallback={null}><SpotifyPersonalLibrary dj={dj} /></Suspense>
         )}
 
         {deleteError && <p role="alert" className="text-sm text-destructive">{deleteError}</p>}

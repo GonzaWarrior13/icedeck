@@ -7,8 +7,8 @@ const API_URL = 'https://api.spotify.com/v1';
 const PENDING_KEY = 'icedeck_spotify_pkce';
 const TOKEN_KEY = 'icedeck_spotify_session';
 export const spotifyConfigured = Boolean(CLIENT_ID);
-export const PERSONAL_SPOTIFY_PATH = '/spotify-personal';
-export const personalSpotifyEnabled = import.meta.env.DEV && window.location.origin === 'http://127.0.0.1:5173';
+export const PERSONAL_SPOTIFY_LIBRARY = '/?spotify=1';
+export const personalSpotifyEnabled = import.meta.env.DEV && import.meta.env.VITE_ICEDECK_STANDALONE === 'true' && window.location.origin === 'http://127.0.0.1:5173';
 const PERSONAL_PENDING_KEY = PENDING_KEY + '_personal';
 const PERSONAL_TOKEN_KEY = TOKEN_KEY + '_personal';
 export const hasPendingPersonalSpotify = () => Boolean(sessionStorage.getItem(PERSONAL_PENDING_KEY));
@@ -74,7 +74,7 @@ export async function completeSpotifyStandaloneAuth(personal = false) {
   const data = await result.json().catch(() => ({}));
   if (!result.ok || !data.access_token) throw new Error(data.error_description || data.error || 'Spotify login failed');
   storeSession(data, null, personal);
-  window.history.replaceState({}, '', personal ? PERSONAL_SPOTIFY_PATH : '/');
+  window.history.replaceState({}, '', personal ? PERSONAL_SPOTIFY_LIBRARY : '/');
   return true;
 }
 export async function getAccessToken(personal = false) {

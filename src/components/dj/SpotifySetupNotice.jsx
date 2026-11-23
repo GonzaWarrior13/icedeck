@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Music, X, Loader2 } from 'lucide-react';
 import {
-  PERSONAL_SPOTIFY_PATH, personalSpotifyEnabled, spotifyConfigured, spotifyConnected, spotifyCallbackUrl,
+  spotifyConfigured, spotifyConnected, spotifyCallbackUrl,
   disconnectSpotifyStandalone, startSpotifyStandaloneAuth,
   getSpotifyPlaylistsStandalone, getSpotifyPlaylistItemsStandalone,
 } from '@/lib/spotifyStandalone';
@@ -41,9 +41,6 @@ export default function SpotifySetupNotice() {
         <h2 className="font-semibold">Spotify playlists</h2>
         <button type="button" aria-label="Close Spotify" onClick={() => setOpen(false)}><X className="w-4 h-4" /></button>
       </div>
-      {personalSpotifyEnabled && (
-        <a href={PERSONAL_SPOTIFY_PATH} className="block text-sm underline">Open personal Spotify player</a>
-      )}
       {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
       {!spotifyConfigured ? <div className="space-y-2 text-sm">
         <p className="text-muted-foreground">Add your Spotify Client ID as VITE_SPOTIFY_CLIENT_ID before connecting. No client secret belongs in the browser.</p>
