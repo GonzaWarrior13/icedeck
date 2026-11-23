@@ -44,10 +44,11 @@ async function refreshTeamSongs() {
     while (cursor < rows.length) {
       const index = cursor++;
       const song = rows[index];
+      const audioUrlExpiresAt = Date.now() + 59 * 60_000;
       const file_url = song.storage_path
         ? await createPrivateAudioUrl(song.storage_path, await getFreshPreviewToken(), 3600)
         : '';
-      songs[index] = { ...song, preview_url: '', file_url };
+      songs[index] = { ...song, preview_url: '', file_url, audioUrlExpiresAt };
     }
   }));
   // A team switch may have happened during the network requests.

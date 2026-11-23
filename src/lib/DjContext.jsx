@@ -2,7 +2,7 @@ import React, { createContext, useContext, useRef, useState, useEffect, useCallb
 import { useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { createPrivateAudioUrl, getFreshPreviewToken, getSelectedTeamId, recordTeamSongPlay } from '@/api/supabaseClient';
-import { PLAYLISTS_KEY, songsQueryOptions, usePlaylists, useSongs, getMigrationSongs, getMigrationPlaylists } from '@/hooks/useDjData';
+import { PLAYLISTS_KEY, usePlaylists, useSongs, getMigrationSongs, getMigrationPlaylists } from '@/hooks/useDjData';
 
 const isSupabasePreview = import.meta.env.VITE_ICEDECK_STANDALONE === 'true' || (typeof window !== 'undefined' && ['/supabase-dj','/supabase-original'].includes(window.location.pathname));
 
@@ -46,6 +46,14 @@ export function DjProvider({ children }) {
   const [playbackError, setPlaybackError] = useState('');
   const prefetchRef = useRef(null);
   const goalAudioRef = useRef(null);
+  useEffect(() => {
+    if (!isSupabasePreview || typeof Audio === 'undefined') return;
+    const horn = new Audio();
+    horn.preload = 'auto';
+    horn.src = MIGRATION_GOAL_HORN_URL;
+    goalAudioRef.current = horn;
+    return () => { goalAudioRef.current = null; };
+  }, []);
   const generatedHornRef = useRef(null);
   const goalResumeRef = useRef(null);
 
@@ -242,6 +250,10 @@ export function DjProvider({ children }) {
       prefetchNext();
     };
     if (isSupabasePreview && song.storage_path) {
+      if (song.file_url && song.audioUrlExpiresAt > Date.now()) {
+        startPlayback(song.file_url);
+        return;
+      }
       // Create a fresh signed URL for EACH track switch, even hours after login.
       // Refresh Supabase Auth first when needed. Never persist the signed URL.
       (async () => {
@@ -302,6 +314,8 @@ export function DjProvider({ children }) {
   fadeOutRef.current = fadeOut;
 
   const triggerGoal = useCallback((queueSongs, startIndex, setlistId) => {
+    const requestId = ++playbackRequestRef.current;
+    setPlaybackError('');
     audio?.pause();
     setIsPlaying(false);
     if (goalTimerRef.current) { clearTimeout(goalTimerRef.current); goalTimerRef.current = null; }
@@ -408,8 +422,16 @@ export function DjProvider({ children }) {
       }
       try { ga.currentTime = 0; } catch (_) {}
       ga.volume = 1;
-      ga.play().catch(() => {});
-      setGoalPlaying(true);
+      ga.play().then(() => {
+        if (requestId === playbackRequestRef.current) setGoalPlaying(true);
+      }).catch((error) => {
+        if (requestId !== playbackRequestRef.current) return;
+        setGoalPlaying(false);
+        setPlaybackError('Goal horn could not play: ' + error.message);
+        const resume = goalResumeRef.current;
+        goalResumeRef.current = null;
+        resume?.();
+      });
     }
   }, [audio]);
 
@@ -435,6 +457,8 @@ export function DjProvider({ children }) {
 
   // global keyboard shortcuts
   useEffect(() => {
+    const songsById = new Map(liveSongs.map(song => [song.id, song]));
+    const resolveSongs = (ids = []) => ids.map(id => songsById.get(id)).filter(Boolean);
     const onKey = (e) => {
       const t = e.target;
       const tag = (t?.tagName || '').toLowerCase();
@@ -445,39 +469,21 @@ export function DjProvider({ children }) {
         const ae = document.activeElement;
         if (ae && ae !== document.body) ae.blur();
       };
-      const resolveFresh = async (ids) => {
-        try {
-          const all = await queryClient.fetchQuery({ ...songsQueryOptions, staleTime: 0 });
-          const byId = new Map(all.map((s) => [s.id, s]));
-          return ids.map((id) => byId.get(id)).filter(Boolean);
-        } catch { return []; }
-      };
       const normKey = e.key.length === 1 ? e.key.toLowerCase() : e.key;
       if (normKey === 'g') {
         e.preventDefault();
         dropFocus();
         const gsid = goalSetlistIdRef.current;
         const ids = gsid ? playlistSongsRef.current[gsid] : null;
-        if (ids && ids.length) {
-          (async () => {
-            const songs = await resolveFresh(ids);
-            if (!songs.length) return;
-            triggerGoal(songs, 0, gsid);
-          })();
-        } else {
-          triggerGoal();
-        }
+        triggerGoal(resolveSongs(ids || []), 0, gsid);
         return;
       }
       const entry = hotkeysRef.current[normKey];
       if (entry) {
         e.preventDefault();
         dropFocus();
-        (async () => {
-          const songs = await resolveFresh(entry.songIds);
-          if (!songs.length) return;
-          playSetlistRef.current(entry.playlistId, songs);
-        })();
+        const songs = resolveSongs(entry.songIds);
+        if (songs.length) playSetlistRef.current(entry.playlistId, songs);
         return;
       }
       if (e.code === 'Space' || e.key === ' ') {
@@ -498,7 +504,7 @@ export function DjProvider({ children }) {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [isPlaying, currentSong, goalPlaying, play, pause, next, prev, stopGoal, queryClient]);
+  }, [isPlaying, currentSong, goalPlaying, play, pause, next, prev, stopGoal, triggerGoal, liveSongs]);
 
   // html audio listeners
   useEffect(() => {

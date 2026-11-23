@@ -27,17 +27,6 @@ export default function Player() {
   const song = dj.currentSong;
   const playbackError = dj.playbackError;
 
-  if (!song) {
-    return (
-      <div className="shrink-0 border-t border-border bg-card px-4 md:px-8 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:h-[72px] md:py-0 md:flex md:items-center md:pb-0">
-        <div className="flex items-center gap-2.5 type-meta">
-          <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50" aria-hidden="true" />
-          Nothing loaded — add a track to the queue.
-        </div>
-      </div>
-    );
-  }
-
   const remaining = dj.duration ? Math.max(0, dj.duration - dj.currentTime) : 0;
   const pct = dj.duration ? (dj.currentTime / dj.duration) * 100 : 0;
 
@@ -47,6 +36,7 @@ export default function Player() {
       <div
         className="relative -mx-4 mb-2 h-1 cursor-pointer bg-border lg:hidden"
         onClick={(e) => {
+          if (!song) return;
           const rect = e.currentTarget.getBoundingClientRect();
           const frac = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
           dj.seek(frac * (dj.duration || 0));
@@ -62,13 +52,14 @@ export default function Player() {
 
       <div className="flex w-full min-w-0 items-center justify-between gap-2 md:gap-4">
         <div className="hidden sm:block min-w-0 w-36 lg:w-52 shrink-0">
-          <p className="truncate text-[15px] font-semibold leading-tight">{song.title}</p>
-          <p className="truncate type-meta">{song.artist || 'Unknown'}</p>
+          <p className="truncate text-[15px] font-semibold leading-tight">{song?.title || 'Nothing loaded'}</p>
+          <p className="truncate type-meta">{song && (song.artist || 'Unknown')}</p>
         </div>
 
         <div className="flex items-center gap-0.5 md:gap-1 shrink-0">
           <button
             onClick={dj.prev}
+            disabled={!song}
             aria-label="Previous track"
             title="Previous"
             className="flex h-11 w-11 items-center justify-center rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors md:h-10 md:w-10"
@@ -77,6 +68,7 @@ export default function Player() {
           </button>
           <button
             onClick={dj.isPlaying ? dj.pause : dj.play}
+            disabled={!song}
             aria-label={dj.isPlaying ? 'Pause' : 'Play'}
             className="w-12 h-12 md:w-11 md:h-11 shrink-0 rounded-[10px] bg-primary text-primary-foreground flex items-center justify-center transition-transform active:scale-[0.96] hover:bg-primary/90"
           >
@@ -84,6 +76,7 @@ export default function Player() {
           </button>
           <button
             onClick={dj.next}
+            disabled={!song}
             aria-label="Next track"
             title="Next"
             className="flex h-11 w-11 items-center justify-center rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors md:h-10 md:w-10"
@@ -99,6 +92,7 @@ export default function Player() {
           <div
             className="relative flex-1 h-1 rounded-full bg-border cursor-pointer transition-all hover:h-1.5"
             onClick={(e) => {
+              if (!song) return;
               const rect = e.currentTarget.getBoundingClientRect();
               const frac = (e.clientX - rect.left) / rect.width;
               dj.seek(frac * (dj.duration || 0));
@@ -111,7 +105,7 @@ export default function Player() {
             tabIndex={0}
           >
             <div className="absolute inset-y-0 left-0 rounded-full bg-primary" style={{ width: `${pct}%` }} />
-            {song.start_point > 0 && (
+            {song?.start_point > 0 && (
               <div
                 className="absolute -top-1.5 w-0.5 h-4 bg-primary"
                 style={{ left: `${(song.start_point / (dj.duration || 1)) * 100}%` }}

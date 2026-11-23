@@ -1,52 +1,29 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
 import { ListMusic, Loader2, Pause, Play, Shuffle, Siren } from 'lucide-react';
 import { useDj } from '@/lib/DjContext';
-import { songsQueryOptions, usePlaylists } from '@/hooks/useDjData';
+import { usePlaylists, useSongs } from '@/hooks/useDjData';
 import { useSimpleMode } from '@/lib/simpleMode';
 
 // Game-day console: transport, goal horn, and only the setlists picked in Settings.
 export default function SimpleConsole() {
   const dj = useDj();
-  const queryClient = useQueryClient();
+  const { data: librarySongs = [] } = useSongs();
   const { playlistIds } = useSimpleMode();
   const { data: playlists = [], isLoading } = usePlaylists();
-  const [busyId, setBusyId] = useState(null);
 
   const chosen = playlists.filter((pl) => playlistIds.includes(pl.id));
 
-  const resolveSongs = async (pl) => {
-    const all = await queryClient.fetchQuery({ ...songsQueryOptions, staleTime: 0 });
-    const byId = new Map(all.map((s) => [s.id, s]));
-    return (pl.song_ids || []).map((id) => byId.get(id)).filter(Boolean);
+  const songsById = new Map(librarySongs.map(song => [song.id, song]));
+  const resolveSongs = playlist => (playlist?.song_ids || []).map(id => songsById.get(id)).filter(Boolean);
+
+  const shufflePlaylist = playlist => {
+    dj.playSetlist(playlist.id, resolveSongs(playlist));
   };
 
-  const shufflePlaylist = async (pl) => {
-    setBusyId(pl.id);
-    try {
-      const songs = await resolveSongs(pl);
-      if (songs.length) dj.playSetlist(pl.id, songs);
-    } catch {
-      /* leave the console as it was */
-    } finally {
-      setBusyId(null);
-    }
-  };
-
-  const triggerGoal = async () => {
-    const goalPlaylist = playlists.find((pl) => pl.id === dj.goalSetlistId);
-    if (!goalPlaylist) {
-      dj.triggerGoal();
-      return;
-    }
-    try {
-      const songs = await resolveSongs(goalPlaylist);
-      if (songs.length) dj.triggerGoal(songs, 0, goalPlaylist.id);
-      else dj.triggerGoal();
-    } catch {
-      dj.triggerGoal();
-    }
+  const triggerGoal = () => {
+    const playlist = playlists.find(pl => pl.id === dj.goalSetlistId);
+    dj.triggerGoal(resolveSongs(playlist), 0, playlist?.id);
   };
 
   return (
@@ -102,13 +79,10 @@ export default function SimpleConsole() {
               <button
                 key={pl.id}
                 onClick={() => shufflePlaylist(pl)}
-                disabled={busyId === pl.id}
-                className="min-h-28 rounded-[14px] bg-secondary px-3 py-4 flex flex-col items-center justify-center gap-1.5 text-center active:scale-[0.99] transition hover:bg-secondary/70 disabled:opacity-60"
+                className="min-h-28 rounded-[14px] bg-secondary px-3 py-4 flex flex-col items-center justify-center gap-1.5 text-center active:scale-[0.99] transition hover:bg-secondary/70"
                 aria-label={`Shuffle ${pl.name}`}
               >
-                {busyId === pl.id
-                  ? <Loader2 className="w-6 h-6 animate-spin text-primary" aria-hidden="true" />
-                  : <Shuffle className="w-6 h-6 text-primary" aria-hidden="true" />}
+                <Shuffle className="w-6 h-6 text-primary" aria-hidden="true" />
                 <span className="font-semibold text-base leading-tight line-clamp-2">{pl.name}</span>
                 <span className="text-xs tabular-nums text-muted-foreground">{(pl.song_ids || []).length} tracks</span>
               </button>

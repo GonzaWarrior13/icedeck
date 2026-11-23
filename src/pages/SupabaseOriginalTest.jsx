@@ -200,10 +200,11 @@ function OriginalInterface() {
         while (cursor < rawSongs.length) {
           const i = cursor++;
           const song = rawSongs[i];
+          const audioUrlExpiresAt = Date.now() + 59 * 60_000;
           const file_url = song.storage_path
             ? await createPrivateAudioUrl(song.storage_path, token, 3600)
             : '';
-          songs[i] = {...song, preview_url:'', file_url};
+          songs[i] = {...song, preview_url:'', file_url, audioUrlExpiresAt};
         }
       }));
       setMigrationToken(token);
