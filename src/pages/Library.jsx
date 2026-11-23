@@ -20,7 +20,7 @@ import ConfirmDialog from '@/components/dj/ConfirmDialog';
 // The waveform editor is heavy: it only loads when a track is opened for cueing.
 const StartPointEditor = lazy(() => import('@/components/dj/StartPointEditor'));
 
-const SpotifyPersonalLibrary = import.meta.env.DEV ? lazy(() => import('@/components/dj/SpotifyPersonalLibrary')) : null;
+const SpotifyPersonalLibrary = (import.meta.env.DEV || import.meta.env.VITE_ICEDECK_SPOTIFY_ORIGIN) ? lazy(() => import('@/components/dj/SpotifyPersonalLibrary')) : null;
 
 function spotifyInitiallyOpen() {
   return personalSpotifyEnabled && new URLSearchParams(window.location.search).has('spotify');

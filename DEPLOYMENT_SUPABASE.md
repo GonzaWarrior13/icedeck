@@ -66,8 +66,12 @@ Register exact Spotify redirect URIs:
 To test full tracks for personal listening, open
 `http://127.0.0.1:5173/?spotify=1` in desktop Chrome or Edge. Sign into IceDeck,
 connect Spotify Premium from the Library, and add a Spotify track link. This uses a separate
-Spotify session from playlist browsing. The personal player is available only
-from the local development server on this address.
+Spotify session from playlist browsing. For a personal Vercel deployment, set `VITE_ICEDECK_STANDALONE=true`,
+`VITE_SPOTIFY_CLIENT_ID`, and `VITE_ICEDECK_SPOTIFY_ORIGIN` in the deployment's
+environment. Set the origin to the stable HTTPS address with no trailing slash
+and register that address plus `/spotify-callback` in Spotify. Redeploy after
+updating the environment. Leave the Spotify origin unset on rink deployments.
+Saved personal tracks are browser-local and scoped to the site's origin.
 
 Spotify uses Authorization Code + PKCE and may restrict Development Mode
 to Spotify Premium owners and a small allowlist of users. IceDeck can
@@ -111,7 +115,7 @@ the hosted horn URL will not exist.
 
 ## Known limitations
 
-- Hosted Spotify access supports authenticated playlist browsing. The local development server also offers a separate personal playback test.
+- Hosted Spotify access supports authenticated playlist browsing. Personal playback is available in local development or on the configured HTTPS origin.
 - The hosted goal horn requires `public/goal-horn.mp3` from the user.
 - Existing Base44 code and SDK remain in the source branch to preserve the
   original app, even though standalone mode bypasses its authentication and APIs.

@@ -105,7 +105,7 @@ export function mountPersonalSpotify(root, { setReady, beforePlay, onPlayback })
     controls.hidden = false;
     if (!await checkProtectedAudio()) {
       status.textContent = 'This browser cannot play Spotify?s protected audio.';
-      showError(new Error('Open http://127.0.0.1:5173/ directly in desktop Chrome or Edge to continue.'));
+      showError(new Error('Open this IceDeck address directly in desktop Chrome or Edge to continue.'));
       return;
     }
     await loadSdk();

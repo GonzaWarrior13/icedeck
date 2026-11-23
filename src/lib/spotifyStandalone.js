@@ -8,7 +8,12 @@ const PENDING_KEY = 'icedeck_spotify_pkce';
 const TOKEN_KEY = 'icedeck_spotify_session';
 export const spotifyConfigured = Boolean(CLIENT_ID);
 export const PERSONAL_SPOTIFY_LIBRARY = '/?spotify=1';
-export const personalSpotifyEnabled = import.meta.env.DEV && import.meta.env.VITE_ICEDECK_STANDALONE === 'true' && window.location.origin === 'http://127.0.0.1:5173';
+const hostedSpotifyOrigin = import.meta.env.VITE_ICEDECK_SPOTIFY_ORIGIN;
+const currentOrigin = window.location.origin;
+export const personalSpotifyEnabled = spotifyConfigured
+  && import.meta.env.VITE_ICEDECK_STANDALONE === 'true'
+  && ((import.meta.env.DEV && currentOrigin === 'http://127.0.0.1:5173')
+    || (hostedSpotifyOrigin?.startsWith('https://') && currentOrigin === hostedSpotifyOrigin));
 const PERSONAL_PENDING_KEY = PENDING_KEY + '_personal';
 const PERSONAL_TOKEN_KEY = TOKEN_KEY + '_personal';
 export const hasPendingPersonalSpotify = () => Boolean(sessionStorage.getItem(PERSONAL_PENDING_KEY));
@@ -30,7 +35,7 @@ export function spotifyConnected(personal = false) { return !!getSession(persona
 export function disconnectSpotifyStandalone(personal = false) { sessionStorage.removeItem(personal ? PERSONAL_TOKEN_KEY : TOKEN_KEY); }
 
 export async function startSpotifyStandaloneAuth(personal = false) {
-  if (personal && !personalSpotifyEnabled) throw new Error('Personal playback requires the local IceDeck development server.');
+  if (personal && !personalSpotifyEnabled) throw new Error('Personal Spotify playback is unavailable on this IceDeck address.');
   if (!CLIENT_ID) throw new Error('Set VITE_SPOTIFY_CLIENT_ID in the IceDeck environment first.');
   const verifier = Array.from(crypto.getRandomValues(new Uint8Array(48)), byte => byte.toString(16).padStart(2,'0')).join('');
   const challengeData = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
