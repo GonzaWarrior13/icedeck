@@ -9,10 +9,9 @@ import SimpleConsole from '@/components/dj/SimpleConsole';
 import { useSimpleMode } from '@/lib/simpleMode';
 import Playlists from '@/pages/Playlists';
 import SupabaseSettings from '@/pages/SupabaseSettings';
-import GoogleSignInButton from '@/components/auth/GoogleSignInButton';
 import { completeSpotifyStandaloneAuth } from '@/lib/spotifyStandalone';
 import { SONGS_KEY, PLAYLISTS_KEY, setMigrationData, setMigrationToken } from '@/hooks/useDjData';
-import { signIn, signUp, requestPasswordReset, verifyRecoveryTokenHash, changePassword, signOut, signInWithGoogleIdToken, createTeam, getStoredPreviewSession, getFreshPreviewToken, getTeamSongs, getTeamPlaylists, createPrivateAudioUrl, setPreviewSession, getMyTeams, setSelectedTeamId, getSignedInUser } from '@/api/supabaseClient';
+import { signIn, signUp, requestPasswordReset, verifyRecoveryTokenHash, changePassword, signOut, createTeam, getStoredPreviewSession, getFreshPreviewToken, getTeamSongs, getTeamPlaylists, createPrivateAudioUrl, setPreviewSession, getMyTeams, setSelectedTeamId, getSignedInUser } from '@/api/supabaseClient';
 
 // The original IceDeck layout and pages, isolated from production Base44.
 function SupabaseHome({ canEdit }) {
@@ -139,17 +138,6 @@ function OriginalInterface() {
     finally { setBusy(false); }
   }
 
-  async function connectGoogle(idToken) {
-    setBusy(true); setError(''); setAuthNotice('');
-    try {
-      await adoptSession(await signInWithGoogleIdToken(idToken));
-    } catch (err) {
-      setError(err.message || 'Google sign-in failed.');
-    } finally {
-      setBusy(false);
-    }
-  }
-
   async function createNewTeam(e) {
     e.preventDefault(); setBusy(true); setError('');
     try {
@@ -274,11 +262,6 @@ function OriginalInterface() {
       {authMode !== 'forgot' && <label>{authMode === 'reset' ? 'New password' : 'Password'}<input className="block w-full rounded border p-3 text-black bg-white" type="password" autoComplete={authMode === 'signin' ? 'current-password' : 'new-password'} required minLength={6} value={password} onChange={e=>setPassword(e.target.value)}/></label>}
       <button className="rounded bg-primary text-primary-foreground p-3 disabled:opacity-60" disabled={busy}>{busy ? 'Working…' : authMode === 'signup' ? 'Register' : authMode === 'forgot' ? 'Email reset link' : authMode === 'reset' ? 'Save new password' : 'Sign in'}</button>
       {authMode === 'signin' && <>
-        <GoogleSignInButton
-          disabled={busy}
-          onCredential={connectGoogle}
-          onError={err => setError(err.message || 'Google sign-in failed.')}
-        />
         <div className="flex flex-wrap justify-between gap-3 text-sm">
           <button type="button" className="underline" onClick={() => { setAuthMode('signup'); setError(''); }}>Create account</button>
           <button type="button" className="underline" onClick={() => { setAuthMode('forgot'); setError(''); }}>Forgot password?</button>
