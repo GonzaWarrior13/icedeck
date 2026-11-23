@@ -1,4 +1,5 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
+import Queue from '@/components/dj/Queue';
 import SongCard from '@/components/dj/SongCard';
 import { createPortal } from 'react-dom';
 import { spotifyConnected } from '@/lib/spotifyStandalone';
@@ -6,12 +7,10 @@ import { addPersonalSpotifyTrack, readPersonalSpotifyTracks, removePersonalSpoti
 
 import { mountPersonalSpotify } from '@/lib/spotifyPersonalPlayer';
 
-export default function SpotifyPersonalLibrary({ dj, open, onOpen, filter, activeTag, rowsTarget, onCounts, playback, onPlayback }) {
+export default function SpotifyPersonalLibrary({ dj, open, onOpen, filter, activeTag, rowsTarget, queueTarget, onCounts, playback, onPlayback, startQueued, onQueueStarted }) {
   const [tracks, setTracks] = useState(readPersonalSpotifyTracks);
   const [collections, setCollections] = useState(readSpotifyCollections);
   const [editingId, setEditingId] = useState(null);
-  const [setlistName, setSetlistName] = useState('');
-  const [selectedSetlistId, setSelectedSetlistId] = useState('');
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -23,11 +22,9 @@ export default function SpotifyPersonalLibrary({ dj, open, onOpen, filter, activ
   currentDj.current = dj;
   const [ready, setReady] = useState(false);
   const onEnd = useRef(null);
-  const selectedSetlist = collections.setlists.find(list => list.id === selectedSetlistId);
   const editingTrack = tracks.find(track => track.id === editingId);
   const byId = new Map(tracks.map(track => [track.id, track]));
   const queue = collections.queue.filter(id => byId.has(id));
-  const setlistTracks = (selectedSetlist?.trackIds || []).filter(id => byId.has(id));
 
   useEffect(() => {
     const refreshTracks = () => setTracks(readPersonalSpotifyTracks());
@@ -44,13 +41,21 @@ export default function SpotifyPersonalLibrary({ dj, open, onOpen, filter, activ
     }
   }
 
-  function playNext(currentId) {
-    const next = queue[0];
+  function playQueued(index = 0) {
+    const next = queue[index];
     if (!next || currentDj.current.goalPlaying) return;
-    changeCollections(value => ({...value, queue: value.queue.slice(1)}));
+    if (!ready) { onOpen(); return; }
+    changeCollections(value => ({...value, queue: value.queue.filter((_, i) => i !== index)}));
     controller.current?.playTrack(byId.get(next));
   }
-  onEnd.current = playNext;
+  onEnd.current = () => playQueued();
+  const playCurrentQueue = useRef(null);
+  playCurrentQueue.current = playQueued;
+  useEffect(() => {
+    if (!startQueued || !ready) return;
+    onQueueStarted();
+    playCurrentQueue.current();
+  }, [startQueued, onQueueStarted, ready]);
 
   function saveTrackChanges(event) {
     event.preventDefault();
@@ -171,60 +176,26 @@ export default function SpotifyPersonalLibrary({ dj, open, onOpen, filter, activ
           <button type="button" className="px-2 py-2 text-sm underline" onClick={() => setEditingId(null)}>Cancel</button>
         </form>
       )}
-      <div className="grid gap-4 border-t border-border pt-3 sm:grid-cols-2">
-        <div className="space-y-2">
-          <h3 className="font-medium">Spotify queue</h3>
-          {queue.length > 0 ? <>
-            <button type="button" className="text-sm underline" disabled={!ready || dj.goalPlaying} onClick={() => playNext()}>Play next Spotify track</button>
-            <ol className="space-y-1 text-sm">
-              {queue.map((id, index) => <li key={id + ':' + index} className="flex items-center justify-between gap-2">
-                <span>{byId.get(id).title}</span>
-                <button type="button" className="underline" aria-label={'Remove ' + byId.get(id).title + ' from Spotify queue'}
-                  onClick={() => changeCollections(value => ({...value, queue: value.queue.filter((_, i) => i !== index)}))}>Remove</button>
-              </li>)}
-            </ol>
-          </> : <p className="text-sm text-muted-foreground">Add tracks with the + button in the Library.</p>}
-        </div>
-        <div className="space-y-2">
-          <h3 className="font-medium">Spotify setlists</h3>
-          <form className="flex gap-2" onSubmit={event => {
-            event.preventDefault();
-            const name = setlistName.trim();
-            if (!name) return;
-            const list = {id: crypto.randomUUID(), name, trackIds: []};
-            changeCollections(value => ({...value, setlists: [...value.setlists, list]}));
-            setSelectedSetlistId(list.id);
-            setSetlistName('');
-          }}>
-            <input aria-label="New Spotify setlist name" value={setlistName} onChange={event => setSetlistName(event.target.value)}
-              required maxLength={80} placeholder="New setlist name" className="min-w-0 flex-1 rounded border border-border bg-background p-2 text-sm" />
-            <button className="text-sm underline">Create</button>
-          </form>
-          {collections.setlists.length > 0 && <select aria-label="Spotify setlist" value={selectedSetlistId}
-            onChange={event => setSelectedSetlistId(event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm">
-            <option value="">Choose a setlist</option>
-            {collections.setlists.map(list => <option key={list.id} value={list.id}>{list.name}</option>)}
-          </select>}
-          {selectedSetlist && <>
-            <button type="button" className="text-sm underline" disabled={!ready || !setlistTracks.length || dj.goalPlaying} onClick={() => {
-              changeCollections(value => ({...value, queue: setlistTracks.slice(1)}));
-              controller.current?.playTrack(byId.get(setlistTracks[0]));
-            }}>Play setlist</button>
-            <ol className="space-y-1 text-sm">
-              {setlistTracks.map(id => <li key={id} className="flex items-center justify-between gap-2">
-                <span>{byId.get(id).title}</span>
-                <button type="button" className="underline" aria-label={'Remove ' + byId.get(id).title + ' from setlist'}
-                  onClick={() => changeCollections(value => ({...value, setlists: value.setlists.map(list => list.id === selectedSetlist.id
-                    ? {...list, trackIds: list.trackIds.filter(trackId => trackId !== id)} : list)}))}>Remove</button>
-              </li>)}
-            </ol>
-          </>}
-        </div>
-      </div>
       <div id="controls" className="space-y-3 border-t border-border pt-3" hidden>
         <button id="disconnect" type="button" className="text-sm underline">Disconnect Spotify</button>
       </div>
     </section>
+    {queueTarget && createPortal(<Queue spotify={{
+      tracks: queue.map(id => byId.get(id)),
+      active: Boolean(playback),
+      play: playQueued,
+      clear: () => {
+        controller.current?.interrupt();
+        changeCollections(value => ({...value, queue: []}));
+      },
+      remove: index => changeCollections(value => ({...value, queue: value.queue.filter((_, i) => i !== index)})),
+      reorder: (from, to) => changeCollections(value => {
+        const ordered = [...queue];
+        const [moved] = ordered.splice(from, 1);
+        ordered.splice(to, 0, moved);
+        return {...value, queue: ordered};
+      }),
+    }} />, queueTarget)}
     {rowsTarget && createPortal(visibleTracks.map(track => (
       <SongCard key={track.id}
         song={{...track, spotifyUrl: 'https://open.spotify.com/track/' + track.id}}
@@ -239,15 +210,8 @@ export default function SpotifyPersonalLibrary({ dj, open, onOpen, filter, activ
         }))}
         onAddQueue={() => {
           changeCollections(value => ({...value, queue: [...value.queue, track.id]}));
-          onOpen();
         }}
         onEdit={() => { setEditingId(track.id); setError(''); onOpen(); }}
-        extraActions={selectedSetlist && <button type="button" className="px-2 text-xs underline"
-          disabled={selectedSetlist.trackIds.includes(track.id)}
-          aria-label={'Add ' + track.title + ' to ' + selectedSetlist.name}
-          onClick={() => changeCollections(value => ({...value, setlists: value.setlists.map(list =>
-            list.id === selectedSetlist.id && !list.trackIds.includes(track.id)
-              ? {...list, trackIds: [...list.trackIds, track.id]} : list)}))}>Setlist</button>}
         onDelete={() => {
           onOpen();
           removeTrack(track.id);

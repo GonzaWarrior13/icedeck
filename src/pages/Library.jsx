@@ -12,6 +12,7 @@ import TagFilter from '@/components/dj/TagFilter';
 import QuickAccess from '@/components/dj/QuickAccess';
 import SpotifyImport from '@/components/dj/SpotifyImport';
 import SpotifySetupNotice from '@/components/dj/SpotifySetupNotice';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { personalSpotifyEnabled } from '@/lib/spotifyStandalone';
 import NormalizeButton from '@/components/dj/NormalizeButton';
 import PullToRefresh from '@/components/dj/PullToRefresh';
@@ -27,12 +28,16 @@ function spotifyInitiallyOpen() {
 }
 
 export default function Library({ migrationReadOnly = false, canEdit = true }) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const clearSpotifyStart = useCallback(() => navigate('/', {replace: true}), [navigate]);
   const allowEdits = !migrationReadOnly || canEdit;
   const dj = useDj();
   const queryClient = useQueryClient();
   const { data: songs = [], isLoading: loading, refetch } = useSongs();
   const [spotifyPlayback, setSpotifyPlayback] = useState(null);
   const [spotifyOpen, setSpotifyOpen] = useState(spotifyInitiallyOpen);
+  const [queueTarget, setQueueTarget] = useState(null);
   const [spotifyRowsTarget, setSpotifyRowsTarget] = useState(null);
   const [spotifyCounts, setSpotifyCounts] = useState({total: 0, visible: 0});
   const [filter, setFilter] = useState('');
@@ -162,7 +167,8 @@ export default function Library({ migrationReadOnly = false, canEdit = true }) {
         {SpotifyPersonalLibrary && personalSpotifyEnabled && (
           <Suspense fallback={null}>
             <SpotifyPersonalLibrary dj={dj} open={spotifyOpen} onOpen={() => setSpotifyOpen(true)}
-              filter={filter} activeTag={activeTag} rowsTarget={spotifyRowsTarget}
+              filter={filter} activeTag={activeTag} rowsTarget={spotifyRowsTarget} queueTarget={queueTarget}
+              startQueued={Boolean(location.state?.playSpotifyQueue)} onQueueStarted={clearSpotifyStart}
               onCounts={setSpotifyCounts} playback={spotifyPlayback} onPlayback={setSpotifyPlayback} />
           </Suspense>
         )}
@@ -194,7 +200,7 @@ export default function Library({ migrationReadOnly = false, canEdit = true }) {
           </section>
           <section className="lg:sticky lg:top-6">
             <div className="flex h-[280px] flex-col overflow-hidden rounded-[10px] border border-border bg-card md:h-[380px] lg:h-[calc(100vh-8rem)]">
-              <Queue />
+              {SpotifyPersonalLibrary && personalSpotifyEnabled ? <div ref={setQueueTarget} className="h-full" /> : <Queue />}
             </div>
           </section>
         </div>
