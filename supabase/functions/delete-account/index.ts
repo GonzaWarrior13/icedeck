@@ -31,7 +31,18 @@ Deno.serve(async req => {
   // teams.created_by is an FK to auth.users, and a team must not become orphaned.
   const { data: owned, error: ownershipError } = await admin.from('teams')
     .select('id,name').eq('created_by', user.id).limit(1);
-  if (ownershipError) return json({ error: 'Unable to verify team ownership' }, 500);
+  if (ownershipError) {
+    console.error('delete-account: ownership lookup failed', {
+      code: ownershipError.code,
+      message: ownershipError.message,
+      details: ownershipError.details,
+    });
+    return json({
+      error: 'Unable to verify team ownership',
+      code: ownershipError.code || 'OWNERSHIP_LOOKUP_FAILED',
+      detail: ownershipError.message || 'Database query failed',
+    }, 500);
+  }
   if (owned?.length) return json({
     error: 'Transfer ownership of your teams to another member before deleting your account.',
   }, 409);
