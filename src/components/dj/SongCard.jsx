@@ -6,11 +6,11 @@ import { Play, Plus, Scissors, Star, Trash2 } from 'lucide-react';
 const iconButton =
   'flex h-11 w-11 items-center justify-center rounded-[8px] transition-colors md:h-9 md:w-9';
 
-export default function SongCard({ song, isActive, onPlay, onAddQueue, onEdit, onDelete, onToggleQuick }) {
+export default function SongCard({ song, isActive, onPlay, onAddQueue, onEdit, onDelete, onToggleQuick, canPlay }) {
   const tags = song.tags || [];
   const isQuick = tags.includes('quick');
   // Spotify imports carry no audio file unless Spotify serves a preview clip.
-  const playable = !!(song.file_url || song.preview_url);
+  const playable = canPlay ?? Boolean(song.file_url || song.preview_url);
 
   return (
     <div
@@ -45,8 +45,14 @@ export default function SongCard({ song, isActive, onPlay, onAddQueue, onEdit, o
         </div>
         <div className="mt-0.5 flex items-center gap-1.5">
           <p className="type-meta truncate">{song.artist || 'Unknown'}</p>
-          <span className="type-meta text-muted-foreground/50" aria-hidden="true">·</span>
-          <span className="type-data shrink-0 text-muted-foreground">{formatTime(song.duration)}</span>
+          {song.spotifyUrl ? (
+            <a href={song.spotifyUrl} target="_blank" rel="noreferrer" className="type-meta shrink-0 underline">Spotify</a>
+          ) : (
+            <>
+              <span className="type-meta text-muted-foreground/50" aria-hidden="true">·</span>
+              <span className="type-data shrink-0 text-muted-foreground">{formatTime(song.duration)}</span>
+            </>
+          )}
         </div>
         {tags.length > 0 && (
           <div className="mt-1.5 hidden flex-wrap gap-1 md:flex">
@@ -72,14 +78,14 @@ export default function SongCard({ song, isActive, onPlay, onAddQueue, onEdit, o
         >
           <Star className={`w-4 h-4 ${isQuick ? 'fill-current' : ''}`} aria-hidden="true" />
         </button>}
-        <button
+        {onAddQueue && <button
           onClick={() => onAddQueue(song)}
           title="Add to queue"
           aria-label={`Add ${song.title} to queue`}
           className={`${iconButton} text-muted-foreground hover:text-foreground hover:bg-secondary`}
         >
           <Plus className="w-4 h-4" aria-hidden="true" />
-        </button>
+        </button>}
         {onEdit && <button
           onClick={() => onEdit(song)}
           title="Edit start point"

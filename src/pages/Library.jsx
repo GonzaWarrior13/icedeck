@@ -31,7 +31,10 @@ export default function Library({ migrationReadOnly = false, canEdit = true }) {
   const dj = useDj();
   const queryClient = useQueryClient();
   const { data: songs = [], isLoading: loading, refetch } = useSongs();
+  const [spotifyPlayback, setSpotifyPlayback] = useState(null);
   const [spotifyOpen, setSpotifyOpen] = useState(spotifyInitiallyOpen);
+  const [spotifyRowsTarget, setSpotifyRowsTarget] = useState(null);
+  const [spotifyCounts, setSpotifyCounts] = useState({total: 0, visible: 0});
   const [filter, setFilter] = useState('');
   const [activeTag, setActiveTag] = useState('All');
   const [editorSong, setEditorSong] = useState(null);
@@ -134,7 +137,7 @@ export default function Library({ migrationReadOnly = false, canEdit = true }) {
             <div className="flex items-baseline gap-2.5">
               <h1 className="font-display text-[44px] md:text-[56px] font-semibold leading-[0.95] tracking-[-0.01em]">Library</h1>
               <span className="type-data mb-2 rounded-[6px] border border-border bg-card px-2 py-0.5 text-muted-foreground">
-                {songs.length} tracks
+                {songs.length + spotifyCounts.total} tracks
               </span>
             </div>
             <p className="type-meta mt-1 hidden md:block">Cue, edit, and fade for game day.</p>
@@ -155,8 +158,12 @@ export default function Library({ migrationReadOnly = false, canEdit = true }) {
           </div>
         </header>
 
-        {SpotifyPersonalLibrary && spotifyOpen && (
-          <Suspense fallback={null}><SpotifyPersonalLibrary dj={dj} /></Suspense>
+        {SpotifyPersonalLibrary && personalSpotifyEnabled && (
+          <Suspense fallback={null}>
+            <SpotifyPersonalLibrary dj={dj} open={spotifyOpen} onOpen={() => setSpotifyOpen(true)}
+              filter={filter} showTracks={activeTag === 'All'} rowsTarget={spotifyRowsTarget}
+              onCounts={setSpotifyCounts} playback={spotifyPlayback} onPlayback={setSpotifyPlayback} />
+          </Suspense>
         )}
 
         {deleteError && <p role="alert" className="text-sm text-destructive">{deleteError}</p>}
@@ -173,8 +180,10 @@ export default function Library({ migrationReadOnly = false, canEdit = true }) {
             />
             <SongLibrary
               songs={filtered}
+              extraTracks={personalSpotifyEnabled ? <div ref={setSpotifyRowsTarget} className="flex flex-col gap-1.5 empty:hidden" /> : undefined}
+              hasExtraTracks={spotifyCounts.visible > 0}
               loading={loading}
-              currentSongId={currentSongId}
+              currentSongId={spotifyPlayback ? null : currentSongId}
               onPlay={dj.playNow}
               onAddQueue={dj.addToQueue}
               onEdit={allowEdits ? setEditorSong : undefined}
@@ -190,7 +199,7 @@ export default function Library({ migrationReadOnly = false, canEdit = true }) {
         </div>
       </PullToRefresh>
 
-      <Player />
+      <Player spotifyPlayback={spotifyPlayback} />
 
       {allowEdits && editorSong && (
         <Suspense fallback={null}>

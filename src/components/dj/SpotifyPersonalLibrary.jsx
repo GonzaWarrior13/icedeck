@@ -1,10 +1,12 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
+import SongCard from '@/components/dj/SongCard';
+import { createPortal } from 'react-dom';
 import { spotifyConnected } from '@/lib/spotifyStandalone';
 import { addPersonalSpotifyTrack, readPersonalSpotifyTracks, removePersonalSpotifyTrack } from '@/lib/spotifyPersonalLibrary';
 
 import { mountPersonalSpotify } from '@/lib/spotifyPersonalPlayer';
 
-export default function SpotifyPersonalLibrary({ dj }) {
+export default function SpotifyPersonalLibrary({ dj, open, onOpen, filter, showTracks, rowsTarget, onCounts, playback, onPlayback }) {
   const [tracks, setTracks] = useState(readPersonalSpotifyTracks);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
@@ -20,17 +22,32 @@ export default function SpotifyPersonalLibrary({ dj }) {
   useEffect(() => {
     controller.current = mountPersonalSpotify(root.current, {
       setReady,
+      onPlayback,
       beforePlay() {
         if (currentDj.current.goalPlaying) throw new Error('Wait for the goal horn to finish.');
         currentDj.current.audio?.pause();
       },
     });
     return () => controller.current.dispose();
-  }, []);
+  }, [onPlayback]);
 
   useEffect(() => {
-    if (dj.isPlaying || dj.goalPlaying) controller.current?.pause();
+    if (dj.isPlaying || dj.goalPlaying) controller.current?.interrupt();
   }, [dj.isPlaying, dj.goalPlaying]);
+
+  useEffect(() => {
+    if (!playback) return;
+    function onSpace(event) {
+      if (event.code !== 'Space' || event.repeat || event.metaKey || event.ctrlKey || event.altKey ||
+        event.target?.closest?.('input, textarea, button, select, [contenteditable="true"]')) return;
+      event.preventDefault();
+      event.stopPropagation();
+      if (playback.isPlaying) playback.pause();
+      else playback.play();
+    }
+    window.addEventListener('keydown', onSpace, true);
+    return () => window.removeEventListener('keydown', onSpace, true);
+  }, [playback]);
 
   async function addTrack(event) {
     event.preventDefault();
@@ -55,8 +72,16 @@ export default function SpotifyPersonalLibrary({ dj }) {
     }
   }
 
+  const visibleTracks = showTracks ? tracks.filter(track =>
+    (track.title + ' ' + track.artist).toLowerCase().includes(filter.toLowerCase())) : [];
+
+  useEffect(() => {
+    onCounts({ total: tracks.length, visible: visibleTracks.length });
+  }, [onCounts, tracks.length, visibleTracks.length]);
+
   return (
-    <section ref={root} aria-label="Personal Spotify library" className="space-y-3 rounded-xl border border-border bg-card p-4">
+    <>
+    <section hidden={!open} ref={root} aria-label="Personal Spotify library" className="space-y-3 rounded-xl border border-border bg-card p-4">
       <h2 className="text-lg font-semibold">Spotify tracks</h2>
       <p id="status" role="status" className="text-sm text-muted-foreground">Checking Spotify connection?</p>
       <p id="error" role="alert" className="text-sm text-destructive" hidden />
@@ -75,36 +100,24 @@ export default function SpotifyPersonalLibrary({ dj }) {
         </form>
       ) : null}
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-      {tracks.length > 0 && (
-        <ul className="divide-y divide-border">
-          {tracks.map(track => (
-            <li key={track.id} className="flex flex-wrap items-center gap-3 py-2">
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-medium">{track.title}</p>
-                <p className="truncate text-sm text-muted-foreground">{track.artist}</p>
-              </div>
-              <button type="button" className="rounded-md border border-border px-3 py-1 disabled:opacity-50"
-                disabled={!ready || dj.goalPlaying} aria-label={'Play ' + track.title}
-                onClick={() => controller.current.playTrack(track.id)}>Play</button>
-              <a className="text-sm underline" href={'https://open.spotify.com/track/' + track.id}
-                target="_blank" rel="noreferrer">Spotify</a>
-              <button type="button" className="text-sm underline" aria-label={'Remove ' + track.title}
-                onClick={() => removeTrack(track.id)}>Remove</button>
-            </li>
-          ))}
-        </ul>
-      )}
       <div id="controls" className="space-y-3 border-t border-border pt-3" hidden>
-        <figure className="flex items-center gap-3" hidden>
-          <img alt="" className="h-12 w-12 rounded-md" hidden />
-          <figcaption className="text-sm font-medium" />
-        </figure>
-        <div className="flex items-center gap-3">
-          <button id="toggle" type="button" className="text-sm underline disabled:opacity-50" disabled>Pause</button>
-          <span id="progress" className="text-sm text-muted-foreground" />
-          <button id="disconnect" type="button" className="ml-auto text-sm underline">Disconnect Spotify</button>
-        </div>
+        <button id="disconnect" type="button" className="text-sm underline">Disconnect Spotify</button>
       </div>
     </section>
+    {rowsTarget && createPortal(visibleTracks.map(track => (
+      <SongCard key={track.id}
+        song={{...track, spotifyUrl: 'https://open.spotify.com/track/' + track.id}}
+        isActive={playback?.currentSong.id === track.id}
+        canPlay={!dj.goalPlaying && (!connected || ready)}
+        onPlay={() => {
+          if (ready) controller.current.playTrack(track.id);
+          else onOpen();
+        }}
+        onDelete={() => {
+          onOpen();
+          removeTrack(track.id);
+        }} />
+    )), rowsTarget)}
+    </>
   );
 }

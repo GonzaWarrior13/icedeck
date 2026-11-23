@@ -3,20 +3,16 @@ import {
   spotifyConnected, startSpotifyStandaloneAuth,
 } from '@/lib/spotifyStandalone';
 
-export function mountPersonalSpotify(root, { setReady, beforePlay }) {
+export function mountPersonalSpotify(root, { setReady, beforePlay, onPlayback }) {
   const listeners = new AbortController();
   const status = root.querySelector('#status');
   const error = root.querySelector('#error');
   const connect = root.querySelector('#connect');
   const controls = root.querySelector('#controls');
-  const toggle = root.querySelector('#toggle');
-  const figure = root.querySelector('figure');
-  const cover = figure.querySelector('img');
-  const caption = figure.querySelector('figcaption');
-  const progress = root.querySelector('#progress');
   let player;
   let deviceId;
-  let playing = false;
+  let volume = 0.4;
+  let selected = false;
   let starting = false;
 
   function showError(cause) {
@@ -25,32 +21,58 @@ export function mountPersonalSpotify(root, { setReady, beforePlay }) {
   }
 
   function updateButtons() {
-    setReady(Boolean(deviceId) && !starting);
-    toggle.disabled = !playing;
+    if (!listeners.signal.aborted) setReady(Boolean(deviceId) && !starting);
+
   }
 
   function showPlayerState(state) {
     const track = state?.track_window?.current_track;
-    playing = Boolean(track);
-    updateButtons();
-    figure.hidden = !track;
-    toggle.textContent = state?.paused ? 'Resume' : 'Pause';
-    if (!track) return;
-    caption.textContent = track.name + ' — ' + track.artists.map(artist => artist.name).join(', ');
-    const image = track.album?.images?.[0]?.url;
-    cover.hidden = !image;
-    if (image) cover.src = image;
-    else cover.removeAttribute('src');
-  }
-
-  function updateProgress(state) {
-    if (!state?.track_window?.current_track) {
-      progress.textContent = '';
+    if (!selected) return;
+    if (!track) {
+      onPlayback(null);
       return;
     }
-    const seconds = Math.floor(state.position / 1000);
-    progress.textContent = (state.paused ? 'Paused at ' : 'Playing at ') +
-      Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0');
+    onPlayback({
+      currentSong: {
+        id: track.id,
+        title: track.name,
+        artist: track.artists.map(artist => artist.name).join(', '),
+        cover: track.album?.images?.[0]?.url,
+      },
+      isPlaying: !state.paused,
+      duration: state.duration / 1000,
+      currentTime: state.position / 1000,
+      masterVolume: volume,
+      play: resume,
+      pause,
+      seek,
+      setMasterVolume,
+    });
+  }
+
+  async function resume() {
+    try {
+      beforePlay();
+      await player.activateElement();
+      await player.resume();
+    } catch (cause) {
+      showError(cause);
+    }
+  }
+
+  function pause() {
+    player?.pause().catch(showError);
+  }
+
+  function seek(seconds) {
+    player?.seek(Math.round(seconds * 1000)).catch(showError);
+  }
+
+  function setMasterVolume(value) {
+    player?.setVolume(value).then(() => {
+      volume = value;
+      return player.getCurrentState();
+    }).then(showPlayerState).catch(showError);
   }
 
   function loadSdk() {
@@ -90,7 +112,7 @@ export function mountPersonalSpotify(root, { setReady, beforePlay }) {
     if (listeners.signal.aborted) return;
     player = new Spotify.Player({
       name: 'IceDeck',
-      volume: 0.4,
+      volume,
       getOAuthToken: callback => { getAccessToken(true).then(callback).catch(showError); },
     });
     player.addListener('ready', ({device_id}) => {
@@ -104,7 +126,6 @@ export function mountPersonalSpotify(root, { setReady, beforePlay }) {
       status.textContent = 'Spotify player offline. Reload to reconnect.';
     });
     player.addListener('player_state_changed', showPlayerState);
-    player.addListener('player_state_changed', updateProgress);
     player.addListener('autoplay_failed', () => showError(new Error('Browser playback was blocked. Click Play again.')));
     for (const name of ['initialization_error','authentication_error','account_error','playback_error']) {
       player.addListener(name, showError);
@@ -121,11 +142,15 @@ export function mountPersonalSpotify(root, { setReady, beforePlay }) {
     try {
       const uri = 'spotify:track:' + id;
       beforePlay();
+      selected = true;
       await player.activateElement();
+      const token = await getAccessToken(true);
+      if (!selected || listeners.signal.aborted) return;
       const response = await fetch('https://api.spotify.com/v1/me/player/play?device_id=' + encodeURIComponent(deviceId), {
         method: 'PUT',
-        headers: {'Content-Type': 'application/json', Authorization: 'Bearer ' + await getAccessToken(true)},
+        headers: {'Content-Type': 'application/json', Authorization: 'Bearer ' + token},
         body: JSON.stringify({uris:[uri]}),
+        signal: listeners.signal,
       });
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
@@ -139,14 +164,6 @@ export function mountPersonalSpotify(root, { setReady, beforePlay }) {
     }
   }
 
-  toggle.addEventListener('click', async () => {
-    try {
-      if ((await player.getCurrentState())?.paused) beforePlay();
-      await player.togglePlay();
-    } catch (cause) {
-      showError(cause);
-    }
-  }, {signal: listeners.signal});
   root.querySelector('#disconnect').addEventListener('click', () => {
     player?.disconnect();
     disconnectSpotifyStandalone(true);
@@ -168,13 +185,20 @@ export function mountPersonalSpotify(root, { setReady, beforePlay }) {
 
   }
   initialize();
-  const clock = setInterval(() => player?.getCurrentState().then(updateProgress).catch(showError), 1000);
+  const clock = setInterval(() => player?.getCurrentState().then(showPlayerState).catch(showError), 1000);
   return {
     playTrack,
-    pause: () => player?.pause().catch(() => {}),
+    interrupt() {
+      if (!selected) return;
+      selected = false;
+      onPlayback(null);
+      pause();
+    },
     dispose() {
       listeners.abort();
       clearInterval(clock);
+      selected = false;
+      onPlayback(null);
       player?.disconnect();
     },
   };
