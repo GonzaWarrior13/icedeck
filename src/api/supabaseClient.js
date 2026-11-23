@@ -71,12 +71,6 @@ export async function verifyRecoveryTokenHash(tokenHash) {
     body: JSON.stringify({ token_hash: tokenHash, type: 'recovery' }),
   });
 }
-export async function exchangeAuthCode(code) {
-  return request('/auth/v1/token?grant_type=pkce', null, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ auth_code: code, code_verifier: sessionStorage.getItem('icedeck_auth_code_verifier') || '' }),
-  });
-}
 export async function changePassword(token, newPassword) {
   return request('/auth/v1/user', token, {
     method: 'PUT', headers: { 'Content-Type': 'application/json' },
