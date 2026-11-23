@@ -1,19 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { Music, X, Loader2 } from 'lucide-react';
+import SongUploader from '@/components/dj/SongUploader';
 import {
   spotifyConfigured, spotifyConnected, spotifyCallbackUrl,
   disconnectSpotifyStandalone, startSpotifyStandaloneAuth,
   getSpotifyPlaylistsStandalone, getSpotifyPlaylistItemsStandalone,
 } from '@/lib/spotifyStandalone';
 
-// Spotify API metadata is not MP3 audio. This screen deliberately does NOT
-// copy unplayable Spotify tracks into a Supabase hockey music library.
-export default function SpotifySetupNotice() {
+export default function SpotifySetupNotice({ onUploaded }) {
   const [open, setOpen] = useState(false);
   const [connected, setConnected] = useState(spotifyConnected);
   const [playlists, setPlaylists] = useState([]);
   const [tracks, setTracks] = useState([]);
   const [selected, setSelected] = useState(null);
+  const [selectedTrackIndex, setSelectedTrackIndex] = useState(null);
+  const [uploaded, setUploaded] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   useEffect(() => {
@@ -27,14 +28,16 @@ export default function SpotifySetupNotice() {
   }, [open, connected]);
   const inspect = async playlist => {
     setBusy(true); setError(''); setSelected(playlist);
+    setTracks([]); setSelectedTrackIndex(null); setUploaded('');
     try { setTracks(await getSpotifyPlaylistItemsStandalone(playlist.id)); }
     catch(e) { setError(e.message); }
     finally { setBusy(false); }
   };
+  const selectedTrack = selectedTrackIndex === null ? null : tracks[selectedTrackIndex];
   return <div className="relative">
     <button type="button" onClick={() => setOpen(v => !v)} aria-expanded={open}
       className="inline-flex items-center gap-1.5 min-h-9 rounded-[10px] border border-border px-2.5 text-[13px] font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors md:min-h-10 md:px-3.5 md:text-sm">
-      <Music className="w-4 h-4" aria-hidden="true" /> {connected ? 'Spotify connected' : 'Connect Spotify'}
+      <Music className="w-4 h-4" aria-hidden="true" /> Spotify playlists
     </button>
     {open && <div className="absolute right-0 mt-2 z-30 w-96 max-w-[calc(100vw-2rem)] rounded-[10px] border border-border bg-popover p-4 space-y-3 shadow-lg">
       <div className="flex justify-between gap-2 items-center">
@@ -51,7 +54,7 @@ export default function SpotifySetupNotice() {
         <p className="text-xs text-muted-foreground">Redirect URI: {spotifyCallbackUrl()}</p>
       </div> : <>
         <button type="button" className="text-xs underline" onClick={() => {
-          disconnectSpotifyStandalone(); setConnected(false); setPlaylists([]); setSelected(null); setTracks([]);
+          disconnectSpotifyStandalone(); setConnected(false); setPlaylists([]); setSelected(null); setTracks([]); setSelectedTrackIndex(null); setUploaded('');
         }}>Disconnect Spotify</button>
         {busy && <p className="flex items-center gap-2 text-xs"><Loader2 className="w-4 h-4 animate-spin" /> Loading…</p>}
         {!selected ? <div className="max-h-64 overflow-y-auto space-y-1">
@@ -60,16 +63,36 @@ export default function SpotifySetupNotice() {
           </button>)}
           {!busy && playlists.length === 0 && <p className="text-sm text-muted-foreground">No accessible playlists found.</p>}
         </div> : <>
-          <button type="button" onClick={() => { setSelected(null); setTracks([]); }} className="text-xs underline">Back to playlists</button>
+          <button type="button" onClick={() => { setSelected(null); setTracks([]); setSelectedTrackIndex(null); setUploaded(''); }} className="text-xs underline">Back to playlists</button>
           <p className="font-medium text-sm">{selected.name}</p>
           <ul className="max-h-56 overflow-y-auto space-y-1">
-            {tracks.map((t,i) => <li key={t.id || i} className="text-xs border-b border-border py-1">{t.name || 'Unknown track'} — {(t.artists || []).map(a=>a.name).join(', ')}</li>)}
+            {tracks.map((track, index) => (
+              <li key={`${track.id || 'track'}-${index}`} className="border-b border-border">
+                <button type="button" aria-pressed={selectedTrackIndex === index}
+                  className="w-full rounded px-2 py-2 text-left text-sm hover:bg-secondary aria-pressed:bg-secondary"
+                  onClick={() => { setSelectedTrackIndex(index); setUploaded(''); }}>
+                  {track.name || 'Unknown track'}
+                  <span className="block text-xs text-muted-foreground">{(track.artists || []).map(artist => artist.name).join(', ')}</span>
+                </button>
+              </li>
+            ))}
           </ul>
+          {!busy && !tracks.length && !error && <p className="text-sm text-muted-foreground">This playlist has no accessible tracks.</p>}
+          {selectedTrack && <div className="space-y-2">
+            <p className="text-sm">Upload an audio file for <strong>{selectedTrack.name}</strong>.</p>
+            <SongUploader key={selectedTrackIndex} useSupabase
+              trackMetadata={{
+                title: selectedTrack.name,
+                artist: (selectedTrack.artists || []).map(artist => artist.name).join(', '),
+              }}
+              onUploaded={song => { onUploaded(song); setUploaded(song.title); }}
+            />
+          </div>}
+          {uploaded && <p role="status" className="text-sm">Added {uploaded} to the Library.</p>}
         </>}
       </>}
       <p className="text-xs text-muted-foreground leading-relaxed">
-        Spotify connection allows viewing your playlist information. It does not provide downloadable MP3 files or authorize playback inside IceDeck.
-        Spotify developer access may require Premium and an approved test-user account.
+        Pick a song, then attach an audio file you have permission to use. IceDeck fills in the title and artist.
       </p>
     </div>}
   </div>;

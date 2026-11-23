@@ -281,8 +281,8 @@ export async function uploadTeamMp3(accessToken, file, metadata = {}) {
   const storagePath = `${getSelectedTeamId()}/${legacyId}.${extension}`;
   const payload = {
     team_id: getSelectedTeamId(), scope: 'team', legacy_id: legacyId,
-    title: file.name.replace(/\.[^.]+$/i, '').slice(0, 250),
-    artist: 'Unknown', source: 'local', storage_path: storagePath,
+    title: (metadata.title?.trim() || file.name.replace(/\.[^.]+$/i, '')).slice(0, 250),
+    artist: (metadata.artist?.trim() || 'Unknown').slice(0, 250), source: 'local', storage_path: storagePath,
     duration: Math.max(0, Math.round(metadata.duration || 0)),
     start_point: 0, volume: metadata.volume ?? 100, tags: [],
     ...(Number.isFinite(metadata.loudness_db) ? { loudness_db: metadata.loudness_db } : {}),

@@ -145,11 +145,12 @@ export default function Library({ migrationReadOnly = false, canEdit = true }) {
           <div className="flex items-center gap-1.5 md:gap-2">
             {allowEdits && <SongUploader onUploaded={handleUploaded} useSupabase={migrationReadOnly} />}
             {allowEdits && (migrationReadOnly
-              ? personalSpotifyEnabled
-                ? <button type="button" aria-expanded={spotifyOpen}
+              ? <>
+                  <SpotifySetupNotice onUploaded={handleUploaded} />
+                  {personalSpotifyEnabled && <button type="button" aria-expanded={spotifyOpen}
                     className="rounded-md border border-border px-3 py-2 text-sm"
-                    onClick={() => setSpotifyOpen(open => !open)}>Spotify</button>
-                : <SpotifySetupNotice />
+                    onClick={() => setSpotifyOpen(open => !open)}>Spotify player</button>}
+                </>
               : <SpotifyImport
                   existingSongs={songs}
                   onImported={(created) => queryClient.setQueryData(SONGS_KEY, (prev = []) => [...created, ...prev])}

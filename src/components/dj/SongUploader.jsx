@@ -1,11 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { uploadTeamMp3, MAX_MP3_BYTES, SUPPORTED_AUDIO, getFreshPreviewToken } from '@/api/supabaseClient';
-import { getMigrationToken } from '@/hooks/useDjData';
 import { Loader2, UploadCloud } from 'lucide-react';
 import { analyzeLoudness, referenceDb, volumeForDb } from '@/lib/audio';
 
-export default function SongUploader({ onUploaded, useSupabase = false }) {
+export default function SongUploader({ onUploaded, useSupabase = false, trackMetadata }) {
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState('');
   const [error, setError] = useState('');
@@ -42,6 +41,8 @@ export default function SongUploader({ onUploaded, useSupabase = false }) {
           } finally { URL.revokeObjectURL(localUrl); }
           setProgress(`Uploading ${file.name}…`);
           const created = await uploadTeamMp3(token, file, {
+            title: trackMetadata?.title,
+            artist: trackMetadata?.artist,
             duration,
             ...(Number.isFinite(loudness) ? { loudness_db: Math.round(loudness * 10) / 10 } : {}),
           });
@@ -113,7 +114,7 @@ export default function SongUploader({ onUploaded, useSupabase = false }) {
       <span className="max-w-[132px] truncate md:max-w-none">
         {uploading ? (
           progress
-        ) : (
+        ) : trackMetadata ? 'Choose audio file' : (
           <>
             <span className="md:hidden">Upload</span>
             <span className="hidden md:inline">Upload tracks</span>
@@ -125,7 +126,9 @@ export default function SongUploader({ onUploaded, useSupabase = false }) {
         ref={inputRef}
         type="file"
         accept="audio/*,video/mp4,.mp3,.mp4,.m4a,.wav,.ogg"
-        multiple
+        multiple={!trackMetadata}
+        disabled={uploading}
+        aria-label={trackMetadata ? `Choose audio file for ${trackMetadata.title}` : 'Upload audio tracks'}
         className="hidden"
         onChange={(e) => handleFiles(e.target.files)}
       />
