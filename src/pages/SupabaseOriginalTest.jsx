@@ -11,7 +11,7 @@ import Playlists from '@/pages/Playlists';
 import SupabaseSettings from '@/pages/SupabaseSettings';
 import { completeSpotifyStandaloneAuth } from '@/lib/spotifyStandalone';
 import { SONGS_KEY, PLAYLISTS_KEY, setMigrationData, setMigrationToken } from '@/hooks/useDjData';
-import { signIn, signUp, requestPasswordReset, changePassword, signOut, startGoogleSignIn, createTeam, getStoredPreviewSession, getFreshPreviewToken, getTeamSongs, getTeamPlaylists, createPrivateAudioUrl, setPreviewSession, getMyTeams, setSelectedTeamId, getSignedInUser } from '@/api/supabaseClient';
+import { signIn, signUp, requestPasswordReset, verifyRecoveryTokenHash, changePassword, signOut, startGoogleSignIn, createTeam, getStoredPreviewSession, getFreshPreviewToken, getTeamSongs, getTeamPlaylists, createPrivateAudioUrl, setPreviewSession, getMyTeams, setSelectedTeamId, getSignedInUser } from '@/api/supabaseClient';
 
 // The original IceDeck layout and pages, isolated from production Base44.
 function SupabaseHome({ canEdit }) {
@@ -62,21 +62,40 @@ function OriginalInterface() {
           }
         }
         const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+        const search = new URLSearchParams(window.location.search);
         const oauthToken = hash.get('access_token');
         const oauthRefresh = hash.get('refresh_token');
+        const isRecovery = hash.get('type') === 'recovery' || search.get('type') === 'recovery'
+          || search.get('password-recovery') === '1';
+        const tokenHash = search.get('token_hash');
+        if (isRecovery && tokenHash) {
+          const recovered = await verifyRecoveryTokenHash(tokenHash);
+          if (!recovered?.access_token) throw new Error('Password reset link is invalid or expired.');
+          setPreviewSession(null);
+          setRecoveryToken(recovered.access_token);
+          setAuthMode('reset');
+          window.history.replaceState({}, '', window.location.pathname);
+          return;
+        }
+        if (isRecovery && oauthToken) {
+          setPreviewSession(null);
+          setRecoveryToken(oauthToken);
+          setAuthMode('reset');
+          window.history.replaceState({}, '', window.location.pathname);
+          return;
+        }
         if (oauthToken && oauthRefresh) {
           window.history.replaceState({}, '', window.location.pathname);
-          if (hash.get('type') === 'recovery') {
-            setPreviewSession(null);
-            setRecoveryToken(oauthToken);
-            setAuthMode('reset');
-            return;
-          }
           if (!cancelled) await adoptSession({
             access_token: oauthToken,
             refresh_token: oauthRefresh,
             expires_in: Number(hash.get('expires_in') || 3600),
           });
+          return;
+        }
+        if (isRecovery) {
+          setAuthMode('forgot');
+          setError('The reset link did not include a valid recovery token. Request a new email.');
           return;
         }
         const stored = getStoredPreviewSession();
