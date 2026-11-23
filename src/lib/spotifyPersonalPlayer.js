@@ -3,7 +3,7 @@ import {
   spotifyConnected, startSpotifyStandaloneAuth,
 } from '@/lib/spotifyStandalone';
 
-export function mountPersonalSpotify(root, { setReady, beforePlay, onPlayback }) {
+export function mountPersonalSpotify(root, { setReady, beforePlay, onPlayback, onTrackEnded }) {
   const listeners = new AbortController();
   const status = root.querySelector('#status');
   const error = root.querySelector('#error');
@@ -13,6 +13,9 @@ export function mountPersonalSpotify(root, { setReady, beforePlay, onPlayback })
   let deviceId;
   let volume = 0.4;
   let selected = false;
+  let requestedTrack;
+  let lastPosition = 0;
+  let finished = false;
   let starting = false;
 
   function showError(cause) {
@@ -31,6 +34,17 @@ export function mountPersonalSpotify(root, { setReady, beforePlay, onPlayback })
     if (!track) {
       onPlayback(null);
       return;
+    }
+    if (track.id !== requestedTrack?.id && track.linked_from?.id !== requestedTrack?.id) return;
+    const end = requestedTrack.end_point > 0 ? requestedTrack.end_point * 1000 : state.duration;
+    const naturalEnd = state.paused && lastPosition > 0 && lastPosition >= state.duration - 1500 && state.position === 0;
+    lastPosition = state.position;
+    if (!finished && (naturalEnd || (end > 0 && state.position >= end))) {
+      finished = true;
+      const endedTrack = requestedTrack;
+      player.pause().then(() => {
+        if (selected && requestedTrack === endedTrack) onTrackEnded?.(endedTrack.id);
+      }).catch(showError);
     }
     onPlayback({
       currentSong: {
@@ -54,7 +68,8 @@ export function mountPersonalSpotify(root, { setReady, beforePlay, onPlayback })
     try {
       beforePlay();
       await player.activateElement();
-      await player.resume();
+      if (finished) await playTrack(requestedTrack);
+      else await player.resume();
     } catch (cause) {
       showError(cause);
     }
@@ -134,22 +149,25 @@ export function mountPersonalSpotify(root, { setReady, beforePlay, onPlayback })
   }
 
   connect.addEventListener('click', () => startSpotifyStandaloneAuth(true).catch(showError), {signal: listeners.signal});
-  async function playTrack(id) {
+  async function playTrack(track) {
     if (!deviceId || starting) return;
     error.hidden = true;
     starting = true;
     updateButtons();
     try {
-      const uri = 'spotify:track:' + id;
+      const uri = 'spotify:track:' + track.id;
       beforePlay();
       selected = true;
+      requestedTrack = track;
+      lastPosition = 0;
+      finished = false;
       await player.activateElement();
       const token = await getAccessToken(true);
       if (!selected || listeners.signal.aborted) return;
       const response = await fetch('https://api.spotify.com/v1/me/player/play?device_id=' + encodeURIComponent(deviceId), {
         method: 'PUT',
         headers: {'Content-Type': 'application/json', Authorization: 'Bearer ' + token},
-        body: JSON.stringify({uris:[uri]}),
+        body: JSON.stringify({uris:[uri], position_ms: Math.round((track.start_point || 0) * 1000)}),
         signal: listeners.signal,
       });
       if (!response.ok) {
@@ -185,7 +203,7 @@ export function mountPersonalSpotify(root, { setReady, beforePlay, onPlayback })
 
   }
   initialize();
-  const clock = setInterval(() => player?.getCurrentState().then(showPlayerState).catch(showError), 1000);
+  const clock = setInterval(() => player?.getCurrentState().then(showPlayerState).catch(showError), 350);
   return {
     playTrack,
     interrupt() {

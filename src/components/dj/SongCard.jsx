@@ -6,7 +6,7 @@ import { Play, Plus, Scissors, Star, Trash2 } from 'lucide-react';
 const iconButton =
   'flex h-11 w-11 items-center justify-center rounded-[8px] transition-colors md:h-9 md:w-9';
 
-export default function SongCard({ song, isActive, onPlay, onAddQueue, onEdit, onDelete, onToggleQuick, canPlay }) {
+export default function SongCard({ song, isActive, onPlay, onAddQueue, onEdit, onDelete, onToggleQuick, canPlay, extraActions }) {
   const tags = song.tags || [];
   const isQuick = tags.includes('quick');
   // Spotify imports carry no audio file unless Spotify serves a preview clip.
@@ -94,6 +94,7 @@ export default function SongCard({ song, isActive, onPlay, onAddQueue, onEdit, o
         >
           <Scissors className="w-4 h-4" aria-hidden="true" />
         </button>}
+        {extraActions}
         {onDelete && <button
           onClick={() => onDelete(song)}
           title="Delete"

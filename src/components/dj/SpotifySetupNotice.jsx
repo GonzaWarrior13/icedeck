@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Music, X, Loader2 } from 'lucide-react';
+import { saveSpotifyPlaylistTracks } from '@/lib/spotifyPersonalLibrary';
 import SongUploader from '@/components/dj/SongUploader';
 import {
   spotifyConfigured, spotifyConnected, spotifyCallbackUrl,
@@ -7,7 +8,7 @@ import {
   getSpotifyPlaylistsStandalone, getSpotifyPlaylistItemsStandalone,
 } from '@/lib/spotifyStandalone';
 
-export default function SpotifySetupNotice({ onUploaded }) {
+export default function SpotifySetupNotice({ onUploaded, allowStreamingImport }) {
   const [open, setOpen] = useState(false);
   const [connected, setConnected] = useState(spotifyConnected);
   const [playlists, setPlaylists] = useState([]);
@@ -15,6 +16,7 @@ export default function SpotifySetupNotice({ onUploaded }) {
   const [selected, setSelected] = useState(null);
   const [selectedTrackIndex, setSelectedTrackIndex] = useState(null);
   const [uploaded, setUploaded] = useState('');
+  const [chosenIds, setChosenIds] = useState([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   useEffect(() => {
@@ -28,11 +30,21 @@ export default function SpotifySetupNotice({ onUploaded }) {
   }, [open, connected]);
   const inspect = async playlist => {
     setBusy(true); setError(''); setSelected(playlist);
-    setTracks([]); setSelectedTrackIndex(null); setUploaded('');
+    setTracks([]); setSelectedTrackIndex(null); setUploaded(''); setChosenIds([]);
     try { setTracks(await getSpotifyPlaylistItemsStandalone(playlist.id)); }
     catch(e) { setError(e.message); }
     finally { setBusy(false); }
   };
+  function addSelection() {
+    try {
+      saveSpotifyPlaylistTracks(tracks.filter(track => chosenIds.includes(track.id)));
+      setUploaded('Selected songs are in the Library.');
+      setChosenIds([]);
+      setError('');
+    } catch (cause) {
+      setError(cause.message);
+    }
+  }
   const selectedTrack = selectedTrackIndex === null ? null : tracks[selectedTrackIndex];
   return <div className="relative">
     <button type="button" onClick={() => setOpen(v => !v)} aria-expanded={open}
@@ -68,17 +80,30 @@ export default function SpotifySetupNotice({ onUploaded }) {
           <ul className="max-h-56 overflow-y-auto space-y-1">
             {tracks.map((track, index) => (
               <li key={`${track.id || 'track'}-${index}`} className="border-b border-border">
-                <button type="button" aria-pressed={selectedTrackIndex === index}
+                {allowStreamingImport ? (
+                  <label className="flex cursor-pointer items-center gap-2 px-2 py-2 text-sm">
+                    <input type="checkbox" disabled={!track.id || track.is_local || track.type === 'episode'}
+                      checked={chosenIds.includes(track.id)}
+                      onChange={event => setChosenIds(ids => event.target.checked ? [...ids, track.id] : ids.filter(id => id !== track.id))} />
+                    <span>{track.name || 'Unknown track'}
+                      <span className="block text-xs text-muted-foreground">{(track.artists || []).map(artist => artist.name).join(', ')}</span>
+                    </span>
+                  </label>
+                ) : <button type="button" aria-pressed={selectedTrackIndex === index}
                   className="w-full rounded px-2 py-2 text-left text-sm hover:bg-secondary aria-pressed:bg-secondary"
                   onClick={() => { setSelectedTrackIndex(index); setUploaded(''); }}>
                   {track.name || 'Unknown track'}
                   <span className="block text-xs text-muted-foreground">{(track.artists || []).map(artist => artist.name).join(', ')}</span>
-                </button>
+                </button>}
               </li>
             ))}
           </ul>
           {!busy && !tracks.length && !error && <p className="text-sm text-muted-foreground">This playlist has no accessible tracks.</p>}
-          {selectedTrack && <div className="space-y-2">
+          {allowStreamingImport && <button type="button" disabled={!chosenIds.length || busy}
+            onClick={addSelection} className="rounded bg-primary px-3 py-2 text-sm text-primary-foreground disabled:opacity-50">
+            Add selected to Library
+          </button>}
+          {!allowStreamingImport && selectedTrack && <div className="space-y-2">
             <p className="text-sm">Upload an audio file for <strong>{selectedTrack.name}</strong>.</p>
             <SongUploader key={selectedTrackIndex} useSupabase
               trackMetadata={{
@@ -88,11 +113,11 @@ export default function SpotifySetupNotice({ onUploaded }) {
               onUploaded={song => { onUploaded(song); setUploaded(song.title); }}
             />
           </div>}
-          {uploaded && <p role="status" className="text-sm">Added {uploaded} to the Library.</p>}
+          {uploaded && <p role="status" className="text-sm">{allowStreamingImport ? uploaded : `Added ${uploaded} to the Library.`}</p>}
         </>}
       </>}
       <p className="text-xs text-muted-foreground leading-relaxed">
-        Pick a song, then attach an audio file you have permission to use. IceDeck fills in the title and artist.
+        {allowStreamingImport ? 'Select tracks to stream through Spotify in your personal Library.' : 'Pick a song, then attach its audio file. IceDeck fills in the title and artist.'}
       </p>
     </div>}
   </div>;

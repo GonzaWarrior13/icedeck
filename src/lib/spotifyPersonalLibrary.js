@@ -1,4 +1,4 @@
-﻿import { getAccessToken } from './spotifyStandalone';
+import { getAccessToken } from './spotifyStandalone';
 
 const storageKey = 'icedeck_personal_spotify_library';
 
@@ -29,18 +29,48 @@ export async function addPersonalSpotifyTrack(input) {
   });
   if (!response.ok) throw new Error('Spotify could not find this track (' + response.status + ').');
   const track = await response.json();
-  const updated = readPersonalSpotifyTracks().filter(track => track.id !== id);
-  updated.unshift({
-    id,
-    title: track.name,
-    artist: track.artists.map(artist => artist.name).join(', '),
-  });
-  localStorage.setItem(storageKey, JSON.stringify(updated));
-  return updated;
+  return saveSpotifyPlaylistTracks([{...track, id}]);
+}
+
+function writeTracks(tracks) {
+  localStorage.setItem(storageKey, JSON.stringify(tracks));
+  window.dispatchEvent(new Event('icedeck:spotify-library'));
+  return tracks;
+}
+
+export function saveSpotifyPlaylistTracks(selection) {
+  const tracks = new Map(readPersonalSpotifyTracks().map(track => [track.id, track]));
+  for (const track of selection) {
+    if (!/^[A-Za-z0-9]{22}$/.test(track.id || '') || !track.name || tracks.has(track.id)) continue;
+    tracks.set(track.id, {
+      id: track.id,
+      title: track.name,
+      artist: (track.artists || []).map(artist => artist.name).join(', '),
+      duration: (track.duration_ms || 0) / 1000,
+    });
+  }
+  return writeTracks([...tracks.values()]);
+}
+
+export function updatePersonalSpotifyTrack(id, changes) {
+  return writeTracks(readPersonalSpotifyTracks().map(track => track.id === id ? {...track, ...changes} : track));
 }
 
 export function removePersonalSpotifyTrack(id) {
-  const tracks = readPersonalSpotifyTracks().filter(track => track.id !== id);
-  localStorage.setItem(storageKey, JSON.stringify(tracks));
-  return tracks;
+  return writeTracks(readPersonalSpotifyTracks().filter(track => track.id !== id));
+}
+
+const collectionsKey = 'icedeck_personal_spotify_collections';
+
+export function readSpotifyCollections() {
+  try {
+    const value = JSON.parse(localStorage.getItem(collectionsKey));
+    if (Array.isArray(value?.queue) && Array.isArray(value?.setlists)) return value;
+  } catch {}
+  return {queue: [], setlists: []};
+}
+
+export function saveSpotifyCollections(collections) {
+  localStorage.setItem(collectionsKey, JSON.stringify(collections));
+  return collections;
 }

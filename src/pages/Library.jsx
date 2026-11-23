@@ -44,7 +44,7 @@ export default function Library({ migrationReadOnly = false, canEdit = true }) {
 
   const refresh = useCallback(() => refetch(), [refetch]);
 
-  const allTags = ['All', ...Array.from(new Set(songs.flatMap((s) => s.tags || [])))];
+  const allTags = ['All', ...Array.from(new Set([...songs.flatMap((s) => s.tags || []), ...(spotifyCounts.starred ? ['quick'] : [])]))];
 
   const filtered = songs.filter((s) => {
     const matchText = !filter || (s.title + ' ' + (s.artist || '')).toLowerCase().includes(filter.toLowerCase());
@@ -146,7 +146,7 @@ export default function Library({ migrationReadOnly = false, canEdit = true }) {
             {allowEdits && <SongUploader onUploaded={handleUploaded} useSupabase={migrationReadOnly} />}
             {allowEdits && (migrationReadOnly
               ? <>
-                  <SpotifySetupNotice onUploaded={handleUploaded} />
+                  <SpotifySetupNotice onUploaded={handleUploaded} allowStreamingImport={personalSpotifyEnabled} />
                   {personalSpotifyEnabled && <button type="button" aria-expanded={spotifyOpen}
                     className="rounded-md border border-border px-3 py-2 text-sm"
                     onClick={() => setSpotifyOpen(open => !open)}>Spotify player</button>}
@@ -162,7 +162,7 @@ export default function Library({ migrationReadOnly = false, canEdit = true }) {
         {SpotifyPersonalLibrary && personalSpotifyEnabled && (
           <Suspense fallback={null}>
             <SpotifyPersonalLibrary dj={dj} open={spotifyOpen} onOpen={() => setSpotifyOpen(true)}
-              filter={filter} showTracks={activeTag === 'All'} rowsTarget={spotifyRowsTarget}
+              filter={filter} activeTag={activeTag} rowsTarget={spotifyRowsTarget}
               onCounts={setSpotifyCounts} playback={spotifyPlayback} onPlayback={setSpotifyPlayback} />
           </Suspense>
         )}
