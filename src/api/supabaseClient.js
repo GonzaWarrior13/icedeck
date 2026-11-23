@@ -83,21 +83,6 @@ export async function signOut(accessToken) {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
   });
 }
-// Google Identity Services returns a Google ID token to the browser.
-// Supabase verifies it server-side; the Google token is never used as a
-// Supabase session or stored in browser storage.
-export async function signInWithGoogleIdToken(idToken) {
-  if (!idToken) throw new Error('Google did not return an identity token.');
-  return request('/auth/v1/token?grant_type=id_token', null, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ provider: 'google', id_token: idToken }),
-  });
-}
-export function startGoogleSignIn() {
-  if (!isSupabaseConfigured) throw new Error('Supabase configuration missing');
-  const redirectTo = new URL('/', window.location.origin).toString();
-  window.location.assign(url + '/auth/v1/authorize?provider=google&redirect_to=' + encodeURIComponent(redirectTo));
-}
 export async function createTeam(name) {
   return request('/rest/v1/rpc/create_team', await getFreshPreviewToken(), {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
