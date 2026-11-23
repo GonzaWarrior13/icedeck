@@ -12,12 +12,15 @@ import TagFilter from '@/components/dj/TagFilter';
 import QuickAccess from '@/components/dj/QuickAccess';
 import SpotifyImport from '@/components/dj/SpotifyImport';
 import SpotifySetupNotice from '@/components/dj/SpotifySetupNotice';
+import { personalSpotifyEnabled } from '@/lib/spotifyStandalone';
 import NormalizeButton from '@/components/dj/NormalizeButton';
 import PullToRefresh from '@/components/dj/PullToRefresh';
 import ConfirmDialog from '@/components/dj/ConfirmDialog';
 
 // The waveform editor is heavy: it only loads when a track is opened for cueing.
 const StartPointEditor = lazy(() => import('@/components/dj/StartPointEditor'));
+
+const SpotifyPersonalLibrary = import.meta.env.DEV ? lazy(() => import('@/components/dj/SpotifyPersonalLibrary')) : null;
 
 export default function Library({ migrationReadOnly = false, canEdit = true }) {
   const allowEdits = !migrationReadOnly || canEdit;
@@ -142,6 +145,10 @@ export default function Library({ migrationReadOnly = false, canEdit = true }) {
             {allowEdits && <NormalizeButton useSupabase={migrationReadOnly} />}
           </div>
         </header>
+
+        {SpotifyPersonalLibrary && personalSpotifyEnabled && (
+          <Suspense fallback={null}><SpotifyPersonalLibrary /></Suspense>
+        )}
 
         {deleteError && <p role="alert" className="text-sm text-destructive">{deleteError}</p>}
         <QuickAccess songs={quickSongs} onPlay={dj.playNow} />

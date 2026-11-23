@@ -2,6 +2,7 @@ import {
   completeSpotifyStandaloneAuth, disconnectSpotifyStandalone, getAccessToken,
   spotifyConnected, startSpotifyStandaloneAuth,
 } from '@/lib/spotifyStandalone';
+import { spotifyTrackId } from '@/lib/spotifyPersonalLibrary';
 
 export function mountPersonalSpotify(root) {
   const listeners = new AbortController();
@@ -12,7 +13,10 @@ export function mountPersonalSpotify(root) {
   const play = root.querySelector('#play');
   const toggle = root.querySelector('#toggle');
   const trackInput = root.querySelector('#track');
-  trackInput.value = sessionStorage.getItem('icedeck_personal_track') || '';
+  const selectedTrack = new URLSearchParams(location.search).get('track');
+  trackInput.value = /^[A-Za-z0-9]{22}$/.test(selectedTrack || '')
+    ? 'https://open.spotify.com/track/' + selectedTrack
+    : sessionStorage.getItem('icedeck_personal_track') || '';
   const figure = root.querySelector('figure');
   const cover = figure.querySelector('img');
   const caption = figure.querySelector('figcaption');
@@ -54,15 +58,6 @@ export function mountPersonalSpotify(root) {
     const seconds = Math.floor(state.position / 1000);
     progress.textContent = (state.paused ? 'Paused at ' : 'Playing at ') +
       Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0');
-  }
-
-  function trackUri(input) {
-    const uri = input.trim().match(/^spotify:track:([A-Za-z0-9]{22})$/);
-    if (uri) return uri[0];
-    const link = new URL(input.trim());
-    const match = link.pathname.match(/^\/(?:intl-[a-z-]+\/)?track\/([A-Za-z0-9]{22})\/?$/i);
-    if (link.origin !== 'https://open.spotify.com' || !match) throw new Error('Paste the Spotify share link for one track.');
-    return 'spotify:track:' + match[1];
   }
 
   function loadSdk() {
@@ -133,7 +128,7 @@ export function mountPersonalSpotify(root) {
     updateButtons();
     try {
       let uri;
-      try { uri = trackUri(trackInput.value); }
+      try { uri = 'spotify:track:' + spotifyTrackId(trackInput.value); }
       catch { throw new Error('Paste the Spotify share link for one track.'); }
       sessionStorage.setItem('icedeck_personal_track', trackInput.value);
       await player.activateElement();
