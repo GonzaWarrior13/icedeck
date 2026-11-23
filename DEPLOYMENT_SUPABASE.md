@@ -54,7 +54,7 @@ For **email signup and password recovery**, verify Supabase Auth email
 configuration, email templates, SMTP limits, and the redirect allowlist.
 Test the emails before opening registration to customers.
 
-## 5. Configure Spotify OAuth (playlist browsing only)
+## 5. Configure Spotify OAuth
 
 Create a Spotify Developer app. Obtain a Client ID (NOT the Client Secret).
 Add `VITE_SPOTIFY_CLIENT_ID` as a Vite environment variable.
@@ -62,6 +62,12 @@ Add `VITE_SPOTIFY_CLIENT_ID` as a Vite environment variable.
 Register exact Spotify redirect URIs:
 - local: `http://127.0.0.1:5173/spotify-callback`
 - hosted: `https://YOUR-DEPLOYMENT-DOMAIN/spotify-callback`
+
+To test full tracks for personal listening, open
+`http://127.0.0.1:5173/spotify-personal` in desktop Chrome or Edge, connect a
+Spotify Premium account, then paste a Spotify track link. This uses a separate
+Spotify session from playlist browsing. The personal player is available only
+from the local development server on this address.
 
 Spotify uses Authorization Code + PKCE and may restrict Development Mode
 to Spotify Premium owners and a small allowlist of users. IceDeck can
@@ -105,7 +111,7 @@ the hosted horn URL will not exist.
 
 ## Known limitations
 
-- Spotify full-track playback is **not implemented**; only authenticated playlist browsing is.
+- Hosted Spotify access supports authenticated playlist browsing. The local development server also offers a separate personal playback test.
 - The hosted goal horn requires `public/goal-horn.mp3` from the user.
 - Existing Base44 code and SDK remain in the source branch to preserve the
   original app, even though standalone mode bypasses its authentication and APIs.

@@ -13,12 +13,14 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import { Navigate } from 'react-router-dom';
 import DjLayout from '@/components/dj/DjLayout';
 import { ThemeProvider } from '@/lib/ThemeProvider';
-import { lazy } from 'react';
+import { lazy, Suspense } from 'react';
+import { hasPendingPersonalSpotify, personalSpotifyEnabled, PERSONAL_SPOTIFY_PATH } from '@/lib/spotifyStandalone';
 
 // Route pages load on demand so the Android WebView boots light.
 const Home = lazy(() => import('@/pages/Home'));
 const Playlists = lazy(() => import('@/pages/Playlists'));
 const Settings = lazy(() => import('@/pages/Settings'));
+const SpotifyPersonal = import.meta.env.DEV ? lazy(() => import('@/pages/SpotifyPersonal')) : null;
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
@@ -72,6 +74,10 @@ const AuthenticatedApp = () => {
 
 
 function App() {
+  const path = window.location.pathname;
+  if (SpotifyPersonal && personalSpotifyEnabled && (path === PERSONAL_SPOTIFY_PATH || (path === '/spotify-callback' && hasPendingPersonalSpotify()))) {
+    return <Suspense fallback={<p>Loading Spotify player?</p>}><SpotifyPersonal /></Suspense>;
+  }
   // Hosting mode: IceDeck opens directly in Supabase without Base44 auth.
   if (import.meta.env.VITE_ICEDECK_STANDALONE === 'true') return <SupabaseOriginalTest />;
   // Standalone migration test: bypass Base44 public-settings/auth calls.

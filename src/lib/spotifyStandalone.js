@@ -7,48 +7,55 @@ const API_URL = 'https://api.spotify.com/v1';
 const PENDING_KEY = 'icedeck_spotify_pkce';
 const TOKEN_KEY = 'icedeck_spotify_session';
 export const spotifyConfigured = Boolean(CLIENT_ID);
+export const PERSONAL_SPOTIFY_PATH = '/spotify-personal';
+export const personalSpotifyEnabled = import.meta.env.DEV && window.location.origin === 'http://127.0.0.1:5173';
+const PERSONAL_PENDING_KEY = PENDING_KEY + '_personal';
+const PERSONAL_TOKEN_KEY = TOKEN_KEY + '_personal';
+export const hasPendingPersonalSpotify = () => Boolean(sessionStorage.getItem(PERSONAL_PENDING_KEY));
 export const spotifyCallbackUrl = () => window.location.origin + '/spotify-callback';
 
-function getSession() {
-  try { return JSON.parse(sessionStorage.getItem(TOKEN_KEY) || 'null'); } catch { return null; }
+function getSession(personal = false) {
+  try { return JSON.parse(sessionStorage.getItem(personal ? PERSONAL_TOKEN_KEY : TOKEN_KEY) || 'null'); } catch { return null; }
 }
-function storeSession(tokens, previous = null) {
+function storeSession(tokens, previous = null, personal = false) {
   const next = {
     access_token: tokens.access_token,
     refresh_token: tokens.refresh_token || previous?.refresh_token,
     expires_at: Date.now() + Math.max(30, (tokens.expires_in || 3600) - 60) * 1000,
   };
-  sessionStorage.setItem(TOKEN_KEY, JSON.stringify(next));
+  sessionStorage.setItem(personal ? PERSONAL_TOKEN_KEY : TOKEN_KEY, JSON.stringify(next));
   return next;
 }
-export function spotifyConnected() { return !!getSession()?.refresh_token; }
-export function disconnectSpotifyStandalone() { sessionStorage.removeItem(TOKEN_KEY); }
+export function spotifyConnected(personal = false) { return !!getSession(personal)?.refresh_token; }
+export function disconnectSpotifyStandalone(personal = false) { sessionStorage.removeItem(personal ? PERSONAL_TOKEN_KEY : TOKEN_KEY); }
 
-export async function startSpotifyStandaloneAuth() {
+export async function startSpotifyStandaloneAuth(personal = false) {
+  if (personal && !personalSpotifyEnabled) throw new Error('Personal playback requires the local IceDeck development server.');
   if (!CLIENT_ID) throw new Error('Set VITE_SPOTIFY_CLIENT_ID in the IceDeck environment first.');
   const verifier = Array.from(crypto.getRandomValues(new Uint8Array(48)), byte => byte.toString(16).padStart(2,'0')).join('');
   const challengeData = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
   const challenge = btoa(String.fromCharCode(...new Uint8Array(challengeData)))
     .replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
   const state = crypto.randomUUID();
-  sessionStorage.setItem(PENDING_KEY, JSON.stringify({ verifier, state }));
+  sessionStorage.setItem(personal ? PERSONAL_PENDING_KEY : PENDING_KEY, JSON.stringify({ verifier, state }));
   const url = new URL(AUTH_URL);
   url.search = new URLSearchParams({
     response_type:'code',
     client_id:CLIENT_ID,
     redirect_uri:spotifyCallbackUrl(),
     state,
-    scope:'playlist-read-private playlist-read-collaborative',
+    scope: personal ? 'streaming user-read-email user-read-private user-modify-playback-state' : 'playlist-read-private playlist-read-collaborative',
     code_challenge_method:'S256',
     code_challenge:challenge,
   }).toString();
   window.location.assign(url.toString());
 }
-export async function completeSpotifyStandaloneAuth() {
+export async function completeSpotifyStandaloneAuth(personal = false) {
   if (window.location.pathname !== '/spotify-callback') return false;
   const params = new URLSearchParams(window.location.search);
-  const pending = JSON.parse(sessionStorage.getItem(PENDING_KEY) || 'null');
-  sessionStorage.removeItem(PENDING_KEY);
+  const pendingKey = personal ? PERSONAL_PENDING_KEY : PENDING_KEY;
+  const pending = JSON.parse(sessionStorage.getItem(pendingKey) || 'null');
+  sessionStorage.removeItem(pendingKey);
   if (!pending || !params.get('state') || params.get('state') !== pending.state)
     throw new Error('Spotify connection could not be verified. Please try again.');
   if (params.get('error')) throw new Error('Spotify authorization was cancelled: ' + params.get('error'));
@@ -66,12 +73,12 @@ export async function completeSpotifyStandaloneAuth() {
   });
   const data = await result.json().catch(() => ({}));
   if (!result.ok || !data.access_token) throw new Error(data.error_description || data.error || 'Spotify login failed');
-  storeSession(data);
-  window.history.replaceState({}, '', '/');
+  storeSession(data, null, personal);
+  window.history.replaceState({}, '', personal ? PERSONAL_SPOTIFY_PATH : '/');
   return true;
 }
-async function getAccessToken() {
-  let tokens = getSession();
+export async function getAccessToken(personal = false) {
+  let tokens = getSession(personal);
   if (!tokens?.refresh_token) throw new Error('Connect Spotify first.');
   if (Date.now() < tokens.expires_at) return tokens.access_token;
   const response = await fetch(TOKEN_URL, {
@@ -85,10 +92,10 @@ async function getAccessToken() {
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok || !data.access_token) {
-    disconnectSpotifyStandalone();
+    disconnectSpotifyStandalone(personal);
     throw new Error(data.error_description || data.error || 'Spotify session expired. Reconnect your account.');
   }
-  tokens = storeSession(data,tokens);
+  tokens = storeSession(data, tokens, personal);
   return tokens.access_token;
 }
 async function spotifyRequest(path) {
