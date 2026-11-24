@@ -68,7 +68,7 @@ export default function DjLayout({ teamName, teamRole, onSwitchTeam } = {}) {
           </div>
         </aside>
 
-        <main className="flex-1 min-h-0 min-w-0 flex flex-col overflow-y-auto scroll-area md:overflow-visible">
+        <main className={`flex-1 min-h-0 min-w-0 flex flex-col overflow-y-auto scroll-area ${pathname === '/settings' ? '' : 'md:overflow-visible'}`}>
           {teamName && (
             <div className="flex min-h-11 shrink-0 items-center justify-between gap-3 border-b border-border px-4 md:px-8">
               <p className="min-w-0 truncate text-sm font-medium">{teamName}<span className="ml-2 hidden capitalize text-muted-foreground sm:inline">{teamRole}</span></p>
