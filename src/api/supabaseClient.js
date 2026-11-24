@@ -329,6 +329,22 @@ export async function uploadTeamMp3(accessToken, file, metadata = {}) {
   return { ...created[0], file_url, audioUrlExpiresAt: file_url ? audioUrlExpiresAt : 0 };
 }
 
+export async function getSharedTeamSongs() {
+  return request('/rest/v1/rpc/list_shared_team_songs', await getFreshPreviewToken());
+}
+
+export async function copySharedTeamSong(song) {
+  const teamId = getSelectedTeamId();
+  const token = await getFreshPreviewToken();
+  const sourceUrl = await createPrivateAudioUrl(song.storage_path, token, 120);
+  const response = await fetch(sourceUrl);
+  if (!response.ok) throw new Error('Could not read the shared audio. Try again.');
+  const audio = await response.blob();
+  if (teamId !== getSelectedTeamId()) throw new Error('Your active team changed. Open the shared library again.');
+  const file = new File([audio], song.storage_path.split('/').at(-1), { type: audio.type });
+  return uploadTeamMp3(token, file, song);
+}
+
 /** In-memory session for the migration preview; never stored in localStorage. */
 let previewSession = null;
 const SESSION_STORAGE_KEY = 'icedeck_supabase_session';

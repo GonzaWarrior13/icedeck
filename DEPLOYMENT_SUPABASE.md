@@ -18,3 +18,18 @@ The hosted build uses Vite and Supabase with Vercel. The legacy Base44 deploymen
 7. Test free, paid, expired, admin, and unauthorized identities against both the catalog API and the private audio endpoint. Verify the physical phone, output device, queue, cue editor, goal horn, file upload and account lifecycle before opening the launch.
 
 The launch build supports the private team library. Catalog queries and payment integration need to be connected using the new schema before advertising shared catalog tiers.
+
+## Enable the IceDeck-Main shared library
+
+Apply migration `20261124_013_shared_team_library.sql` to the Supabase project that holds both the source and destination teams. Start on staging. The migration leaves sharing off until a database operator selects the source team.
+
+In the SQL Editor, look up the source team and confirm its UUID. If multiple teams match, verify the right team before enabling sharing.
+
+```sql
+select id, name from public.teams where name ilike '%IceDeck-Main%';
+
+insert into public.shared_library_source (team_id)
+values ('REPLACE_WITH_SOURCE_TEAM_UUID'::uuid);
+```
+
+This shares existing and future supported audio files stored in that team's private audio folder with signed-in team members. Use a source team containing only recordings approved for sharing. Owners, admins and DJs can add a separate copy to a team they can edit. Test with a second team by copying a song, refreshing the library, then playing, cueing and deleting the copy. The source remains intact. To stop future sharing, run `delete from public.shared_library_source;`. Copies already imported remain in their teams.

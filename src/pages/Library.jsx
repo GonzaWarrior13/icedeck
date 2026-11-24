@@ -6,6 +6,7 @@ import { useDj } from '@/lib/DjContext';
 import { SONGS_KEY, PLAYLISTS_KEY, useSongs, updateMigrationSong, addMigrationSong, removeMigrationSong } from '@/hooks/useDjData';
 import SongUploader from '@/components/dj/SongUploader';
 import SongLibrary from '@/components/dj/SongLibrary';
+import SharedTeamLibrary from '@/components/dj/SharedTeamLibrary';
 import Queue from '@/components/dj/Queue';
 import Player from '@/components/dj/Player';
 import TagFilter from '@/components/dj/TagFilter';
@@ -129,6 +130,7 @@ export default function Library({ migrationReadOnly = false, canEdit = true }) {
             <p className="type-meta mt-1 hidden md:block">Cue, edit, and fade for game day.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            {migrationReadOnly && <SharedTeamLibrary canEdit={allowEdits} onAdded={handleUploaded} />}
             {allowEdits && <SongUploader onUploaded={handleUploaded} useSupabase={migrationReadOnly} />}
             {allowEdits && <NormalizeButton useSupabase={migrationReadOnly} />}
           </div>
