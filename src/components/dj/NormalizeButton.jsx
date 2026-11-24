@@ -16,7 +16,7 @@ export default function NormalizeButton({ useSupabase = false }) {
   const [error, setError] = useState('');
 
   const normalize = async () => {
-    const tracks = songs.filter((s) => s.storage_path || s.file_url || s.preview_url);
+    const tracks = songs.filter((s) => s.storage_path || s.file_url);
     if (!tracks.length) return;
     setRunning(true);
     setError('');
@@ -30,7 +30,7 @@ export default function NormalizeButton({ useSupabase = false }) {
           try {
             const url = useSupabase && track.storage_path
               ? await createPrivateAudioUrl(track.storage_path, await getFreshPreviewToken(), 3600)
-              : (track.preview_url || track.file_url);
+              : track.file_url;
             db = await analyzeLoudness(url);
           } catch {
             db = null; // a file we cannot decode keeps the volume it has

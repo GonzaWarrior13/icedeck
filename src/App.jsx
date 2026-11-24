@@ -14,17 +14,14 @@ import { Navigate } from 'react-router-dom';
 import DjLayout from '@/components/dj/DjLayout';
 import { ThemeProvider } from '@/lib/ThemeProvider';
 import { lazy } from 'react';
-import { personalSpotifyEnabled, PERSONAL_SPOTIFY_LIBRARY } from '@/lib/spotifyStandalone';
 
 // Route pages load on demand so the Android WebView boots light.
 const Home = lazy(() => import('@/pages/Home'));
 const Playlists = lazy(() => import('@/pages/Playlists'));
 const Settings = lazy(() => import('@/pages/Settings'));
 import Login from '@/pages/Login';
-import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
-import SpotifyCallback from '@/pages/SpotifyCallback';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -59,11 +56,8 @@ const AuthenticatedApp = () => {
           <Route path="/settings" element={<Settings />} />
         </Route>
       </Route>
-      <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
-        <Route path="/spotify-callback" element={<SpotifyCallback />} />
-      </Route>
       <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
+      <Route path="/register" element={<Navigate to="/login" replace />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="*" element={<PageNotFound />} />
@@ -73,10 +67,7 @@ const AuthenticatedApp = () => {
 
 
 function App() {
-  if (personalSpotifyEnabled && window.location.pathname === '/spotify-personal') {
-    window.history.replaceState({}, '', PERSONAL_SPOTIFY_LIBRARY);
-  }
-  // Hosting mode: IceDeck opens directly in Supabase without Base44 auth.
+  // Hosting mode: RinkBeats opens directly in Supabase without Base44 auth.
   if (import.meta.env.VITE_ICEDECK_STANDALONE === 'true') return <SupabaseOriginalTest />;
   // Standalone migration test: bypass Base44 public-settings/auth calls.
   if (window.location.pathname === '/supabase-test') return <SupabaseConnectionTest />;

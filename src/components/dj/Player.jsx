@@ -5,7 +5,7 @@ import { formatTime } from '@/lib/audio';
 import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Waves, Siren, ChevronDown } from 'lucide-react';
 
 // Persistent bottom player bar: 72px tall on desktop, hairline top border, no shadow.
-export default function Player({ spotifyPlayback } = {}) {
+export default function Player() {
   const dj = useDj();
   const { data: playlists = [] } = usePlaylists();
   const { data: librarySongs = [] } = useSongs();
@@ -24,12 +24,11 @@ export default function Player({ spotifyPlayback } = {}) {
   };
 
   const defaultPl = playlists.find((p) => p.id === dj.goalSetlistId);
-  const transport = spotifyPlayback || dj;
-  const song = transport.currentSong;
+  const song = dj.currentSong;
   const playbackError = dj.playbackError;
 
-  const remaining = transport.duration ? Math.max(0, transport.duration - transport.currentTime) : 0;
-  const pct = transport.duration ? (transport.currentTime / transport.duration) * 100 : 0;
+  const remaining = dj.duration ? Math.max(0, dj.duration - dj.currentTime) : 0;
+  const pct = dj.duration ? (dj.currentTime / dj.duration) * 100 : 0;
 
   return (
     <div className="shrink-0 border-t border-border bg-card px-4 md:px-8 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] md:min-h-[72px] md:pt-0 md:pb-0 md:flex md:flex-col md:justify-center">
@@ -40,31 +39,28 @@ export default function Player({ spotifyPlayback } = {}) {
           if (!song) return;
           const rect = e.currentTarget.getBoundingClientRect();
           const frac = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
-          transport.seek(frac * (transport.duration || 0));
+          dj.seek(frac * (dj.duration || 0));
         }}
         role="slider"
         aria-label="Seek"
         aria-valuemin={0}
-        aria-valuemax={Math.round(transport.duration || 0)}
-        aria-valuenow={Math.round(transport.currentTime || 0)}
+        aria-valuemax={Math.round(dj.duration || 0)}
+        aria-valuenow={Math.round(dj.currentTime || 0)}
       >
         <div className="absolute inset-y-0 left-0 bg-primary" style={{ width: `${pct}%` }} />
       </div>
 
-      {spotifyPlayback && <p className="truncate text-sm sm:hidden">{song?.title}</p>}
-      <div className="flex w-full min-w-0 items-center justify-between gap-2 md:gap-4">
-        <div className="hidden min-w-0 w-36 lg:w-52 shrink-0 items-center gap-2 sm:flex">
-          {song?.cover && <img src={song.cover} alt="" className="h-9 w-9 shrink-0 rounded" />}
-          <div className="min-w-0">
-            <p className="truncate text-[15px] font-semibold leading-tight">{song?.title || 'Nothing loaded'}</p>
-            <p className="truncate type-meta">{song && (song.artist || 'Unknown')}</p>
-          </div>
+      {song && <p className="mb-1 truncate text-sm font-medium sm:hidden">{song.title}</p>}
+      <div className="flex w-full min-w-0 items-center justify-between gap-1.5 md:gap-4">
+        <div className="hidden sm:block min-w-0 w-36 lg:w-52 shrink-0">
+          <p className="truncate text-[15px] font-semibold leading-tight">{song?.title || 'Nothing loaded'}</p>
+          <p className="truncate type-meta">{song && (song.artist || 'Unknown')}</p>
         </div>
 
         <div className="flex items-center gap-0.5 md:gap-1 shrink-0">
           <button
-            onClick={transport.prev}
-            disabled={!song || !transport.prev}
+            onClick={dj.prev}
+            disabled={!song}
             aria-label="Previous track"
             title="Previous"
             className="flex h-11 w-11 items-center justify-center rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors md:h-10 md:w-10"
@@ -72,16 +68,16 @@ export default function Player({ spotifyPlayback } = {}) {
             <SkipBack className="w-4 h-4" aria-hidden="true" />
           </button>
           <button
-            onClick={transport.isPlaying ? transport.pause : transport.play}
+            onClick={dj.isPlaying ? dj.pause : dj.play}
             disabled={!song}
-            aria-label={transport.isPlaying ? 'Pause' : 'Play'}
+            aria-label={dj.isPlaying ? 'Pause' : 'Play'}
             className="w-12 h-12 md:w-11 md:h-11 shrink-0 rounded-[10px] bg-primary text-primary-foreground flex items-center justify-center transition-transform active:scale-[0.96] hover:bg-primary/90"
           >
-            {transport.isPlaying ? <Pause className="w-5 h-5 fill-current" aria-hidden="true" /> : <Play className="w-5 h-5 fill-current" aria-hidden="true" />}
+            {dj.isPlaying ? <Pause className="w-5 h-5 fill-current" aria-hidden="true" /> : <Play className="w-5 h-5 fill-current" aria-hidden="true" />}
           </button>
           <button
-            onClick={transport.next}
-            disabled={!song || !transport.next}
+            onClick={dj.next}
+            disabled={!song}
             aria-label="Next track"
             title="Next"
             className="flex h-11 w-11 items-center justify-center rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors md:h-10 md:w-10"
@@ -92,7 +88,7 @@ export default function Player({ spotifyPlayback } = {}) {
 
         <div className="hidden min-w-0 flex-1 items-center gap-2.5 lg:flex">
           <span className="type-data w-11 shrink-0 text-right text-foreground">
-            {formatTime(transport.currentTime)}
+            {formatTime(dj.currentTime)}
           </span>
           <div
             className="relative flex-1 h-1 rounded-full bg-border cursor-pointer transition-all hover:h-1.5"
@@ -100,20 +96,20 @@ export default function Player({ spotifyPlayback } = {}) {
               if (!song) return;
               const rect = e.currentTarget.getBoundingClientRect();
               const frac = (e.clientX - rect.left) / rect.width;
-              transport.seek(frac * (transport.duration || 0));
+              dj.seek(frac * (dj.duration || 0));
             }}
             role="slider"
             aria-label="Seek"
             aria-valuemin={0}
-            aria-valuemax={Math.round(transport.duration || 0)}
-            aria-valuenow={Math.round(transport.currentTime || 0)}
+            aria-valuemax={Math.round(dj.duration || 0)}
+            aria-valuenow={Math.round(dj.currentTime || 0)}
             tabIndex={0}
           >
             <div className="absolute inset-y-0 left-0 rounded-full bg-primary" style={{ width: `${pct}%` }} />
             {song?.start_point > 0 && (
               <div
                 className="absolute -top-1.5 w-0.5 h-4 bg-primary"
-                style={{ left: `${(song.start_point / (transport.duration || 1)) * 100}%` }}
+                style={{ left: `${(song.start_point / (dj.duration || 1)) * 100}%` }}
               />
             )}
           </div>
@@ -125,7 +121,7 @@ export default function Player({ spotifyPlayback } = {}) {
         <div className="flex items-center gap-1 md:gap-1.5 shrink-0">
           <button
             onClick={() => (dj.goalPlaying ? dj.stopGoal() : dj.fadeOut(2, false))}
-            disabled={dj.isFading || Boolean(spotifyPlayback) || (!dj.isPlaying && !dj.goalPlaying)}
+            disabled={dj.isFading || (!dj.isPlaying && !dj.goalPlaying)}
             className={`hidden sm:flex items-center gap-1.5 h-10 px-2.5 rounded-[8px] border-[1.5px] text-[11px] font-semibold uppercase tracking-[0.06em] transition-colors disabled:opacity-40 ${
               dj.isFading
                 ? 'border-destructive bg-destructive text-destructive-foreground'
@@ -143,7 +139,7 @@ export default function Player({ spotifyPlayback } = {}) {
                 if (def) goalWithPlaylist(def);
                 else goalOnly();
               }}
-              className="flex items-center gap-1.5 h-10 px-2.5 rounded-l-[8px] text-[12px] font-bold uppercase tracking-[0.08em] bg-signal text-signal-foreground hover:bg-signal/90 transition-colors"
+              className="flex items-center gap-1.5 h-11 px-2.5 rounded-l-[8px] text-[12px] font-bold uppercase tracking-[0.08em] bg-signal text-signal-foreground hover:bg-signal/90 transition-colors"
               title={defaultPl ? `Goal! Horn + shuffle "${defaultPl.name}"` : 'Goal! Play the goal horn'}
               aria-label={defaultPl ? `Goal horn then ${defaultPl.name}` : 'Play goal horn'}
             >
@@ -151,7 +147,7 @@ export default function Player({ spotifyPlayback } = {}) {
             </button>
             <button
               onClick={() => setGoalMenuOpen((o) => !o)}
-              className="flex h-10 w-9 items-center justify-center rounded-r-[8px] bg-signal text-signal-foreground hover:bg-signal/90 transition-colors border-l border-signal-foreground/20"
+              className="flex h-11 w-11 items-center justify-center rounded-r-[8px] bg-signal text-signal-foreground hover:bg-signal/90 transition-colors border-l border-signal-foreground/20"
               title="More goal options"
               aria-label="More goal options"
               aria-expanded={goalMenuOpen}
@@ -161,7 +157,7 @@ export default function Player({ spotifyPlayback } = {}) {
             {goalMenuOpen && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setGoalMenuOpen(false)} aria-hidden="true" />
-                <div className="absolute bottom-full mb-2 right-0 w-[280px] max-h-80 overflow-y-auto bg-popover border border-border rounded-[10px] shadow-[0_16px_40px_rgba(0,0,0,0.5)] py-1 z-50">
+                <div className="absolute bottom-full mb-2 right-0 w-[min(280px,calc(100vw_-_5rem))] max-h-[min(20rem,55dvh)] overflow-y-auto bg-popover border border-border rounded-[10px] shadow-[0_16px_40px_rgba(0,0,0,0.5)] py-1 z-50">
                   <button
                     onClick={goalOnly}
                     className="w-full text-left min-h-11 px-3 py-2 text-sm text-popover-foreground hover:bg-secondary transition-colors"
@@ -188,19 +184,19 @@ export default function Player({ spotifyPlayback } = {}) {
             )}
           </div>
           <button
-            onClick={() => transport.setMasterVolume(transport.masterVolume > 0 ? 0 : 1)}
+            onClick={() => dj.setMasterVolume(dj.masterVolume > 0 ? 0 : 1)}
             className="flex h-11 w-11 items-center justify-center rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors md:h-10 md:w-9"
-            aria-label={transport.masterVolume > 0 ? 'Mute' : 'Unmute'}
+            aria-label={dj.masterVolume > 0 ? 'Mute' : 'Unmute'}
           >
-            {transport.masterVolume > 0 ? <Volume2 className="w-4 h-4" aria-hidden="true" /> : <VolumeX className="w-4 h-4" aria-hidden="true" />}
+            {dj.masterVolume > 0 ? <Volume2 className="w-4 h-4" aria-hidden="true" /> : <VolumeX className="w-4 h-4" aria-hidden="true" />}
           </button>
           <input
             type="range"
             min={0}
             max={1}
             step={0.01}
-            value={transport.masterVolume}
-            onChange={(e) => transport.setMasterVolume(Number(e.target.value))}
+            value={dj.masterVolume}
+            onChange={(e) => dj.setMasterVolume(Number(e.target.value))}
             className="hidden xl:block w-20 accent-primary"
             aria-label="Master volume"
           />

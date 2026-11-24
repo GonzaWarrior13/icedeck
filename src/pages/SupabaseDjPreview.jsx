@@ -31,13 +31,13 @@ function Preview() {
     setBusy(true); setError('');
     try {
       const url = await createPrivateAudioUrl(song.storage_path, token, 3600);
-      dj.playNow({ ...song, preview_url: '', file_url: url });
+      dj.playNow({ ...song, file_url: url });
     } catch(e) { setError(e.message); }
     finally { setBusy(false); }
   }
   const byId = new Map(songs.map(s => [s.id,s]));
   return <main style={{maxWidth:850,margin:'24px auto',padding:20,fontFamily:'system-ui'}}>
-    <h1>IceDeck · Supabase DJ preview</h1>
+    <h1>RinkBeats · Supabase DJ preview</h1>
     <p>Read-only migration test. Base44 production remains unchanged.</p>
     {!token ? <form onSubmit={connect} style={{display:'grid',gap:10,maxWidth:440}}>
       <label>Email <input type="email" required autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} style={{display:"block",width:"100%",padding:10,color:"#111",background:"#fff",border:"1px solid #888",borderRadius:4}}/></label>

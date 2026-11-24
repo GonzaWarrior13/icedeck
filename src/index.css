@@ -6,7 +6,7 @@
 
 @layer base {
   :root {
-    /* IceDeck: a rink-side broadcast console. Neutral charcoal surfaces, pure
+    /* RinkBeats: a rink-side broadcast console. Neutral charcoal surfaces, pure
        white text, one mint accent for live states, orange for the goal trigger. */
     --background: 0 0% 7%;
     --foreground: 0 0% 100%;

@@ -6,15 +6,14 @@ import { Play, Plus, Scissors, Star, Trash2 } from 'lucide-react';
 const iconButton =
   'flex h-11 w-11 items-center justify-center rounded-[8px] transition-colors md:h-9 md:w-9';
 
-export default function SongCard({ song, isActive, onPlay, onAddQueue, onEdit, onDelete, onToggleQuick, canPlay }) {
+export default function SongCard({ song, isActive, onPlay, onAddQueue, onEdit, onDelete, onToggleQuick }) {
   const tags = song.tags || [];
   const isQuick = tags.includes('quick');
-  // Spotify imports carry no audio file unless Spotify serves a preview clip.
-  const playable = canPlay ?? Boolean(song.file_url || song.preview_url);
+  const playable = Boolean(song.file_url || song.storage_path);
 
   return (
     <div
-      className={`group flex min-h-14 items-center gap-3 rounded-[8px] border px-3 py-2 transition-colors ${
+      className={`group flex min-h-14 flex-wrap items-center gap-x-3 gap-y-1 rounded-[8px] border px-3 py-2 transition-colors ${
         isActive
           ? 'border-primary bg-primary/15'
           : 'border-border bg-card hover:bg-secondary'
@@ -45,14 +44,8 @@ export default function SongCard({ song, isActive, onPlay, onAddQueue, onEdit, o
         </div>
         <div className="mt-0.5 flex items-center gap-1.5">
           <p className="type-meta truncate">{song.artist || 'Unknown'}</p>
-          {song.spotifyUrl ? (
-            <a href={song.spotifyUrl} target="_blank" rel="noreferrer" className="type-meta shrink-0 underline">Spotify</a>
-          ) : (
-            <>
-              <span className="type-meta text-muted-foreground/50" aria-hidden="true">·</span>
-              <span className="type-data shrink-0 text-muted-foreground">{formatTime(song.duration)}</span>
-            </>
-          )}
+          <span className="type-meta text-muted-foreground/50" aria-hidden="true">·</span>
+          <span className="type-data shrink-0 text-muted-foreground">{formatTime(song.duration)}</span>
         </div>
         {tags.length > 0 && (
           <div className="mt-1.5 hidden flex-wrap gap-1 md:flex">
@@ -68,7 +61,7 @@ export default function SongCard({ song, isActive, onPlay, onAddQueue, onEdit, o
         )}
       </div>
 
-      <div className="-mr-1 flex items-center gap-0.5 md:mr-0 md:opacity-70 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
+      <div className="-mr-1 flex min-w-0 basis-full justify-end gap-1 sm:basis-auto sm:shrink-0 md:mr-0 md:opacity-70 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
         {onToggleQuick && <button
           onClick={() => onToggleQuick(song)}
           title="Quick access"
@@ -78,14 +71,14 @@ export default function SongCard({ song, isActive, onPlay, onAddQueue, onEdit, o
         >
           <Star className={`w-4 h-4 ${isQuick ? 'fill-current' : ''}`} aria-hidden="true" />
         </button>}
-        {onAddQueue && <button
+        <button
           onClick={() => onAddQueue(song)}
           title="Add to queue"
           aria-label={`Add ${song.title} to queue`}
           className={`${iconButton} text-muted-foreground hover:text-foreground hover:bg-secondary`}
         >
           <Plus className="w-4 h-4" aria-hidden="true" />
-        </button>}
+        </button>
         {onEdit && <button
           onClick={() => onEdit(song)}
           title="Edit start point"

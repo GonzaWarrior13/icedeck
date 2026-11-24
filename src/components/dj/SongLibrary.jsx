@@ -1,11 +1,10 @@
 import React from 'react';
 import SongCard from './SongCard';
 
-export default function SongLibrary({ songs, extraTracks, hasExtraTracks, loading, currentSongId, onPlay, onAddQueue, onEdit, onDelete, onToggleQuick }) {
+export default function SongLibrary({ songs, loading, currentSongId, onPlay, onAddQueue, onEdit, onDelete, onToggleQuick }) {
   if (loading) {
     return (
       <div className="flex flex-col gap-1.5" aria-label="Loading library">
-        {extraTracks}
         {[0, 1, 2].map((i) => (
           <div
             key={i}
@@ -22,21 +21,17 @@ export default function SongLibrary({ songs, extraTracks, hasExtraTracks, loadin
     );
   }
 
-  if (!songs.length && !hasExtraTracks) {
+  if (!songs.length) {
     return (
-      <>
-      {extraTracks}
       <div className="rounded-[10px] border border-dashed border-border px-4 py-10 text-center md:py-16">
         <p className="text-[16px] font-semibold leading-tight">No tracks yet</p>
         <p className="type-meta mt-1.5">Upload some audio to get started.</p>
       </div>
-      </>
     );
   }
 
   return (
     <div className="flex flex-col gap-1.5">
-      {extraTracks}
       {songs.map((song) => (
         <SongCard
           key={song.id}

@@ -19,19 +19,9 @@
       "enum": [
         "local",
         "itunes",
-        "youtube",
-        "spotify"
+        "youtube"
       ],
       "default": "local"
-    },
-    "preview_url": {
-      "type": "string"
-    },
-    "spotify_id": {
-      "type": "string"
-    },
-    "spotify_uri": {
-      "type": "string"
     },
     "start_point": {
       "type": "number",

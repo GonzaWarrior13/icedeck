@@ -13,7 +13,7 @@ const PageFallback = () => (
   </div>
 );
 
-export default function DjLayout() {
+export default function DjLayout({ teamName, teamRole, onSwitchTeam } = {}) {
   const { pathname } = useLocation();
   const { enabled: simpleMode } = useSimpleMode();
 
@@ -48,9 +48,9 @@ export default function DjLayout() {
 
   return (
     <DjProvider>
-      <div className={`${simpleMode ? 'simple-shell' : 'app-shell-height'} bg-background text-foreground flex flex-col md:flex-row overflow-hidden md:overflow-visible`}>
-        <aside className="shrink-0 md:w-[212px] md:min-h-screen border-b md:border-b-0 md:border-r border-border bg-card flex md:flex-col items-center md:items-stretch px-4 md:px-5 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-2.5 md:py-7 gap-3 md:gap-0">
-          <Link to="/" className="no-select md:mb-8" aria-label="Rinkbeats home">
+      <div className={`${simpleMode ? 'simple-shell' : 'app-shell-height'} bg-background text-foreground flex flex-col md:flex-row overflow-hidden`}>
+        <aside className="shrink-0 md:w-[212px] md:h-full border-b md:border-b-0 md:border-r border-border bg-card flex md:flex-col items-center md:items-stretch px-4 md:px-5 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-2.5 md:py-7 gap-3 md:gap-0">
+          <Link to="/" className="no-select md:mb-8" aria-label="RinkBeats home">
             <BrandMark />
           </Link>
 
@@ -69,6 +69,15 @@ export default function DjLayout() {
         </aside>
 
         <main className="flex-1 min-h-0 min-w-0 flex flex-col overflow-y-auto scroll-area md:overflow-visible">
+          {teamName && (
+            <div className="flex min-h-11 shrink-0 items-center justify-between gap-3 border-b border-border px-4 md:px-8">
+              <p className="min-w-0 truncate text-sm font-medium">{teamName}<span className="ml-2 hidden capitalize text-muted-foreground sm:inline">{teamRole}</span></p>
+              <button type="button" onClick={onSwitchTeam}
+                className="min-h-11 shrink-0 rounded-md px-2 text-sm text-muted-foreground hover:text-foreground">
+                Switch team
+              </button>
+            </div>
+          )}
           <Suspense fallback={<PageFallback />}>
             <PageTransition>
               <Outlet />

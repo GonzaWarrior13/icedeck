@@ -3,8 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { saveTeamPlaylist, deleteTeamPlaylist, getTeamPlaylists } from '@/api/supabaseClient';
-import { personalSpotifyEnabled } from '@/lib/spotifyStandalone';
-import { readPersonalSpotifyTracks, readSpotifyCollections, saveSpotifyCollections } from '@/lib/spotifyPersonalLibrary';
 import { useDj } from '@/lib/DjContext';
 import { PLAYLISTS_KEY, SONGS_KEY, songsQueryOptions, usePlaylists, useSongs, getMigrationToken, setMigrationPlaylists } from '@/hooks/useDjData';
 import { Button } from '@/components/ui/button';
@@ -19,14 +17,8 @@ export default function Playlists({ migrationReadOnly = false, canEdit = true })
   const navigate = useNavigate();
   const dj = useDj();
   const queryClient = useQueryClient();
-  const { data: uploadedPlaylists = [], isLoading: loading } = usePlaylists();
+  const { data: playlists = [], isLoading: loading } = usePlaylists();
   const { data: songs = [] } = useSongs();
-  const [personal, setPersonal] = useState(() => personalSpotifyEnabled ? readSpotifyCollections() : {setlists: []});
-  const spotifyTracks = personalSpotifyEnabled ? readPersonalSpotifyTracks() : [];
-  const spotifyIds = new Set(spotifyTracks.map(track => track.id));
-  const playlists = [...uploadedPlaylists, ...personal.setlists.map(list => ({
-    id: list.id, name: list.name, song_ids: list.trackIds, spotify: true,
-  }))];
   const [editor, setEditor] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -41,33 +33,10 @@ export default function Playlists({ migrationReadOnly = false, canEdit = true })
   );
 
   const openCreate = () => { if (!allowEdits) return; setSaveError(''); setEditor({ id: null, name: '', songIds: [], hotkey: '' }); };
-  const openEdit = (pl) => { if (!allowEdits) return; setSaveError(''); setEditor({ id: pl.id, name: pl.name, songIds: [...(pl.song_ids || [])], hotkey: pl.hotkey || '', spotify: pl.spotify }); };
+  const openEdit = (pl) => { if (!allowEdits) return; setSaveError(''); setEditor({ id: pl.id, name: pl.name, songIds: [...(pl.song_ids || [])], hotkey: pl.hotkey || '' }); };
 
   const handleSave = async (name, songIds, hotkey) => {
     if (!name || !editor || !allowEdits) return;
-    const includesSpotify = songIds.some(id => spotifyIds.has(id));
-    if ((includesSpotify || editor.spotify) && songIds.some(id => !spotifyIds.has(id))) {
-      setSaveError('Choose Spotify tracks together in a Spotify setlist.');
-      return;
-    }
-    if (includesSpotify || editor.spotify) {
-      if (editor.id && !editor.spotify) {
-        setSaveError('Create a new setlist for these Spotify tracks.');
-        return;
-      }
-      if (hotkey) {
-        setSaveError('Clear the hotkey to save this Spotify setlist.');
-        return;
-      }
-      const value = readSpotifyCollections();
-      const list = {id: editor.id || crypto.randomUUID(), name, trackIds: songIds};
-      const setlists = editor.id
-        ? value.setlists.map(item => item.id === editor.id ? list : item)
-        : [...value.setlists, list];
-      setPersonal(saveSpotifyCollections({...value, setlists}));
-      setEditor(null);
-      return;
-    }
     if (migrationReadOnly) {
       setSaveError(''); setSaving(true);
       try {
@@ -108,11 +77,6 @@ export default function Playlists({ migrationReadOnly = false, canEdit = true })
     const pl = deleteTarget;
     setDeleteTarget(null);
     if (!pl || !allowEdits) return;
-    if (pl.spotify) {
-      const value = readSpotifyCollections();
-      setPersonal(saveSpotifyCollections({...value, setlists: value.setlists.filter(list => list.id !== pl.id)}));
-      return;
-    }
     if (migrationReadOnly) {
       setSaveError(''); setSaving(true);
       try {
@@ -149,15 +113,7 @@ export default function Playlists({ migrationReadOnly = false, canEdit = true })
     return (pl.song_ids || []).map((id) => byId.get(id)).filter(Boolean);
   };
 
-  const stageSpotifySetlist = (ids) => {
-    const queue = ids.filter(id => spotifyIds.has(id));
-    if (!queue.length) return;
-    saveSpotifyCollections({...readSpotifyCollections(), queue});
-    navigate('/', {state: {playSpotifyQueue: true}});
-  };
-
   const loadPlaylist = async (pl, startIndex = 0) => {
-    if (pl.spotify) return stageSpotifySetlist(pl.song_ids.slice(startIndex));
     const ordered = await resolveSongs(pl);
     if (!ordered.length) return;
     dj.playQueueFrom(ordered, startIndex);
@@ -165,14 +121,6 @@ export default function Playlists({ migrationReadOnly = false, canEdit = true })
   };
 
   const shufflePlaylist = async (pl) => {
-    if (pl.spotify) {
-      const shuffled = [...pl.song_ids];
-      for (let index = shuffled.length - 1; index > 0; index--) {
-        const other = Math.floor(Math.random() * (index + 1));
-        [shuffled[index], shuffled[other]] = [shuffled[other], shuffled[index]];
-      }
-      return stageSpotifySetlist(shuffled);
-    }
     const ordered = await resolveSongs(pl);
     if (!ordered.length) return;
     dj.playSetlist(pl.id, ordered);
@@ -211,7 +159,7 @@ export default function Playlists({ migrationReadOnly = false, canEdit = true })
             initialName={editor.name}
             initialSongIds={editor.songIds}
             initialHotkey={editor.hotkey}
-            songs={editor.spotify ? spotifyTracks : editor.id ? songs : [...songs, ...spotifyTracks]}
+            songs={songs}
             onCancel={() => { if (!saving) setEditor(null); }}
             saving={saving}
             error={saveError}
@@ -277,7 +225,7 @@ export default function Playlists({ migrationReadOnly = false, canEdit = true })
                   <div className="flex-1 min-w-0">
                     <p className={`type-track truncate ${isGoal ? 'text-signal' : ''}`}>{pl.name}</p>
                     <div className="mt-0.5 flex items-center gap-2">
-                      <span className="type-data text-muted-foreground">{count} tracks{pl.spotify && ' · Spotify'}</span>
+                      <span className="type-data text-muted-foreground">{count} tracks</span>
                       {pl.hotkey && (
                         <span className="type-data rounded-[6px] border border-border px-1.5 py-px text-[14px] text-muted-foreground md:text-[11px]">
                           {pl.hotkey.toUpperCase()}
@@ -286,7 +234,7 @@ export default function Playlists({ migrationReadOnly = false, canEdit = true })
                     </div>
                   </div>
                   <div className="flex items-center gap-0.5 max-md:w-full max-md:justify-end">
-                    {!pl.spotify && <button
+                    <button
                       onClick={() => dj.setGoalSetlist(isGoal ? null : pl.id)}
                       className={`min-h-11 min-w-11 md:min-h-9 md:min-w-9 flex items-center justify-center rounded-[8px] transition-colors ${
                         isGoal ? 'text-signal' : 'text-muted-foreground hover:text-signal hover:bg-secondary'
@@ -296,7 +244,7 @@ export default function Playlists({ migrationReadOnly = false, canEdit = true })
                       aria-pressed={isGoal}
                     >
                       <Target className="w-4 h-4" aria-hidden="true" />
-                    </button>}
+                    </button>
                     {allowEdits && <button
                       onClick={() => openEdit(pl)}
                       className="min-h-11 min-w-11 md:min-h-9 md:min-w-9 flex items-center justify-center rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"

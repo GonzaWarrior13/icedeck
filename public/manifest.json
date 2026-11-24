@@ -1,6 +1,6 @@
 {
-  "name": "IceDeck — Hockey Game Music Controller",
-  "short_name": "IceDeck",
+  "name": "RinkBeats — Hockey Game Music Controller",
+  "short_name": "RinkBeats",
   "description": "Game-day DJ controller with setlists and goal horn",
   "start_url": "/",
   "display": "standalone",

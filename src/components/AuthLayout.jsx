@@ -4,23 +4,20 @@ import BrandMark from "@/components/dj/BrandMark";
 
 export default function AuthLayout({ icon: Icon, title, subtitle, footer, children }) {
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-[100dvh] flex flex-col bg-background">
       <div className="px-5 md:px-10 pt-[calc(1.5rem+env(safe-area-inset-top))] md:pt-8">
         <BrandMark size="lg" />
       </div>
 
-      <div className="flex-1 flex items-center justify-center px-5 py-10 md:py-12">
+      <div className="flex-1 flex items-center justify-center px-4 py-7 sm:px-6 sm:py-12">
         <div className="w-full max-w-[400px]">
           <div className="mb-8">
-            <div className="flex items-center gap-2.5 mb-3">
-              {Icon && <Icon className="w-4 h-4 text-primary" strokeWidth={1.5} aria-hidden="true" />}
-              <span className="section-label">Rinkbeats</span>
-            </div>
+            {Icon && <Icon className="mb-3 h-5 w-5 text-primary" strokeWidth={1.5} aria-hidden="true" />}
             <h1 className="font-display text-[40px] font-semibold leading-[1] tracking-[-0.01em] text-foreground">{title}</h1>
             {subtitle && <p className="mt-2 text-[15px] text-muted-foreground">{subtitle}</p>}
           </div>
 
-          <div className="bg-card border border-border rounded-[14px] p-6 md:p-8">
+          <div className="bg-card border border-border rounded-2xl p-4 sm:p-8">
             {children}
           </div>
 

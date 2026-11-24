@@ -40,7 +40,7 @@ export default function SupabaseConnectionTest() {
   }
   return (
     <main style={{maxWidth:540,margin:'5vh auto',padding:24,fontFamily:'system-ui'}}>
-      <h1>IceDeck · Supabase connection test</h1>
+      <h1>RinkBeats · Supabase connection test</h1>
       <p>This checks your private team data without changing Base44.</p>
       {!isSupabaseConfigured ? (
         <p role="alert">Missing VITE_SUPABASE_URL or VITE_SUPABASE_PUBLISHABLE_KEY in .env.local.</p>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,8 +8,7 @@ import { Label } from '@/components/ui/label';
 import { motion } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { base44 } from '@/api/base44Client';
-import { updateTeamSong } from '@/api/supabaseClient';
-import { getMigrationToken } from '@/hooks/useDjData';
+import { createPrivateAudioUrl, getFreshPreviewToken, updateTeamSong } from '@/api/supabaseClient';
 import {
   decodeAudioFile, computePeaks, suggestStartPoint, formatTime, parseTime,
 } from '@/lib/audio';
@@ -33,32 +32,36 @@ export default function StartPointEditor({ song, onClose, onSave, useSupabase = 
   const [saving, setSaving] = useState(false);
   const [volume, setVolume] = useState(song?.volume != null ? song.volume : 100);
   const [error, setError] = useState('');
+  const [audioUrl, setAudioUrl] = useState('');
   const bufRef = useRef(null);
   const previewRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const url = song?.preview_url || song?.file_url;
-      if (!url) return;
       try {
         setAnalyzing(true);
+        const needsUrl = useSupabase && song?.storage_path && (!song.file_url || !(song.audioUrlExpiresAt > Date.now()));
+        const url = needsUrl ? await createPrivateAudioUrl(song.storage_path, await getFreshPreviewToken()) : song?.file_url;
+        if (cancelled) return;
+        if (!url) throw new Error('No audio file');
+        setAudioUrl(url);
         const buf = await decodeAudioFile(url);
         if (cancelled) return;
         bufRef.current = buf;
         setPeaks(computePeaks(buf, 700));
         setDuration(buf.duration);
       } catch (e) {
-        setError('Could not analyze audio (waveform unavailable). You can still set a start point manually.');
+        if (!cancelled) setError('Waveform unavailable. You can enter cue times manually.');
       } finally {
-        setAnalyzing(false);
+        if (!cancelled) setAnalyzing(false);
       }
     })();
     return () => {
       cancelled = true;
       if (previewRef.current) { previewRef.current.pause(); previewRef.current = null; }
     };
-  }, [song]);
+  }, [song, useSupabase]);
 
   const stopPreview = () => {
     if (previewRef.current) { previewRef.current.pause(); }
@@ -68,17 +71,23 @@ export default function StartPointEditor({ song, onClose, onSave, useSupabase = 
 
   const togglePreview = () => {
     if (previewing) { stopPreview(); return; }
-    const url = song?.preview_url || song?.file_url;
-    if (!url) return;
+    if (!audioUrl) return;
     if (!previewRef.current) previewRef.current = new Audio();
     const a = previewRef.current;
-    a.src = url;
+    if (a.src !== audioUrl) a.src = audioUrl;
     a.currentTime = start;
     a.volume = (volume / 100);
-    a.play().catch(() => {});
     setPreviewing(true);
+    a.play().catch(() => {
+      if (previewRef.current !== a) return;
+      stopPreview();
+      setError('This audio file could not be played.');
+    });
     a.onended = () => { setPreviewing(false); setPreviewTime(0); };
-    a.ontimeupdate = () => setPreviewTime(a.currentTime);
+    a.ontimeupdate = () => {
+      if (end !== null && a.currentTime >= end) stopPreview();
+      else setPreviewTime(a.currentTime);
+    };
   };
 
   const handleSuggest = () => {
@@ -108,11 +117,12 @@ export default function StartPointEditor({ song, onClose, onSave, useSupabase = 
       if (!Number.isFinite(start) || start < 0 || (end !== null && (!Number.isFinite(end) || end <= start)) || !Number.isFinite(volume) || volume < 0 || volume > 100) {
         throw new Error('Please enter a valid start point, an end point after the start, and volume between 0 and 100%.');
       }
+      if (duration > 0 && (start >= duration || (end !== null && end > duration))) {
+        throw new Error('Cue points must fit within the track duration.');
+      }
       const changes = { start_point: start, end_point: end, volume };
       if (useSupabase) {
-        const token = getMigrationToken();
-        if (!token) throw new Error('Supabase session missing; sign in again.');
-        const rows = await updateTeamSong(token, song.id, changes);
+        const rows = await updateTeamSong(await getFreshPreviewToken(), song.id, changes);
         if (!Array.isArray(rows) || rows.length !== 1) throw new Error('No song was updated. Check team permissions.');
         onSave?.({ id: song.id, ...changes });
       } else {
@@ -139,8 +149,9 @@ export default function StartPointEditor({ song, onClose, onSave, useSupabase = 
         >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Scissors className="w-4 h-4 text-primary" aria-hidden="true" /> Start Point — {song?.title}
+              <Scissors className="w-4 h-4 text-primary" aria-hidden="true" /> <span className="min-w-0 break-words pr-8">{song?.title}</span>
             </DialogTitle>
+            <DialogDescription>Adjust the start and end points for playback.</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
@@ -174,16 +185,18 @@ export default function StartPointEditor({ song, onClose, onSave, useSupabase = 
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs text-muted-foreground">Start point (mm:ss or sec)</Label>
+                <Label htmlFor="cue-start" className="text-xs text-muted-foreground">Start point (mm:ss or sec)</Label>
                 <Input
+                  id="cue-start"
                   value={startInput}
                   onChange={(e) => applyStartInput(e.target.value)}
                   className="min-h-11 bg-background border-border"
                 />
               </div>
               <div>
-                <Label className="text-xs text-muted-foreground">End point (optional)</Label>
+                <Label htmlFor="cue-end" className="text-xs text-muted-foreground">End point (optional)</Label>
                 <Input
+                  id="cue-end"
                   value={endInput}
                   onChange={(e) => applyEndInput(e.target.value)}
                   placeholder="auto"
@@ -213,7 +226,7 @@ export default function StartPointEditor({ song, onClose, onSave, useSupabase = 
             <Button variant="outline" onClick={handleSuggest} disabled={!peaks} className="min-h-11 bg-transparent border-border text-foreground hover:bg-secondary">
               <Wand2 className="w-4 h-4 mr-1" aria-hidden="true" /> Auto-suggest
             </Button>
-            <Button variant="outline" onClick={togglePreview} className="min-h-11 bg-transparent border-border text-foreground hover:bg-secondary">
+            <Button variant="outline" onClick={togglePreview} disabled={!audioUrl} className="min-h-11 bg-transparent border-border text-foreground hover:bg-secondary">
               {previewing ? <Pause className="w-4 h-4 mr-1" aria-hidden="true" /> : <Play className="w-4 h-4 mr-1" aria-hidden="true" />}
               {previewing ? 'Stop' : 'Preview'}
             </Button>

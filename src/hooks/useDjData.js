@@ -46,9 +46,9 @@ async function refreshTeamSongs() {
       const song = rows[index];
       const audioUrlExpiresAt = Date.now() + 59 * 60_000;
       const file_url = song.storage_path
-        ? await createPrivateAudioUrl(song.storage_path, await getFreshPreviewToken(), 3600)
+        ? await createPrivateAudioUrl(song.storage_path, token, 3600).catch(() => '')
         : '';
-      songs[index] = { ...song, preview_url: '', file_url, audioUrlExpiresAt };
+      songs[index] = { ...song, file_url, audioUrlExpiresAt: file_url ? audioUrlExpiresAt : 0 };
     }
   }));
   // A team switch may have happened during the network requests.

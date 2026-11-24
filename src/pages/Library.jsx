@@ -1,6 +1,6 @@
 import React, { useState, useCallback, lazy, Suspense } from 'react';
 import { base44 } from '@/api/base44Client';
-import { deleteTeamSong } from '@/api/supabaseClient';
+import { deleteTeamSong, getFreshPreviewToken, updateTeamSong } from '@/api/supabaseClient';
 import { useQueryClient } from '@tanstack/react-query';
 import { useDj } from '@/lib/DjContext';
 import { SONGS_KEY, PLAYLISTS_KEY, useSongs, updateMigrationSong, addMigrationSong, removeMigrationSong } from '@/hooks/useDjData';
@@ -10,10 +10,6 @@ import Queue from '@/components/dj/Queue';
 import Player from '@/components/dj/Player';
 import TagFilter from '@/components/dj/TagFilter';
 import QuickAccess from '@/components/dj/QuickAccess';
-import SpotifyImport from '@/components/dj/SpotifyImport';
-import SpotifySetupNotice from '@/components/dj/SpotifySetupNotice';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { personalSpotifyEnabled } from '@/lib/spotifyStandalone';
 import NormalizeButton from '@/components/dj/NormalizeButton';
 import PullToRefresh from '@/components/dj/PullToRefresh';
 import ConfirmDialog from '@/components/dj/ConfirmDialog';
@@ -21,25 +17,11 @@ import ConfirmDialog from '@/components/dj/ConfirmDialog';
 // The waveform editor is heavy: it only loads when a track is opened for cueing.
 const StartPointEditor = lazy(() => import('@/components/dj/StartPointEditor'));
 
-const SpotifyPersonalLibrary = (import.meta.env.DEV || import.meta.env.VITE_ICEDECK_SPOTIFY_ORIGIN) ? lazy(() => import('@/components/dj/SpotifyPersonalLibrary')) : null;
-
-function spotifyInitiallyOpen() {
-  return personalSpotifyEnabled && new URLSearchParams(window.location.search).has('spotify');
-}
-
 export default function Library({ migrationReadOnly = false, canEdit = true }) {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const clearSpotifyStart = useCallback(() => navigate('/', {replace: true}), [navigate]);
   const allowEdits = !migrationReadOnly || canEdit;
   const dj = useDj();
   const queryClient = useQueryClient();
   const { data: songs = [], isLoading: loading, refetch } = useSongs();
-  const [spotifyPlayback, setSpotifyPlayback] = useState(null);
-  const [spotifyOpen, setSpotifyOpen] = useState(spotifyInitiallyOpen);
-  const [queueTarget, setQueueTarget] = useState(null);
-  const [spotifyRowsTarget, setSpotifyRowsTarget] = useState(null);
-  const [spotifyCounts, setSpotifyCounts] = useState({total: 0, visible: 0});
   const [filter, setFilter] = useState('');
   const [activeTag, setActiveTag] = useState('All');
   const [editorSong, setEditorSong] = useState(null);
@@ -49,7 +31,7 @@ export default function Library({ migrationReadOnly = false, canEdit = true }) {
 
   const refresh = useCallback(() => refetch(), [refetch]);
 
-  const allTags = ['All', ...Array.from(new Set([...songs.flatMap((s) => s.tags || []), ...(spotifyCounts.starred ? ['quick'] : [])]))];
+  const allTags = ['All', ...Array.from(new Set(songs.flatMap((s) => s.tags || [])))];
 
   const filtered = songs.filter((s) => {
     const matchText = !filter || (s.title + ' ' + (s.artist || '')).toLowerCase().includes(filter.toLowerCase());
@@ -114,7 +96,6 @@ export default function Library({ migrationReadOnly = false, canEdit = true }) {
     queryClient.setQueryData(SONGS_KEY, previous.map((s) => (s.id === song.id ? { ...s, tags: newTags } : s)));
     try {
       if (migrationReadOnly) {
-        const { updateTeamSong, getFreshPreviewToken } = await import('@/api/supabaseClient');
         const updated = await updateTeamSong(await getFreshPreviewToken(), song.id, { tags: newTags });
         if (!Array.isArray(updated) || updated.length !== 1) throw new Error('Could not update this song');
         updateMigrationSong(updated[0]);
@@ -142,36 +123,16 @@ export default function Library({ migrationReadOnly = false, canEdit = true }) {
             <div className="flex items-baseline gap-2.5">
               <h1 className="font-display text-[44px] md:text-[56px] font-semibold leading-[0.95] tracking-[-0.01em]">Library</h1>
               <span className="type-data mb-2 rounded-[6px] border border-border bg-card px-2 py-0.5 text-muted-foreground">
-                {songs.length + spotifyCounts.total} tracks
+                {songs.length} tracks
               </span>
             </div>
             <p className="type-meta mt-1 hidden md:block">Cue, edit, and fade for game day.</p>
           </div>
-          <div className="flex items-center gap-1.5 md:gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {allowEdits && <SongUploader onUploaded={handleUploaded} useSupabase={migrationReadOnly} />}
-            {allowEdits && (migrationReadOnly
-              ? <>
-                  <SpotifySetupNotice onUploaded={handleUploaded} allowStreamingImport={personalSpotifyEnabled} />
-                  {personalSpotifyEnabled && <button type="button" aria-expanded={spotifyOpen}
-                    className="rounded-md border border-border px-3 py-2 text-sm"
-                    onClick={() => setSpotifyOpen(open => !open)}>Spotify player</button>}
-                </>
-              : <SpotifyImport
-                  existingSongs={songs}
-                  onImported={(created) => queryClient.setQueryData(SONGS_KEY, (prev = []) => [...created, ...prev])}
-                />)}
             {allowEdits && <NormalizeButton useSupabase={migrationReadOnly} />}
           </div>
         </header>
-
-        {SpotifyPersonalLibrary && personalSpotifyEnabled && (
-          <Suspense fallback={null}>
-            <SpotifyPersonalLibrary dj={dj} open={spotifyOpen} onOpen={() => setSpotifyOpen(true)}
-              filter={filter} activeTag={activeTag} rowsTarget={spotifyRowsTarget} queueTarget={queueTarget}
-              startQueued={Boolean(location.state?.playSpotifyQueue)} onQueueStarted={clearSpotifyStart}
-              onCounts={setSpotifyCounts} playback={spotifyPlayback} onPlayback={setSpotifyPlayback} />
-          </Suspense>
-        )}
 
         {deleteError && <p role="alert" className="text-sm text-destructive">{deleteError}</p>}
         <QuickAccess songs={quickSongs} onPlay={dj.playNow} />
@@ -187,10 +148,8 @@ export default function Library({ migrationReadOnly = false, canEdit = true }) {
             />
             <SongLibrary
               songs={filtered}
-              extraTracks={personalSpotifyEnabled ? <div ref={setSpotifyRowsTarget} className="flex flex-col gap-1.5 empty:hidden" /> : undefined}
-              hasExtraTracks={spotifyCounts.visible > 0}
               loading={loading}
-              currentSongId={spotifyPlayback ? null : currentSongId}
+              currentSongId={currentSongId}
               onPlay={dj.playNow}
               onAddQueue={dj.addToQueue}
               onEdit={allowEdits ? setEditorSong : undefined}
@@ -200,13 +159,13 @@ export default function Library({ migrationReadOnly = false, canEdit = true }) {
           </section>
           <section className="lg:sticky lg:top-6">
             <div className="flex h-[280px] flex-col overflow-hidden rounded-[10px] border border-border bg-card md:h-[380px] lg:h-[calc(100vh-8rem)]">
-              {SpotifyPersonalLibrary && personalSpotifyEnabled ? <div ref={setQueueTarget} className="h-full" /> : <Queue />}
+              <Queue />
             </div>
           </section>
         </div>
       </PullToRefresh>
 
-      <Player spotifyPlayback={spotifyPlayback} />
+      <Player />
 
       {allowEdits && editorSong && (
         <Suspense fallback={null}>

@@ -50,13 +50,6 @@ export async function signIn(email, password) {
     body: JSON.stringify({ email, password }),
   });
 }
-// Account creation and recovery use Supabase Auth, never Base44.
-export async function signUp(email, password) {
-  return request('/auth/v1/signup', null, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password, options: { email_redirect_to: window.location.origin + '/' } }),
-  });
-}
 export async function requestPasswordReset(email) {
   const destination = new URL('/', window.location.origin);
   destination.searchParams.set('password-recovery', '1');
@@ -65,10 +58,10 @@ export async function requestPasswordReset(email) {
     body: JSON.stringify({ email }),
   });
 }
-export async function verifyRecoveryTokenHash(tokenHash) {
+export async function verifyPasswordSetupToken(tokenHash, type) {
   return request('/auth/v1/verify', null, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token_hash: tokenHash, type: 'recovery' }),
+    body: JSON.stringify({ token_hash: tokenHash, type }),
   });
 }
 export async function changePassword(token, newPassword) {
@@ -318,8 +311,9 @@ export async function uploadTeamMp3(accessToken, file, metadata = {}) {
     // completed while the network response was lost.
     throw new Error('Song entry created, but audio upload failed: ' + error.message + '. Check Storage before retrying.');
   }
-  const file_url = await createPrivateAudioUrl(storagePath, accessToken, 3600);
-  return { ...created[0], file_url, preview_url: '' };
+  const audioUrlExpiresAt = Date.now() + 59 * 60_000;
+  const file_url = await createPrivateAudioUrl(storagePath, await getFreshPreviewToken(), 3600).catch(() => '');
+  return { ...created[0], file_url, audioUrlExpiresAt: file_url ? audioUrlExpiresAt : 0 };
 }
 
 /** In-memory session for the migration preview; never stored in localStorage. */

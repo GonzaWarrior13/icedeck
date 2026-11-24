@@ -182,7 +182,7 @@ export function DjProvider({ children }) {
     const nextSong = ni < q.length ? q[ni] : null;
     if (!nextSong) return;
     if (isSupabasePreview) return; // Preview signs each new track just before playing it.
-    const url = nextSong.preview_url || nextSong.file_url;
+    const url = nextSong.file_url;
     if (!url) return;
     if (!prefetchRef.current && typeof Audio !== 'undefined') {
       prefetchRef.current = new Audio();
@@ -202,7 +202,7 @@ export function DjProvider({ children }) {
     if (!audio) return;
     const song = queue[currentIndex];
     if (!song) return;
-    const url = song.preview_url || song.file_url;
+    const url = song.file_url;
     if (url) { audio.src = url; }
     prefetchNext();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -266,7 +266,7 @@ export function DjProvider({ children }) {
         }
       })();
     } else {
-      startPlayback(song.preview_url || song.file_url);
+      startPlayback(song.file_url);
     }
   }, [audio, prefetchNext]);
 
