@@ -41,14 +41,27 @@ async function request(path, token, options = {}) {
     ...options, headers: headers(token, options.headers),
   });
   const data = await response.json().catch(() => null);
-  if (!response.ok) throw new Error(data?.message || data?.error_description || `Supabase HTTP ${response.status}`);
+  if (!response.ok) {
+    const error = new Error(data?.message || data?.msg || data?.error_description || `Supabase HTTP ${response.status}`);
+    error.status = response.status;
+    error.code = data?.error_code || data?.code;
+    throw error;
+  }
   return data;
 }
 export async function signIn(email, password) {
-  return request('/auth/v1/token?grant_type=password', null, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
-  });
+  try {
+    return await request('/auth/v1/token?grant_type=password', null, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+  } catch (error) {
+    if (error.code === 'invalid_credentials' || (typeof error.code !== 'string' && error.status === 400)) {
+      throw new Error('Incorrect email or password. Check your details and try again.');
+    }
+    if (error.status === 429) throw new Error('Too many sign-in attempts. Wait a moment and try again.');
+    throw new Error('Sign-in is temporarily unavailable. Please try again shortly.');
+  }
 }
 export async function requestPasswordReset(email) {
   const destination = new URL('/', window.location.origin);
