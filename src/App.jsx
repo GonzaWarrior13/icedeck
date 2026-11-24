@@ -14,6 +14,7 @@ import { Navigate } from 'react-router-dom';
 import DjLayout from '@/components/dj/DjLayout';
 import { ThemeProvider } from '@/lib/ThemeProvider';
 import { lazy } from 'react';
+import { isSupabaseConfigured } from '@/api/supabaseClient';
 
 // Route pages load on demand so the Android WebView boots light.
 const Home = lazy(() => import('@/pages/Home'));
@@ -68,7 +69,15 @@ const AuthenticatedApp = () => {
 
 function App() {
   // Hosting mode: RinkBeats opens directly in Supabase without Base44 auth.
-  if (import.meta.env.VITE_ICEDECK_STANDALONE === 'true') return <SupabaseOriginalTest />;
+  if (import.meta.env.VITE_ICEDECK_STANDALONE === 'true') {
+    if (!isSupabaseConfigured) return (
+      <main className="mx-auto max-w-md px-6 py-16 text-foreground">
+        <h1 className="text-2xl font-semibold">RinkBeats sign-in is unavailable</h1>
+        <p className="mt-3 text-muted-foreground">This deployment needs its Supabase URL and publishable key before anyone can sign in.</p>
+      </main>
+    );
+    return <SupabaseOriginalTest />;
+  }
   // Standalone migration test: bypass Base44 public-settings/auth calls.
   if (window.location.pathname === '/supabase-test') return <SupabaseConnectionTest />;
   if (window.location.pathname === '/supabase-dj') return <SupabaseDjPreview />;
