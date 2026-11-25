@@ -158,16 +158,6 @@ function OriginalInterface() {
     setError('');
   }
 
-  async function syncTeams() {
-    const available = await getMyTeams(await getFreshPreviewToken(), signedInUser);
-    setTeams(available);
-    if (activeTeam) {
-      const updated = available.find(t => t.id === activeTeam.id);
-      if (!updated) leaveTeam();
-      else setActiveTeam(updated);
-    }
-  }
-
   async function openTeam(team) {
     if (!session || !teams.some(t => t.id === team.id)) return;
     setBusy(true); setError('');
@@ -316,7 +306,7 @@ function OriginalInterface() {
         <Route element={<DjLayout teamName={activeTeam?.name} teamRole={teamRole} onSwitchTeam={leaveTeam} />}>
           <Route path="/" element={<SupabaseHome canEdit={canEdit}/>}/>
           <Route path="/playlists" element={<Playlists migrationReadOnly canEdit={canEdit}/>}/>
-          <Route path="/settings" element={<SupabaseSettings user={signedInUser} team={activeTeam} onLogout={logout} onTeamsChanged={syncTeams}/>}/>
+          <Route path="/settings" element={<SupabaseSettings user={signedInUser} team={activeTeam} onLogout={logout}/>}/>
         </Route>
         <Route path="*" element={<Navigate to="/" replace/>}/>
       </Routes>

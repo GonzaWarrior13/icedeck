@@ -2,7 +2,6 @@ import { userFacingError } from '@/lib/userFacingError';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, ShieldCheck } from 'lucide-react';
-import TeamManager from '@/components/dj/TeamManager';
 import { requestPasswordReset, changePassword, deleteMyAccount, getFreshPreviewToken } from '@/api/supabaseClient';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
@@ -10,7 +9,7 @@ import { usePlaylists } from '@/hooks/useDjData';
 import { useSimpleMode } from '@/lib/simpleMode';
 
 // Supabase settings use verified session data; never call Base44 auth.
-export default function SupabaseSettings({ user, team, onLogout, onTeamsChanged }) {
+export default function SupabaseSettings({ user, team, onLogout }) {
   const navigate = useNavigate();
   const [newPassword,setNewPassword] = useState('');
   const [accountBusy,setAccountBusy] = useState(false);
@@ -101,8 +100,6 @@ export default function SupabaseSettings({ user, team, onLogout, onTeamsChanged 
           </div>
         )}
       </section>
-
-      <TeamManager team={team} user={user} onTeamsChanged={onTeamsChanged} />
 
       <section className="border-t border-border pt-8 space-y-4">
         <p className="section-label">Password and account</p>
