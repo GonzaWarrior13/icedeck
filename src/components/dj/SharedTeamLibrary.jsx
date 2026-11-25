@@ -34,6 +34,8 @@ export default function SharedTeamLibrary({ canEdit, teamSongs }) {
     .slice(0, available);
   const selectedSet = new Set(selected.map(song => song.id));
   const editor = canEdit && imports;
+  const plannedCount = sharedCount + pending.size + selected.length;
+  const selectionFull = capped && plannedCount >= FREE_SHARED_TRACK_LIMIT;
 
   function download() {
     if (!editor || !selected.length) return;
@@ -50,11 +52,6 @@ export default function SharedTeamLibrary({ canEdit, teamSongs }) {
       <DialogContent className="flex flex-col overflow-hidden">
         <DialogTitle className="pr-10">Shared library</DialogTitle>
         <DialogDescription>Select tracks from IceDeck-Main to download to your team’s library.</DialogDescription>
-        {editor && capped && (
-          <p className="text-sm text-muted-foreground">
-            {Math.min(sharedCount, FREE_SHARED_TRACK_LIMIT)} of {FREE_SHARED_TRACK_LIMIT} shared tracks used
-          </p>
-        )}
         {editor && demoPlan && sourceTeamId !== teamId && (
           <p role="status" className="text-sm text-primary">Demo Plus is active. You can add more shared tracks.</p>
         )}
@@ -82,15 +79,19 @@ export default function SharedTeamLibrary({ canEdit, teamSongs }) {
               const checkboxId = `shared-track-${song.id}`;
               return (
                 <li key={song.id} className="flex items-center gap-3 py-2.5">
-                  <label htmlFor={editor ? checkboxId : undefined} className="flex min-h-11 min-w-0 flex-1 flex-col justify-center">
+                    <label htmlFor={editor && !inLibrary && !queued ? checkboxId : undefined} className="flex min-h-11 min-w-0 flex-1 flex-col justify-center">
                     <span className="break-words text-sm font-medium">{song.title}</span>
                     {song.artist && <span className="break-words text-xs text-muted-foreground">{song.artist}</span>}
-                    {(inLibrary || queued) && <span className="text-xs text-muted-foreground">{inLibrary ? 'In library' : 'Queued'}</span>}
                   </label>
-                  {editor && (
+                    {(inLibrary || queued) && (
+                      <span className="shrink-0 rounded-md border bg-secondary px-2 py-1 text-xs text-muted-foreground">
+                        {inLibrary ? 'In library' : 'Queued'}
+                      </span>
+                    )}
+                    {editor && !inLibrary && !queued && (
                     <Checkbox id={checkboxId} className="mr-1 h-6 w-6" checked={checked}
-                      disabled={inLibrary || queued || (!checked && selected.length >= available)}
-                      aria-label={inLibrary ? `${song.title} is already in your library` : queued ? `${song.title} is queued` : `Select ${song.title}`}
+                        disabled={!checked && selectionFull}
+                        aria-label={`Select ${song.title}`}
                       onCheckedChange={next => setSelectedIds(previous =>
                         next === true ? [...previous, song.id] : previous.filter(id => id !== song.id))} />
                   )}
@@ -100,9 +101,18 @@ export default function SharedTeamLibrary({ canEdit, teamSongs }) {
           </ul>
         </div>
         {editor && (
-          <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t pt-3">
-            <div className="min-w-0">
-              <p className="text-sm font-medium">{selected.length} selected</p>
+          <div className={`flex shrink-0 flex-wrap items-center justify-between gap-2 border-t pt-3 ${selectionFull ? 'border-destructive/60' : ''}`}>
+            <div className="min-w-0 flex-1">
+              <p role="status" className={`text-sm font-medium ${selectionFull ? 'text-destructive' : ''}`}>
+                {capped
+                  ? `${selected.length} selected + ${sharedCount} downloaded${pending.size ? ` + ${pending.size} queued` : ''} = ${plannedCount} / ${FREE_SHARED_TRACK_LIMIT}`
+                  : `${selected.length} selected`}
+              </p>
+              {selectionFull && <p className="mt-1 text-xs text-muted-foreground">
+                {atLimit ? 'Free plan limit reached. Remove a downloaded track or try Plus.'
+                  : selected.length ? 'No more slots. Uncheck a track to choose a different one.'
+                  : 'Queued tracks are using the remaining slots.'}
+              </p>}
               {pending.size > 0 && <p className="text-xs text-muted-foreground">Downloads continue when you close this window.</p>}
               {imports.message && <p role="alert" className="text-xs text-destructive">{imports.message}</p>}
             </div>
