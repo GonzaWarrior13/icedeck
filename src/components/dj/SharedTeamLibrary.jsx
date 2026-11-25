@@ -6,11 +6,10 @@ import { copySharedTeamSong, getSharedTeamSongs } from '@/api/supabaseClient';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
-export default function SharedTeamLibrary({ canEdit, onAdded }) {
+export default function SharedTeamLibrary({ canEdit, teamSongs, onAdded, onRefresh }) {
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState('');
   const [copying, setCopying] = useState(null);
-  const [added, setAdded] = useState([]);
   const [error, setError] = useState('');
   const library = useQuery({
     queryKey: ['shared-team-library'], queryFn: getSharedTeamSongs, enabled: open, retry: false,
@@ -18,15 +17,22 @@ export default function SharedTeamLibrary({ canEdit, onAdded }) {
   const search = filter.trim().toLowerCase();
   const songs = (library.data ?? []).filter(song =>
     `${song.title} ${song.artist || ''}`.toLowerCase().includes(search));
+  const libraryIds = new Set(teamSongs.flatMap(song => [song.id, song.shared_source_song_id]));
 
   async function add(song) {
+    if (copying || libraryIds.has(song.id)) return;
     setCopying(song.id);
     setError('');
     try {
       onAdded(await copySharedTeamSong(song));
-      setAdded(previous => [...previous, song.id]);
     } catch (error) {
-      setError(userFacingError(error, 'Couldn’t copy the track. Check your library before trying again.'));
+      if (error.code === '23505' && error.message.includes('songs_team_shared_source_unique')) {
+        setError('This track is already in your library.');
+        await onRefresh();
+      } else {
+        if (error.code === 'audio_upload_incomplete') await onRefresh();
+        setError(userFacingError(error, 'Couldn’t copy the track. Check your library before trying again.'));
+      }
     } finally {
       setCopying(null);
     }
@@ -48,20 +54,25 @@ export default function SharedTeamLibrary({ canEdit, onAdded }) {
           <p className="text-sm text-muted-foreground">{search ? 'No matches. Try another title or artist.' : 'IceDeck-Main hasn’t shared any tracks yet.'}</p>
         )}
         <ul className="divide-y divide-border">
-          {songs.map(song => (
-            <li key={song.id} className="flex items-center gap-3 py-2.5">
-              <div className="min-w-0 flex-1">
-                <p className="break-words text-sm font-medium">{song.title}</p>
-                {song.artist && <p className="break-words text-xs text-muted-foreground">{song.artist}</p>}
-              </div>
-              {canEdit && (
-                <Button variant="outline" className="min-h-11 shrink-0" disabled={Boolean(copying) || added.includes(song.id)}
-                  aria-label={`Add ${song.title} to library`} onClick={() => add(song)}>
-                  <Plus aria-hidden="true" /> {copying === song.id ? 'Adding…' : added.includes(song.id) ? 'Added' : 'Add'}
-                </Button>
-              )}
-            </li>
-          ))}
+          {songs.map(song => {
+            const inLibrary = libraryIds.has(song.id);
+            return (
+              <li key={song.id} className="flex items-center gap-3 py-2.5">
+                <div className="min-w-0 flex-1">
+                  <p className="break-words text-sm font-medium">{song.title}</p>
+                  {song.artist && <p className="break-words text-xs text-muted-foreground">{song.artist}</p>}
+                </div>
+                {canEdit && (
+                  <Button variant="outline" className="min-h-11 shrink-0" disabled={Boolean(copying) || inLibrary}
+                    aria-label={inLibrary ? `${song.title} is already in your library` : `Add ${song.title} to library`}
+                    onClick={() => add(song)}>
+                    {!inLibrary && <Plus aria-hidden="true" />}
+                    {copying === song.id ? 'Adding…' : inLibrary ? 'In library' : 'Add'}
+                  </Button>
+                )}
+              </li>
+            );
+          })}
         </ul>
       </DialogContent>
     </Dialog>

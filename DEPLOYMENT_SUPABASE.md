@@ -33,3 +33,5 @@ values ('REPLACE_WITH_SOURCE_TEAM_UUID'::uuid);
 ```
 
 This shares existing and future supported audio files stored in that team's private audio folder with signed-in team members. Use a source team containing only recordings approved for sharing. Owners, admins and DJs can add a separate copy to a team they can edit. Test with a second team by copying a song, refreshing the library, then playing, cueing and deleting the copy. The source remains intact. To stop future sharing, run `delete from public.shared_library_source;`. Copies already imported remain in their teams.
+
+Apply `20261124_014_shared_library_dedup.sql` after migration 013 and after registering the source team. This limits each team to one copy per shared track. The migration links older copies when their stored audio fingerprint, title and artist identify a single match. It leaves ambiguous copies intact. After applying it, test that the Add button stays disabled after a refresh and becomes available after deleting the team's copy.

@@ -130,7 +130,9 @@ export default function Library({ migrationReadOnly = false, canEdit = true }) {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            {migrationReadOnly && <SharedTeamLibrary canEdit={allowEdits} onAdded={handleUploaded} />}
+            {migrationReadOnly && (
+              <SharedTeamLibrary canEdit={allowEdits} teamSongs={songs} onAdded={handleUploaded} onRefresh={refresh} />
+            )}
             {allowEdits && <SongUploader onUploaded={handleUploaded} useSupabase={migrationReadOnly} />}
             {allowEdits && <NormalizeButton useSupabase={migrationReadOnly} />}
           </div>

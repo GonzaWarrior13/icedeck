@@ -292,6 +292,7 @@ export async function uploadTeamMp3(accessToken, file, metadata = {}) {
     duration: Math.max(0, Math.round(metadata.duration || 0)),
     start_point: 0, volume: metadata.volume ?? 100, tags: [],
     ...(Number.isFinite(metadata.loudness_db) ? { loudness_db: metadata.loudness_db } : {}),
+    ...(metadata.shared_source_song_id ? { shared_source_song_id: metadata.shared_source_song_id } : {}),
   };
   const created = await request('/rest/v1/songs?select=*', accessToken, {
     method: 'POST',
@@ -342,7 +343,7 @@ export async function copySharedTeamSong(song) {
   const audio = await response.blob();
   if (teamId !== getSelectedTeamId()) throw new Error('Your active team changed. Open the shared library again.');
   const file = new File([audio], song.storage_path.split('/').at(-1), { type: audio.type });
-  return uploadTeamMp3(token, file, song);
+  return uploadTeamMp3(token, file, { ...song, shared_source_song_id: song.id });
 }
 
 /** In-memory session for the migration preview; never stored in localStorage. */
