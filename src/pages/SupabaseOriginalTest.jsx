@@ -6,6 +6,7 @@ import { queryClientInstance } from '@/lib/query-client';
 import { ThemeProvider } from '@/lib/ThemeProvider';
 import DjLayout from '@/components/dj/DjLayout';
 import AuthLayout from '@/components/AuthLayout';
+import { SharedImportQueue } from '@/components/dj/SharedImportQueue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ArrowRight, Loader2 } from 'lucide-react';
@@ -300,7 +301,7 @@ function OriginalInterface() {
     );
   }
 
-  return <MemoryRouter initialEntries={['/']}>
+  return <SharedImportQueue key={activeTeam.id} teamId={activeTeam.id}><MemoryRouter initialEntries={['/']}>
     <Suspense fallback={<div className="p-6">Loading RinkBeats…</div>}>
       <Routes>
         <Route element={<DjLayout teamName={activeTeam?.name} teamRole={teamRole} onSwitchTeam={leaveTeam} />}>
@@ -311,7 +312,7 @@ function OriginalInterface() {
         <Route path="*" element={<Navigate to="/" replace/>}/>
       </Routes>
     </Suspense>
-  </MemoryRouter>;
+  </MemoryRouter></SharedImportQueue>;
 }
 export default function SupabaseOriginalTest(){
   return <ThemeProvider><QueryClientProvider client={queryClientInstance}><OriginalInterface/></QueryClientProvider></ThemeProvider>;

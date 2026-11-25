@@ -6,6 +6,7 @@ import { useSimpleMode } from '@/lib/simpleMode';
 import MobileTabBar from './MobileTabBar';
 import BrandMark from './BrandMark';
 import PageTransition from './PageTransition';
+import { SharedImportStatus } from './SharedImportQueue';
 
 const PageFallback = () => (
   <div className="flex items-center justify-center py-16">
@@ -78,6 +79,7 @@ export default function DjLayout({ teamName, teamRole, onSwitchTeam } = {}) {
               </button>
             </div>
           )}
+          <SharedImportStatus />
           <Suspense fallback={<PageFallback />}>
             <PageTransition>
               <Outlet />
