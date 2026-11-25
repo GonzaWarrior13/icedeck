@@ -1,5 +1,4 @@
 import React from "react";
-import { Disc3 } from "lucide-react";
 import BrandMark from "@/components/dj/BrandMark";
 
 export default function AuthLayout({ icon: Icon, title, subtitle, footer, children }) {
@@ -10,14 +9,14 @@ export default function AuthLayout({ icon: Icon, title, subtitle, footer, childr
       </div>
 
       <div className="flex-1 flex items-center justify-center px-4 py-7 sm:px-6 sm:py-12">
-        <div className="w-full max-w-[400px]">
-          <div className="mb-8">
+        <div className="w-full max-w-[424px]">
+          <div className="mb-6">
             {Icon && <Icon className="mb-3 h-5 w-5 text-primary" strokeWidth={1.5} aria-hidden="true" />}
-            <h1 className="font-display text-[40px] font-semibold leading-[1] tracking-[-0.01em] text-foreground">{title}</h1>
+            <h1 className="workspace-title text-foreground">{title}</h1>
             {subtitle && <p className="mt-2 text-[15px] text-muted-foreground">{subtitle}</p>}
           </div>
 
-          <div className="bg-card border border-border rounded-2xl p-4 sm:p-8">
+          <div className="bg-card border border-border rounded-xl p-5 sm:p-7">
             {children}
           </div>
 
@@ -25,10 +24,6 @@ export default function AuthLayout({ icon: Icon, title, subtitle, footer, childr
             <p className="mt-6 text-sm text-muted-foreground">{footer}</p>
           )}
 
-          <div className="mt-8 flex items-center gap-2 text-[11px] uppercase tracking-[0.12em] text-muted-foreground/60">
-            <Disc3 className="w-3.5 h-3.5" strokeWidth={1.5} aria-hidden="true" />
-            Hockey game music controller
-          </div>
         </div>
       </div>
     </div>

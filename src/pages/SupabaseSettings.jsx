@@ -31,9 +31,9 @@ export default function SupabaseSettings({ user, team, onLogout, onTeamsChanged 
   };
 
   return (
-    <div className="px-5 md:px-10 py-6 md:py-10 space-y-10 max-w-[720px]">
+    <div className="max-w-[760px] space-y-8 px-5 py-7 md:space-y-10 md:px-8 md:py-9 xl:px-10">
       <header>
-        <h1 className="font-display text-[44px] md:text-[56px] font-semibold leading-[0.95]">Settings</h1>
+        <h1 className="workspace-title">Settings</h1>
         <p className="mt-1 text-[15px] text-muted-foreground">Your account, team and this device.</p>
       </header>
 

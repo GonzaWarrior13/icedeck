@@ -117,17 +117,17 @@ export default function Library({ migrationReadOnly = false, canEdit = true }) {
       <PullToRefresh
         onRefresh={refresh}
         className="flex-1 min-h-0"
-        contentClassName="px-4 md:px-8 pt-4 pb-6 md:py-8 space-y-5 md:space-y-7"
+        contentClassName="mx-auto max-w-[1520px] px-4 pb-6 pt-6 md:space-y-8 md:px-8 md:py-9 xl:px-10 space-y-6"
       >
         <header className="space-y-3 md:flex md:flex-wrap md:items-end md:justify-between md:gap-4 md:space-y-0">
           <div className="min-w-0">
             <div className="flex items-baseline gap-2.5">
-              <h1 className="font-display text-[44px] md:text-[56px] font-semibold leading-[0.95] tracking-[-0.01em]">Library</h1>
-              <span className="type-data mb-2 rounded-[6px] border border-border bg-card px-2 py-0.5 text-muted-foreground">
+              <h1 className="workspace-title">Library</h1>
+              <span className="type-data rounded-md border border-border bg-card px-2 py-0.5 text-muted-foreground">
                 {songs.length} tracks
               </span>
             </div>
-            <p className="type-meta mt-1 hidden md:block">Cue, edit, and fade for game day.</p>
+            <p className="type-meta mt-1 hidden md:block">Play tracks, set cue points, and build your queue.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {migrationReadOnly && <SharedTeamLibrary canEdit={allowEdits} onAdded={handleUploaded} />}
@@ -139,7 +139,7 @@ export default function Library({ migrationReadOnly = false, canEdit = true }) {
         {deleteError && <p role="alert" className="text-sm text-destructive">{deleteError}</p>}
         <QuickAccess songs={quickSongs} onPlay={dj.playNow} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_336px] gap-6 lg:gap-7">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_328px] xl:gap-8">
           <section className="min-w-0 space-y-4 md:space-y-5">
             <TagFilter
               filter={filter}
@@ -160,7 +160,7 @@ export default function Library({ migrationReadOnly = false, canEdit = true }) {
             />
           </section>
           <section className="lg:sticky lg:top-6">
-            <div className="flex h-[280px] flex-col overflow-hidden rounded-[10px] border border-border bg-card md:h-[380px] lg:h-[calc(100vh-8rem)]">
+            <div className="flex h-[280px] flex-col overflow-hidden rounded-xl border border-border bg-card md:h-[380px] lg:h-[clamp(20rem,calc(100dvh_-_19rem),36rem)]">
               <Queue />
             </div>
           </section>

@@ -132,14 +132,14 @@ export default function Playlists({ migrationReadOnly = false, canEdit = true })
       <PullToRefresh
         onRefresh={refresh}
         className="flex-1 min-h-0"
-        contentClassName="px-4 md:px-8 pt-5 md:pt-8 pb-6 space-y-6 md:space-y-8 max-w-4xl"
+        contentClassName="max-w-5xl space-y-6 px-4 pb-6 pt-6 md:space-y-8 md:px-8 md:py-9 xl:px-10"
       >
         <header className="flex flex-wrap items-end justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-baseline gap-2.5">
-              <h1 className="font-display text-[44px] md:text-[56px] font-semibold leading-[0.95] tracking-[-0.01em]">Setlists</h1>
-              <span className="type-data mb-2 rounded-[6px] border border-border bg-card px-2 py-0.5 text-muted-foreground">
-                {playlists.length}
+              <h1 className="workspace-title">Setlists</h1>
+              <span className="type-data rounded-md border border-border bg-card px-2 py-0.5 text-muted-foreground">
+                {playlists.length} {playlists.length === 1 ? 'setlist' : 'setlists'}
               </span>
             </div>
             <p className="type-meta mt-1">
@@ -148,7 +148,7 @@ export default function Playlists({ migrationReadOnly = false, canEdit = true })
           </div>
           {allowEdits && <Button
             onClick={openCreate}
-            className="min-h-10 rounded-[8px] bg-foreground text-background hover:bg-foreground/90 font-semibold"
+            className="min-h-11 rounded-lg font-semibold"
           >
             <Plus className="w-4 h-4 mr-1.5" aria-hidden="true" /> New setlist
           </Button>}
