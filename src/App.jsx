@@ -15,6 +15,7 @@ import DjLayout from '@/components/dj/DjLayout';
 import { ThemeProvider } from '@/lib/ThemeProvider';
 import { lazy } from 'react';
 import { personalSpotifyEnabled, PERSONAL_SPOTIFY_LIBRARY } from '@/lib/spotifyStandalone';
+import { Analytics } from '@vercel/analytics/react';
 
 // Route pages load on demand so the Android WebView boots light.
 const Home = lazy(() => import('@/pages/Home'));
@@ -92,6 +93,7 @@ function App() {
             <AuthenticatedApp />
           </Router>
           <Toaster />
+          <Analytics />
         </QueryClientProvider>
       </AuthProvider>
     </ThemeProvider>
