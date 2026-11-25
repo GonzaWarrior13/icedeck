@@ -7,6 +7,7 @@ import MobileTabBar from './MobileTabBar';
 import BrandMark from './BrandMark';
 import PageTransition from './PageTransition';
 import { SharedImportStatus } from './SharedImportQueue';
+import GameDayCheck from './GameDayCheck';
 
 const PageFallback = () => (
   <div className="flex items-center justify-center py-16">
@@ -72,7 +73,8 @@ export default function DjLayout({ teamName, teamRole, onSwitchTeam } = {}) {
         <main className={`flex-1 min-h-0 min-w-0 flex flex-col overflow-y-auto scroll-area ${pathname === '/settings' ? '' : 'md:overflow-visible'}`}>
           {teamName && (
             <div className="flex min-h-11 shrink-0 items-center justify-between gap-3 border-b border-border px-4 md:px-8">
-              <p className="min-w-0 truncate text-sm font-medium">{teamName}<span className="ml-2 hidden capitalize text-muted-foreground sm:inline">{teamRole}</span></p>
+              <p className="min-w-0 flex-1 truncate text-sm font-medium">{teamName}<span className="ml-2 hidden capitalize text-muted-foreground sm:inline">{teamRole}</span></p>
+              <GameDayCheck />
               <button type="button" onClick={onSwitchTeam}
                 className="min-h-11 shrink-0 rounded-md px-2 text-sm text-muted-foreground hover:text-foreground">
                 Switch team
