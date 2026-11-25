@@ -43,7 +43,7 @@ export default function Settings() {
       await base44.functions.invoke('DeleteAccount', {});
       await base44.auth.logout('/login');
     } catch (e) {
-      setError(e?.response?.data?.error || e?.message || 'Could not delete your account.');
+      setError(e?.status === 409 ? 'Transfer any teams you own before deleting your account.' : 'Couldn’t delete your account. Try again or contact support.');
       setDeleting(false);
     }
   };
@@ -98,7 +98,7 @@ export default function Settings() {
           <div className="space-y-2 pt-1">
             <p className="section-label">Setlists shown</p>
             {playlists.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-2">No setlists yet.</p>
+              <p className="text-sm text-muted-foreground py-2">Create a setlist before choosing which ones to show.</p>
             ) : (
               <div className="grid sm:grid-cols-2 gap-x-6">
                 {playlists.map((pl) => (

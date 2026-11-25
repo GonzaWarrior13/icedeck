@@ -1,3 +1,4 @@
+import { userFacingError } from '@/lib/userFacingError';
 import React, { useCallback, useEffect, useState } from 'react';
 import { createTeam, getTeamMembers, getMyNickname, manageTeamMember, removeTeamMember, setMyNickname, transferTeamOwnership } from '@/api/supabaseClient';
 
@@ -21,11 +22,11 @@ export default function TeamManager({ team, user, onTeamsChanged }) {
   useEffect(() => {
     let active = true;
     getMyNickname().then(name => { if (active) setNickname(typeof name === 'string' ? name : ''); }).catch(() => {});
-    loadMembers().catch(err => { if (active) setError(err.message); });
+    loadMembers().catch(err => { if (active) setError(userFacingError(err, 'Couldn’t load team members. Refresh the page to try again.')); });
     return () => { active = false; };
   }, [loadMembers, user?.id]);
 
-  const run = async (action, success, reload = false) => {
+  const run = async (action, success, failure, reload = false) => {
     setBusy(true); setError(''); setNotice('');
     try {
       await action();
@@ -33,25 +34,24 @@ export default function TeamManager({ team, user, onTeamsChanged }) {
       await onTeamsChanged?.();
       setNotice(success);
       return true;
-    } catch (err) { setError(err.message || 'Action failed'); return false; }
+    } catch (err) { setError(userFacingError(err, failure)); return false; }
     finally { setBusy(false); }
   };
   return (
     <section className="border-t border-border pt-8 space-y-5">
       <div>
-        <p className="section-label">Team administration</p>
+        <p className="section-label">Manage teams</p>
         <p className="text-sm text-muted-foreground mt-1">
-          Create a team, set your display name, and manage memberships without SQL.
-          Only existing registered accounts can be assigned to teams.
+          To add a teammate, use the email on their RinkBeats account.
         </p>
       </div>
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
       {notice && <p role="status" className="text-sm text-primary">{notice}</p>}
       <form onSubmit={e => {
         e.preventDefault();
-        run(() => setMyNickname(nickname), 'Nickname saved.');
+        run(() => setMyNickname(nickname), 'Display name saved.', 'Couldn’t save your display name. Try again.');
       }} className="space-y-2">
-        <label className="block text-sm font-medium">Your nickname</label>
+        <label className="block text-sm font-medium">Display name</label>
         <div className="flex gap-2">
           <input className="min-w-0 flex-1 rounded border border-border bg-background p-2" value={nickname} maxLength={80} onChange={e => setNickname(e.target.value)} placeholder="Your display name" />
           <button disabled={busy} className="rounded border border-border px-3 py-2 disabled:opacity-50">Save</button>
@@ -59,10 +59,10 @@ export default function TeamManager({ team, user, onTeamsChanged }) {
       </form>
       <form onSubmit={e => {
         e.preventDefault();
-        run(() => createTeam(newTeam.trim()), 'Team created. Use Switch team to open it.')
+        run(() => createTeam(newTeam.trim()), 'Team created. Choose Switch team to open it.', 'Couldn’t create the team. Check the name and try again.')
           .then(ok => { if (ok) setNewTeam(''); });
       }} className="space-y-2">
-        <label className="block text-sm font-medium">Create another team</label>
+        <label className="block text-sm font-medium">New team</label>
         <div className="flex gap-2">
           <input required minLength={1} maxLength={120} className="min-w-0 flex-1 rounded border border-border bg-background p-2" value={newTeam} onChange={e => setNewTeam(e.target.value)} placeholder="New team name" />
           <button disabled={busy || !newTeam.trim()} className="rounded bg-primary text-primary-foreground px-3 py-2 disabled:opacity-50">Create</button>
@@ -80,12 +80,12 @@ export default function TeamManager({ team, user, onTeamsChanged }) {
               <span className="text-xs capitalize">{member.role}</span>
               {member.user_id !== user?.id && member.role !== 'owner' && (isOwner || member.role !== 'admin') && (
                 <button type="button" disabled={busy}
-                  onClick={() => { if (window.confirm('Remove this user from the team?')) run(() => removeTeamMember(member.user_id), 'Member removed.', true); }}
+                  onClick={() => { if (window.confirm('Remove this member from the team? They’ll lose access to its library and setlists.')) run(() => removeTeamMember(member.user_id), 'Member removed.', 'Couldn’t remove this member. Refresh the page and try again.', true); }}
                   className="rounded border border-destructive/50 px-2 py-1 text-destructive disabled:opacity-50">Remove</button>
               )}
               {isOwner && member.user_id !== user?.id && (
                 <button type="button" disabled={busy}
-                  onClick={() => { if (window.confirm('Transfer ownership to ' + member.email + '? You will become an admin.')) run(() => transferTeamOwnership(member.user_id), 'Ownership transferred.', true); }}
+                  onClick={() => { if (window.confirm('Transfer ownership to ' + member.email + '? You will become an admin.')) run(() => transferTeamOwnership(member.user_id), 'Ownership transferred.', 'Couldn’t transfer ownership. Check that this person is still a team member.', true); }}
                   className="rounded border border-border px-2 py-1 text-xs disabled:opacity-50">Make owner</button>
               )}
             </div>
@@ -93,10 +93,10 @@ export default function TeamManager({ team, user, onTeamsChanged }) {
         </div>
         <form className="space-y-2" onSubmit={e => {
           e.preventDefault();
-          run(() => manageTeamMember(email.trim(), role), 'Membership saved.', true).then(ok => { if (ok) setEmail(''); });
+          run(() => manageTeamMember(email.trim(), role), 'Team access saved.', 'Couldn’t save team access. Check that the email belongs to an existing account.', true).then(ok => { if (ok) setEmail(''); });
         }}>
-          <label className="block text-sm font-medium">Add or update a member</label>
-          <input required type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Registered user's email"
+          <label className="block text-sm font-medium">Add a member or change their role</label>
+          <input required type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Teammate’s account email"
             className="w-full rounded border border-border bg-background p-2" />
           <div className="flex gap-2">
             <select value={role} onChange={e => setRole(e.target.value)}

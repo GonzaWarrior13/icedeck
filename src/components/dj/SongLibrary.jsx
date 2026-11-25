@@ -1,7 +1,7 @@
 import React from 'react';
 import SongCard from './SongCard';
 
-export default function SongLibrary({ songs, loading, currentSongId, onPlay, onAddQueue, onEdit, onDelete, onToggleQuick }) {
+export default function SongLibrary({ songs, loading, filtered, canUpload, currentSongId, onPlay, onAddQueue, onEdit, onDelete, onToggleQuick }) {
   if (loading) {
     return (
       <div className="flex flex-col gap-1.5" aria-label="Loading library">
@@ -24,8 +24,8 @@ export default function SongLibrary({ songs, loading, currentSongId, onPlay, onA
   if (!songs.length) {
     return (
       <div className="rounded-[10px] border border-dashed border-border px-4 py-10 text-center md:py-16">
-        <p className="text-[16px] font-semibold leading-tight">No tracks yet</p>
-        <p className="type-meta mt-1.5">Upload some audio to get started.</p>
+        <p className="text-[16px] font-semibold leading-tight">{filtered ? 'No matching tracks' : 'No tracks yet'}</p>
+        <p className="type-meta mt-1.5">{filtered ? 'Try a different search or choose All.' : canUpload ? 'Upload a track to start your library.' : 'Ask a team editor to add tracks.'}</p>
       </div>
     );
   }

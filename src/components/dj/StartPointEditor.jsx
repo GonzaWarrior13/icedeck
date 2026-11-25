@@ -1,3 +1,4 @@
+import { userFacingError } from '@/lib/userFacingError';
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter,
@@ -52,7 +53,7 @@ export default function StartPointEditor({ song, onClose, onSave, useSupabase = 
         setPeaks(computePeaks(buf, 700));
         setDuration(buf.duration);
       } catch (e) {
-        if (!cancelled) setError('Waveform unavailable. You can enter cue times manually.');
+        if (!cancelled) setError('Couldn’t load the waveform. You can still enter start and end times below.');
       } finally {
         if (!cancelled) setAnalyzing(false);
       }
@@ -81,7 +82,7 @@ export default function StartPointEditor({ song, onClose, onSave, useSupabase = 
     a.play().catch(() => {
       if (previewRef.current !== a) return;
       stopPreview();
-      setError('This audio file could not be played.');
+      setError('Couldn’t preview this audio. Try playing the track from your library.');
     });
     a.onended = () => { setPreviewing(false); setPreviewTime(0); };
     a.ontimeupdate = () => {
@@ -111,15 +112,25 @@ export default function StartPointEditor({ song, onClose, onSave, useSupabase = 
   };
 
   const handleSave = async () => {
+    if (!Number.isFinite(start) || start < 0) {
+      setError('Enter a start time, like 0:15.');
+      return;
+    }
+    if (end !== null && (!Number.isFinite(end) || end <= start)) {
+      setError('Set the end time after the start, or leave it blank.');
+      return;
+    }
+    if (duration > 0 && (start >= duration || (end !== null && end > duration))) {
+      setError(`Keep both times within the track’s length of ${formatTime(duration)}.`);
+      return;
+    }
+    if (!Number.isFinite(volume) || volume < 0 || volume > 100) {
+      setError('Set the volume between 0% and 100%.');
+      return;
+    }
     setSaving(true);
     setError('');
     try {
-      if (!Number.isFinite(start) || start < 0 || (end !== null && (!Number.isFinite(end) || end <= start)) || !Number.isFinite(volume) || volume < 0 || volume > 100) {
-        throw new Error('Please enter a valid start point, an end point after the start, and volume between 0 and 100%.');
-      }
-      if (duration > 0 && (start >= duration || (end !== null && end > duration))) {
-        throw new Error('Cue points must fit within the track duration.');
-      }
       const changes = { start_point: start, end_point: end, volume };
       if (useSupabase) {
         const rows = await updateTeamSong(await getFreshPreviewToken(), song.id, changes);
@@ -130,7 +141,7 @@ export default function StartPointEditor({ song, onClose, onSave, useSupabase = 
         onSave?.({ id: song.id, ...changes });
       }
     } catch (e) {
-      setError('Save failed: ' + (e.message || 'error'));
+      setError(userFacingError(e, 'Couldn’t save the cue points. Try again before closing this window.'));
     } finally {
       setSaving(false);
     }
@@ -151,16 +162,16 @@ export default function StartPointEditor({ song, onClose, onSave, useSupabase = 
             <DialogTitle className="flex items-center gap-2">
               <Scissors className="w-4 h-4 text-primary" aria-hidden="true" /> <span className="min-w-0 break-words pr-8">{song?.title}</span>
             </DialogTitle>
-            <DialogDescription>Adjust the start and end points for playback.</DialogDescription>
+            <DialogDescription>Set where this track starts and stops.</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
-            {error && <p className="text-xs text-destructive bg-destructive/10 rounded-[8px] p-2">{error}</p>}
+            {error && <p role="alert" className="text-xs text-destructive bg-destructive/10 rounded-[8px] p-2">{error}</p>}
 
             <div className="rounded-xl bg-background/60 border border-border p-3">
               {analyzing ? (
                 <div className="flex items-center justify-center h-20 text-muted-foreground text-sm">
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" aria-hidden="true" /> Analyzing audio…
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" aria-hidden="true" /> Loading waveform…
                 </div>
               ) : (
                 <Suspense fallback={<div className="h-[84px] rounded bg-secondary/40" />}>
@@ -185,7 +196,7 @@ export default function StartPointEditor({ song, onClose, onSave, useSupabase = 
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <Label htmlFor="cue-start" className="text-xs text-muted-foreground">Start point (mm:ss or sec)</Label>
+                <Label htmlFor="cue-start" className="text-xs text-muted-foreground">Start point (minutes:seconds)</Label>
                 <Input
                   id="cue-start"
                   value={startInput}
@@ -199,19 +210,19 @@ export default function StartPointEditor({ song, onClose, onSave, useSupabase = 
                   id="cue-end"
                   value={endInput}
                   onChange={(e) => applyEndInput(e.target.value)}
-                  placeholder="auto"
+                  placeholder="End of track"
                   className="min-h-11 bg-background border-border"
                 />
               </div>
             </div>
 
             <div>
-              <Label className="text-xs text-muted-foreground">Per-song volume: {volume}%</Label>
+              <Label className="text-xs text-muted-foreground">Track volume: {volume}%</Label>
               <input
                 type="range" min={0} max={100} value={volume}
                 onChange={(e) => setVolume(Number(e.target.value))}
                 className="w-full accent-primary"
-                aria-label="Per-song volume"
+                aria-label="Track volume"
               />
             </div>
 
@@ -224,7 +235,7 @@ export default function StartPointEditor({ song, onClose, onSave, useSupabase = 
 
           <DialogFooter className="gap-2 sm:gap-2">
             <Button variant="outline" onClick={handleSuggest} disabled={!peaks} className="min-h-11 bg-transparent border-border text-foreground hover:bg-secondary">
-              <Wand2 className="w-4 h-4 mr-1" aria-hidden="true" /> Auto-suggest
+              <Wand2 className="w-4 h-4 mr-1" aria-hidden="true" /> Suggest start
             </Button>
             <Button variant="outline" onClick={togglePreview} disabled={!audioUrl} className="min-h-11 bg-transparent border-border text-foreground hover:bg-secondary">
               {previewing ? <Pause className="w-4 h-4 mr-1" aria-hidden="true" /> : <Play className="w-4 h-4 mr-1" aria-hidden="true" />}

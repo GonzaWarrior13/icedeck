@@ -27,7 +27,7 @@ export default function SongCard({ song, isActive, onPlay, onAddQueue, onEdit, o
             ? 'border-primary bg-primary text-primary-foreground'
             : 'border-border bg-background text-foreground hover:border-primary/60 hover:bg-primary/10 hover:text-primary'
         }`}
-        title={playable ? 'Play now' : 'No audio available for this track'}
+        title={playable ? 'Play track' : 'This track is missing its audio file'}
         aria-label={playable ? `Play ${song.title}` : `${song.title} has no audio available`}
       >
         <Play className="w-3.5 h-3.5 fill-current" aria-hidden="true" />
@@ -64,7 +64,7 @@ export default function SongCard({ song, isActive, onPlay, onAddQueue, onEdit, o
       <div className="-mr-1 flex min-w-0 basis-full justify-end gap-0.5 sm:basis-auto sm:shrink-0 md:mr-0 md:opacity-70 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
         {onToggleQuick && <button
           onClick={() => onToggleQuick(song)}
-          title="Quick access"
+          title={isQuick ? 'Remove from Quick Access' : 'Add to Quick Access'}
           aria-label={isQuick ? `Remove ${song.title} from quick access` : `Add ${song.title} to quick access`}
           aria-pressed={isQuick}
           className={`${iconButton} ${isQuick ? 'text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
@@ -81,7 +81,7 @@ export default function SongCard({ song, isActive, onPlay, onAddQueue, onEdit, o
         </button>
         {onEdit && <button
           onClick={() => onEdit(song)}
-          title="Edit start point"
+          title="Edit start and end times"
           aria-label={`Edit start point for ${song.title}`}
           className={`${iconButton} text-muted-foreground hover:text-foreground hover:bg-secondary`}
         >
@@ -89,7 +89,7 @@ export default function SongCard({ song, isActive, onPlay, onAddQueue, onEdit, o
         </button>}
         {onDelete && <button
           onClick={() => onDelete(song)}
-          title="Delete"
+          title="Delete track"
           aria-label={`Delete ${song.title}`}
           className={`${iconButton} text-muted-foreground hover:text-destructive hover:bg-destructive/10`}
         >

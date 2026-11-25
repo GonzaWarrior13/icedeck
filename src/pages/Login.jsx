@@ -25,7 +25,7 @@ export default function Login() {
       await base44.auth.loginViaEmailPassword(email, password);
       window.location.href = returnTo;
     } catch (err) {
-      setError(err.message || "Invalid email or password");
+      setError(err?.status >= 500 ? "Can’t sign in right now. Try again in a moment." : "Incorrect email or password. Check your details and try again.");
     } finally {
       setLoading(false);
     }
@@ -34,8 +34,7 @@ export default function Login() {
   return (
     <AuthLayout
       icon={LogIn}
-      title="Welcome back"
-      subtitle="Log in to your account"
+      title="Sign in"
     >
       {error && (
         <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
@@ -89,7 +88,7 @@ export default function Login() {
               Logging in...
             </>
           ) : (
-            "Log in"
+            "Sign in"
           )}
         </Button>
       </form>

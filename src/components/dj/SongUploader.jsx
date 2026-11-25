@@ -1,3 +1,4 @@
+import { userFacingError } from '@/lib/userFacingError';
 import React, { useState, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { uploadTeamMp3, MAX_MP3_BYTES, SUPPORTED_AUDIO, getFreshPreviewToken } from '@/api/supabaseClient';
@@ -21,7 +22,8 @@ export default function SongUploader({ onUploaded, useSupabase = false, trackMet
         for (const file of list) {
           const ext = file.name.split('.').pop().toLowerCase();
           if (!SUPPORTED_AUDIO[ext] || file.size > MAX_MP3_BYTES || !file.size) {
-            throw new Error('Supported formats: MP3, M4A, MP4, WAV, OGG up to 50 MB (plan limits may be lower).');
+            setError('Choose an MP3, M4A, MP4, WAV, or OGG file under 50 MB.');
+            return;
           }
           setProgress(`Preparing ${file.name}…`);
           const localUrl = URL.createObjectURL(file);
@@ -48,8 +50,9 @@ export default function SongUploader({ onUploaded, useSupabase = false, trackMet
           });
           onUploaded?.(created);
         }
-        setProgress('Upload successful');
-      } catch (err) { setError(err.message || 'Upload failed'); }
+      } catch (err) { setError(userFacingError(err, err.code === 'audio_upload_incomplete'
+          ? 'The track was added, but its audio may be missing. Check the library before uploading it again.'
+          : 'Couldn’t upload this track. Check the file and your connection, then try again.')); }
       finally {
         setUploading(false);
         setProgress('');
@@ -98,8 +101,8 @@ export default function SongUploader({ onUploaded, useSupabase = false, trackMet
         });
         onUploaded?.(created);
       }
-    } catch (e) {
-      setProgress('Upload failed: ' + (e.message || 'error'));
+    } catch {
+      setError('Couldn’t upload the track. Check the file and your connection, then try again.');
     } finally {
       setUploading(false);
       setProgress('');

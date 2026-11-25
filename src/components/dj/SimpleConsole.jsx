@@ -71,7 +71,7 @@ export default function SimpleConsole() {
         ) : chosen.length === 0 ? (
           <div className="pt-12 text-center">
             <ListMusic className="w-5 h-5 mx-auto mb-3 text-muted-foreground/60" aria-hidden="true" />
-            <p className="text-sm text-muted-foreground">No setlists picked yet. Choose them in Settings.</p>
+            <p className="text-sm text-muted-foreground">Choose which setlists to show in Settings.</p>
           </div>
         ) : (
           <div className={`grid gap-3 ${chosen.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>

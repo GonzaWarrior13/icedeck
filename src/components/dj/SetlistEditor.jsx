@@ -51,7 +51,7 @@ export default function SetlistEditor({ initialName = '', initialSongIds = [], i
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Warmup mix"
+            placeholder="Warmup mix"
             className="mt-2 h-12 bg-transparent border-0 border-b border-border rounded-none px-0 font-display text-2xl md:text-3xl font-semibold focus-visible:ring-0 focus-visible:border-primary"
             autoFocus
           />
@@ -79,7 +79,7 @@ export default function SetlistEditor({ initialName = '', initialSongIds = [], i
         <Label className="section-label shrink-0">Hotkey</Label>
         <button
           onClick={() => setRecording((r) => !r)}
-          aria-label={recording ? 'Press a key to assign' : hotkey ? `Hotkey ${hotkey.toUpperCase()}, change it` : 'Set a hotkey'}
+          aria-label={recording ? 'Press the key you want to use' : hotkey ? `Hotkey ${hotkey.toUpperCase()}, change it` : 'Set a hotkey'}
           className={`min-h-10 min-w-10 px-3 rounded-full border text-sm tabular-nums transition-colors ${
             recording
               ? 'border-primary text-primary bg-primary/10'
@@ -88,14 +88,14 @@ export default function SetlistEditor({ initialName = '', initialSongIds = [], i
                 : 'border-dashed border-border text-muted-foreground hover:border-muted-foreground/40'
           }`}
         >
-          {recording ? 'Press keys…' : hotkey ? hotkey.toUpperCase() : 'Set key'}
+          {recording ? 'Press a key…' : hotkey ? hotkey.toUpperCase() : 'Set key'}
         </button>
         {hotkey && !recording && (
           <button onClick={() => setHotkey('')} className="min-h-11 px-2 text-xs text-muted-foreground hover:text-destructive">
             Clear
           </button>
         )}
-        <span className="text-xs text-muted-foreground">Press this key anytime to play the setlist instantly.</span>
+        <span className="text-xs text-muted-foreground">Use this key to play the setlist.</span>
       </div>
 
       <div>
@@ -133,7 +133,7 @@ export default function SetlistEditor({ initialName = '', initialSongIds = [], i
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search your library…"
+            placeholder="Search your tracks"
             aria-label="Search your library"
             className="h-11 pl-10 rounded-[10px] bg-card border-transparent focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-primary/60"
           />
@@ -145,7 +145,7 @@ export default function SetlistEditor({ initialName = '', initialSongIds = [], i
               <Plus className="w-4 h-4 text-primary shrink-0" aria-hidden="true" />
             </button>
           ))}
-          {!available.length && <p className="text-xs text-muted-foreground text-center py-6">No matching tracks.</p>}
+          {!available.length && <p className="text-xs text-muted-foreground text-center py-6">{query.trim() ? 'No matching tracks. Try a different search.' : 'No tracks left to add. Upload more in Library.'}</p>}
         </div>
       </div>
     </div>

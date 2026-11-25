@@ -62,7 +62,7 @@ export default function Player() {
             onClick={dj.prev}
             disabled={!song}
             aria-label="Previous track"
-            title="Previous"
+            title="Previous track"
             className="flex h-11 w-11 items-center justify-center rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors md:h-10 md:w-10"
           >
             <SkipBack className="w-4 h-4" aria-hidden="true" />
@@ -79,7 +79,7 @@ export default function Player() {
             onClick={dj.next}
             disabled={!song}
             aria-label="Next track"
-            title="Next"
+            title="Next track"
             className="flex h-11 w-11 items-center justify-center rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors md:h-10 md:w-10"
           >
             <SkipForward className="w-4 h-4" aria-hidden="true" />
@@ -127,7 +127,7 @@ export default function Player() {
                 ? 'border-destructive bg-destructive text-destructive-foreground'
                 : 'border-destructive/70 text-destructive hover:bg-destructive/10'
             }`}
-            title={dj.goalPlaying ? 'Fade out goal horn' : 'Fade out & pause'}
+            title={dj.goalPlaying ? 'Fade out goal horn' : 'Fade out and pause the track'}
             aria-label={dj.goalPlaying ? 'Fade out goal horn' : 'Fade out and pause'}
           >
             <Waves className="w-3.5 h-3.5" aria-hidden="true" /> Fade
@@ -140,7 +140,7 @@ export default function Player() {
                 else goalOnly();
               }}
               className="flex items-center gap-1.5 h-11 px-2.5 rounded-l-[8px] text-[12px] font-bold uppercase tracking-[0.08em] bg-signal text-signal-foreground hover:bg-signal/90 transition-colors"
-              title={defaultPl ? `Goal! Horn + shuffle "${defaultPl.name}"` : 'Goal! Play the goal horn'}
+              title={defaultPl ? `Play the horn, then shuffle ${defaultPl.name}` : 'Play the goal horn'}
               aria-label={defaultPl ? `Goal horn then ${defaultPl.name}` : 'Play goal horn'}
             >
               <Siren className="w-3.5 h-3.5" aria-hidden="true" /> Goal
@@ -165,7 +165,7 @@ export default function Player() {
                     Horn only
                   </button>
                   {playlists.length > 0 && (
-                    <div className="px-3 pt-2 pb-1 section-label">Shuffle after horn</div>
+                    <div className="px-3 pt-2 pb-1 section-label">Shuffle after the horn</div>
                   )}
                   {playlists.map((pl) => (
                     <button
@@ -177,7 +177,7 @@ export default function Player() {
                     </button>
                   ))}
                   {playlists.length === 0 && (
-                    <div className="px-3 py-2 text-xs text-muted-foreground">No setlists yet</div>
+                    <div className="px-3 py-2 text-xs text-muted-foreground">Create a setlist to play music after the horn.</div>
                   )}
                 </div>
               </>

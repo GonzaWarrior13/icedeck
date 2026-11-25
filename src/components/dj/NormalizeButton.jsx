@@ -1,3 +1,4 @@
+import { userFacingError } from '@/lib/userFacingError';
 import React, { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
@@ -63,9 +64,9 @@ export default function NormalizeButton({ useSupabase = false }) {
       const byId = new Map(changes.map((c) => [c.id, c]));
       if (!useSupabase) queryClient.setQueryData(SONGS_KEY, (prev = []) => prev.map((s) => (byId.has(s.id) ? { ...s, ...byId.get(s.id) } : s)));
       else queryClient.invalidateQueries({ queryKey: SONGS_KEY });
-      setStatus(`Leveled ${changes.length} track${changes.length === 1 ? '' : 's'}`);
+      setStatus(`Matched volume for ${changes.length} track${changes.length === 1 ? '' : 's'}`);
     } catch (e) {
-      setError(e.message || 'Could not level the library');
+      setError(userFacingError(e, 'Couldn’t match track volumes. Try again when your connection is stable.'));
       setStatus('');
     } finally {
       setRunning(false);
@@ -84,11 +85,11 @@ export default function NormalizeButton({ useSupabase = false }) {
         ) : (
           <Volume2 className="w-3.5 h-3.5 md:w-4 md:h-4" />
         )}
-        <span className="md:hidden">{running ? 'Leveling…' : 'Level'}</span>
-        <span className="hidden md:inline">{running ? 'Normalizing…' : 'Normalize volume'}</span>
+        <span className="md:hidden">{running ? 'Matching…' : 'Match volume'}</span>
+        <span className="hidden md:inline">{running ? 'Matching volume…' : 'Match volume'}</span>
       </button>
       {status && <span className="text-xs text-muted-foreground">{status}</span>}
-      {error && <span className="text-xs text-destructive">{error}</span>}
+      {error && <span role="alert" className="text-xs text-destructive">{error}</span>}
     </div>
   );
 }

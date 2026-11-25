@@ -1,3 +1,4 @@
+import { userFacingError } from '@/lib/userFacingError';
 import React, { useState, useCallback, lazy, Suspense } from 'react';
 import { base44 } from '@/api/base44Client';
 import { deleteTeamSong, getFreshPreviewToken, updateTeamSong } from '@/api/supabaseClient';
@@ -22,7 +23,7 @@ export default function Library({ migrationReadOnly = false, canEdit = true }) {
   const allowEdits = !migrationReadOnly || canEdit;
   const dj = useDj();
   const queryClient = useQueryClient();
-  const { data: songs = [], isLoading: loading, refetch } = useSongs();
+  const { data: songs = [], isLoading: loading, isError: libraryError, refetch } = useSongs();
   const [filter, setFilter] = useState('');
   const [activeTag, setActiveTag] = useState('All');
   const [editorSong, setEditorSong] = useState(null);
@@ -70,10 +71,10 @@ export default function Library({ migrationReadOnly = false, canEdit = true }) {
         dj.refreshHotkeys();
         setDeleteTarget(null);
         if (result.cleanupError) {
-          setDeleteError('Song removed from the library, but MP3 storage cleanup needs attention: ' + result.cleanupError);
+          setDeleteError('Track removed. Its audio file is still stored. Ask a team admin to remove it.');
         }
       } catch (err) {
-        setDeleteError(err.message || 'Could not delete song.');
+        setDeleteError(userFacingError(err, 'Couldn’t delete the track. Refresh your library and try again.'));
       } finally {
         setDeleteBusy(false);
       }
@@ -105,7 +106,7 @@ export default function Library({ migrationReadOnly = false, canEdit = true }) {
       }
     } catch (error) {
       queryClient.setQueryData(SONGS_KEY, previous);
-      setDeleteError(error.message || 'Could not update Quick Access.');
+      setDeleteError(userFacingError(error, 'Couldn’t update Quick Access. Try again.'));
     }
   };
 
@@ -127,7 +128,6 @@ export default function Library({ migrationReadOnly = false, canEdit = true }) {
                 {songs.length} tracks
               </span>
             </div>
-            <p className="type-meta mt-1 hidden md:block">Play tracks, set cue points, and build your queue.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {migrationReadOnly && <SharedTeamLibrary canEdit={allowEdits} onAdded={handleUploaded} />}
@@ -148,8 +148,11 @@ export default function Library({ migrationReadOnly = false, canEdit = true }) {
               activeTag={activeTag}
               setActiveTag={setActiveTag}
             />
-            <SongLibrary
+            {libraryError && <p role="alert" className="text-sm text-destructive">Couldn’t load the library. Refresh the page to try again.</p>}
+            {(!libraryError || songs.length > 0) && <SongLibrary
               songs={filtered}
+              filtered={Boolean(filter.trim()) || activeTag !== 'All'}
+              canUpload={allowEdits}
               loading={loading}
               currentSongId={currentSongId}
               onPlay={dj.playNow}
@@ -157,7 +160,7 @@ export default function Library({ migrationReadOnly = false, canEdit = true }) {
               onEdit={allowEdits ? setEditorSong : undefined}
               onDelete={allowEdits ? handleDelete : undefined}
               onToggleQuick={allowEdits ? (s) => toggleTag(s, 'quick') : undefined}
-            />
+            />}
           </section>
           <section className="lg:sticky lg:top-6">
             <div className="flex h-[280px] flex-col overflow-hidden rounded-xl border border-border bg-card md:h-[380px] lg:h-[clamp(20rem,calc(100dvh_-_19rem),36rem)]">
@@ -183,7 +186,7 @@ export default function Library({ migrationReadOnly = false, canEdit = true }) {
       <ConfirmDialog
         open={!!deleteTarget}
         title="Delete track?"
-        description={deleteTarget ? `"${deleteTarget.title}" will be removed from your library and playlists, and its private MP3 will be deleted.` : ''}
+        description={deleteTarget ? `This removes “${deleteTarget.title}” from your library and setlists and deletes its audio file.` : ''}
         onCancel={() => { if (!deleteBusy) setDeleteTarget(null); }}
         onConfirm={confirmDelete}
       />

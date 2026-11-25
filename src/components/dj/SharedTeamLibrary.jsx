@@ -1,3 +1,4 @@
+import { userFacingError } from '@/lib/userFacingError';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
@@ -25,7 +26,7 @@ export default function SharedTeamLibrary({ canEdit, onAdded }) {
       onAdded(await copySharedTeamSong(song));
       setAdded(previous => [...previous, song.id]);
     } catch (error) {
-      setError(error.message || 'Could not add the track. Try again.');
+      setError(userFacingError(error, 'Couldn’t copy the track. Check your library before trying again.'));
     } finally {
       setCopying(null);
     }
@@ -36,15 +37,15 @@ export default function SharedTeamLibrary({ canEdit, onAdded }) {
       <DialogTrigger asChild><Button variant="outline">Shared library</Button></DialogTrigger>
       <DialogContent>
         <DialogTitle className="pr-10">Shared library</DialogTitle>
-        <DialogDescription>Browse songs from IceDeck-Main. Songs you add go into your team’s library.</DialogDescription>
+        <DialogDescription>Find tracks from IceDeck-Main and copy them to your team’s library.</DialogDescription>
         <input aria-label="Search shared library" placeholder="Search title or artist" value={filter}
           onChange={event => setFilter(event.target.value)}
           className="min-h-11 w-full rounded-md border bg-card px-3 text-sm" />
         {library.isLoading && <p role="status" className="text-sm text-muted-foreground">Loading shared songs…</p>}
-        {library.isError && <p role="alert" className="text-sm text-destructive">The shared library is unavailable. Try opening it again.</p>}
+        {library.isError && <p role="alert" className="text-sm text-destructive">Couldn’t load shared tracks. Close this window and try again.</p>}
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
         {library.isSuccess && songs.length === 0 && (
-          <p className="text-sm text-muted-foreground">{search ? 'No songs match your search.' : 'No songs have been shared yet.'}</p>
+          <p className="text-sm text-muted-foreground">{search ? 'No matches. Try another title or artist.' : 'IceDeck-Main hasn’t shared any tracks yet.'}</p>
         )}
         <ul className="divide-y divide-border">
           {songs.map(song => (

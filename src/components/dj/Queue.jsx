@@ -30,7 +30,7 @@ export default function Queue() {
             onClick={dj.clearQueue}
             className="min-h-11 px-2 text-[14px] text-muted-foreground hover:text-foreground transition-colors md:text-xs"
           >
-            Clear
+            Clear queue
           </button>
         )}
       </div>
@@ -40,7 +40,7 @@ export default function Queue() {
           <span className="grid h-10 w-10 place-items-center rounded-lg border bg-background text-muted-foreground"><ListMusic className="h-4 w-4" aria-hidden="true" /></span>
           <div>
             <p className="text-sm font-medium">Queue is empty</p>
-            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Use + next to a track to add it.</p>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Choose + next to any track in your library.</p>
           </div>
         </div>
       ) : (

@@ -232,7 +232,7 @@ export function DjProvider({ children }) {
 
     const startPlayback = (url) => {
       if (requestId !== playbackRequestRef.current) return;
-      if (!url) { setPlaybackError('This track has no playable audio.'); return; }
+      if (!url) { setPlaybackError('This track is missing its audio file. Ask a team editor to upload it.'); return; }
       audio.pause();
       audio.src = url;
       const start = song.start_point || 0;
@@ -245,7 +245,7 @@ export function DjProvider({ children }) {
         audio.addEventListener('loadedmetadata', onMeta);
       }
       audio.play().catch((err) => {
-        if (requestId === playbackRequestRef.current) setPlaybackError('Playback failed: ' + err.message);
+        if (requestId === playbackRequestRef.current) setPlaybackError('Couldn’t play this track. Try again or choose another track.');
       });
       prefetchNext();
     };
@@ -262,7 +262,7 @@ export function DjProvider({ children }) {
           const signedUrl = await createPrivateAudioUrl(song.storage_path, token, 3600);
           startPlayback(signedUrl);
         } catch (err) {
-          if (requestId === playbackRequestRef.current) setPlaybackError('Could not renew private audio: ' + err.message);
+          if (requestId === playbackRequestRef.current) setPlaybackError('The audio link expired. Refresh the library and try again.');
         }
       })();
     } else {
@@ -427,7 +427,7 @@ export function DjProvider({ children }) {
       }).catch((error) => {
         if (requestId !== playbackRequestRef.current) return;
         setGoalPlaying(false);
-        setPlaybackError('Goal horn could not play: ' + error.message);
+        setPlaybackError('Couldn’t play the goal horn. Refresh the page and try again.');
         const resume = goalResumeRef.current;
         goalResumeRef.current = null;
         resume?.();

@@ -12,7 +12,7 @@ export default function TagFilter({ filter, setFilter, tags, activeTag, setActiv
         <input
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          placeholder="Search title or artist…"
+          placeholder="Search by title or artist"
           aria-label="Search title or artist"
           className="w-full h-12 pl-10 pr-3 rounded-lg bg-card border border-border text-[14px] text-foreground placeholder:text-muted-foreground/70 transition-colors focus:outline-none focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
         />

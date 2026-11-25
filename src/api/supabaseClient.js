@@ -60,7 +60,7 @@ export async function signIn(email, password) {
       throw new Error('Incorrect email or password. Check your details and try again.');
     }
     if (error.status === 429) throw new Error('Too many sign-in attempts. Wait a moment and try again.');
-    throw new Error('Sign-in is temporarily unavailable. Please try again shortly.');
+    throw new Error('Sign-in is temporarily unavailable. Please try again in a moment.');
   }
 }
 export async function requestPasswordReset(email) {
@@ -322,7 +322,7 @@ export async function uploadTeamMp3(accessToken, file, metadata = {}) {
   } catch (error) {
     // Preserve the row for manual recovery: the storage upload might have
     // completed while the network response was lost.
-    throw new Error('Song entry created, but audio upload failed: ' + error.message + '. Check Storage before retrying.');
+    throw Object.assign(new Error('Audio upload interrupted', { cause: error }), { code: 'audio_upload_incomplete' });
   }
   const audioUrlExpiresAt = Date.now() + 59 * 60_000;
   const file_url = await createPrivateAudioUrl(storagePath, await getFreshPreviewToken(), 3600).catch(() => '');
@@ -363,13 +363,13 @@ export function setPreviewSession(session) {
 }
 export async function getFreshPreviewToken() {
   if (!previewSession) previewSession = getStoredPreviewSession();
-  if (!previewSession?.access_token) throw new Error('Sign in to Supabase again.');
+  if (!previewSession?.access_token) throw Object.assign(new Error('Session missing'), { status: 401 });
   const expiresAt = previewSession.expires_at ||
     (previewSession.issued_at ? previewSession.issued_at + previewSession.expires_in : 0);
   // Normal Supabase sessions include expires_at; the initial login may not.
   if (expiresAt && Date.now() / 1000 < expiresAt - 120) return previewSession.access_token;
   if (!expiresAt && previewSession._receivedAt && Date.now() / 1000 < previewSession._receivedAt + (previewSession.expires_in || 3600) - 120) return previewSession.access_token;
-  if (!previewSession.refresh_token) throw new Error('Session expired. Sign in again.');
+  if (!previewSession.refresh_token) throw Object.assign(new Error('Session expired'), { status: 401 });
   const refreshed = await refreshSession(previewSession.refresh_token);
   setPreviewSession(refreshed);
   return previewSession.access_token;

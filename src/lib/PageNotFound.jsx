@@ -1,13 +1,7 @@
 import { useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
 import { Home } from 'lucide-react';
 
-export default function PageNotFound({}) {
-    const location = useLocation();
-    const pageName = location.pathname.substring(1);
-
+export default function PageNotFound() {
     // Tell crawlers this is a real 404 once the page has settled.
     useEffect(() => {
         const meta = document.createElement('meta');
@@ -18,18 +12,6 @@ export default function PageNotFound({}) {
             document.head.removeChild(meta);
         };
     }, []);
-
-    const { data: authData, isFetched } = useQuery({
-        queryKey: ['user'],
-        queryFn: async () => {
-            try {
-                const user = await base44.auth.me();
-                return { user, isAuthenticated: true };
-            } catch (error) {
-                return { user: null, isAuthenticated: false };
-            }
-        }
-    });
 
     return (
         <div className="min-h-screen flex items-center justify-center p-6 bg-background">
@@ -42,28 +24,12 @@ export default function PageNotFound({}) {
 
                     <div className="space-y-3">
                         <h2 className="text-2xl font-medium text-foreground">
-                            Page Not Found
+                            Page not found
                         </h2>
                         <p className="text-muted-foreground leading-relaxed">
-                            The page <span className="font-medium text-foreground">"{pageName}"</span> could not be found in this application.
+                            Check the address, or return to the library.
                         </p>
                     </div>
-
-                    {isFetched && authData.isAuthenticated && authData.user?.role === 'admin' && (
-                        <div className="mt-8 p-4 bg-card rounded-lg border border-border">
-                            <div className="flex items-start space-x-3">
-                                <div className="flex-shrink-0 w-5 h-5 rounded-full bg-orange-500/20 flex items-center justify-center mt-0.5">
-                                    <div className="w-2 h-2 rounded-full bg-orange-400"></div>
-                                </div>
-                                <div className="text-left space-y-1">
-                                    <p className="text-sm font-medium text-foreground">Admin Note</p>
-                                    <p className="text-sm text-muted-foreground leading-relaxed">
-                                        This could mean that the AI hasn't implemented this page yet. Ask it to implement it in the chat.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    )}
 
                     <div className="pt-6">
                         <button
@@ -71,7 +37,7 @@ export default function PageNotFound({}) {
                             className="inline-flex items-center min-h-11 px-4 py-2 text-sm font-medium text-foreground bg-card border border-border rounded-lg hover:bg-secondary transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
                         >
                             <Home className="w-4 h-4 mr-2" aria-hidden="true" />
-                            Go Home
+                            Back to library
                         </button>
                     </div>
                 </div>

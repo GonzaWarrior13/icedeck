@@ -1,3 +1,4 @@
+import { userFacingError } from '@/lib/userFacingError';
 import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
@@ -17,7 +18,7 @@ export default function Playlists({ migrationReadOnly = false, canEdit = true })
   const navigate = useNavigate();
   const dj = useDj();
   const queryClient = useQueryClient();
-  const { data: playlists = [], isLoading: loading } = usePlaylists();
+  const { data: playlists = [], isLoading: loading, isError: listError } = usePlaylists();
   const { data: songs = [] } = useSongs();
   const [editor, setEditor] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -41,14 +42,14 @@ export default function Playlists({ migrationReadOnly = false, canEdit = true })
       setSaveError(''); setSaving(true);
       try {
         const token = getMigrationToken();
-        if (!token) throw new Error('Supabase session missing. Sign in again.');
+        if (!token) throw Object.assign(new Error('Session missing'), { status: 401 });
         await saveTeamPlaylist(token, { id: editor.id, name, song_ids: songIds, hotkey });
         const updated = await getTeamPlaylists(token);
         setMigrationPlaylists(updated);
         queryClient.setQueryData(PLAYLISTS_KEY, updated);
         setEditor(null);
         dj.refreshHotkeys();
-      } catch (err) { setSaveError(err.message || 'Could not save setlist'); }
+      } catch (err) { setSaveError(userFacingError(err, 'Couldn’t save the setlist. Try again before closing the editor.')); }
       finally { setSaving(false); }
       return;
     }
@@ -81,13 +82,13 @@ export default function Playlists({ migrationReadOnly = false, canEdit = true })
       setSaveError(''); setSaving(true);
       try {
         const token = getMigrationToken();
-        if (!token) throw new Error('Supabase session missing. Sign in again.');
+        if (!token) throw Object.assign(new Error('Session missing'), { status: 401 });
         await deleteTeamPlaylist(token, pl.id);
         const updated = await getTeamPlaylists(token);
         setMigrationPlaylists(updated);
         queryClient.setQueryData(PLAYLISTS_KEY, updated);
         dj.refreshHotkeys();
-      } catch (err) { setSaveError(err.message || 'Could not delete setlist'); }
+      } catch (err) { setSaveError(userFacingError(err, 'Couldn’t delete the setlist. Refresh the page and try again.')); }
       finally { setSaving(false); }
       return;
     }
@@ -143,7 +144,7 @@ export default function Playlists({ migrationReadOnly = false, canEdit = true })
               </span>
             </div>
             <p className="type-meta mt-1">
-              Save and reuse queues for intermissions, warmups, and celebrations.
+              Save tracks in the order you want to play them.
             </p>
           </div>
           {allowEdits && <Button
@@ -181,10 +182,12 @@ export default function Playlists({ migrationReadOnly = false, canEdit = true })
               </div>
             ))}
           </div>
+        ) : listError && !playlists.length ? (
+          <p role="alert" className="text-sm text-destructive">Couldn’t load setlists. Refresh the page to try again.</p>
         ) : playlists.length === 0 ? (
           <div className="rounded-[10px] border border-dashed border-border px-4 py-12 text-center">
             <p className="text-[16px] font-semibold leading-tight">No setlists yet</p>
-            <p className="type-meta mt-1.5">Create one to save a reusable queue.</p>
+            <p className="type-meta mt-1.5">{allowEdits ? 'Choose New setlist to add your first one.' : 'Ask a team editor to create a setlist.'}</p>
           </div>
         ) : (
           <div className="flex flex-col gap-1.5">
@@ -239,7 +242,7 @@ export default function Playlists({ migrationReadOnly = false, canEdit = true })
                       className={`min-h-11 min-w-11 md:min-h-9 md:min-w-9 flex items-center justify-center rounded-[8px] transition-colors ${
                         isGoal ? 'text-signal' : 'text-muted-foreground hover:text-signal hover:bg-secondary'
                       }`}
-                      title={isGoal ? 'Default goal setlist — click to clear' : 'Set as default goal setlist'}
+                      title={isGoal ? 'Stop playing this setlist after the goal horn' : 'Play this setlist after the goal horn'}
                       aria-label={isGoal ? `Clear default goal setlist ${pl.name}` : `Set ${pl.name} as default goal setlist`}
                       aria-pressed={isGoal}
                     >
@@ -274,7 +277,7 @@ export default function Playlists({ migrationReadOnly = false, canEdit = true })
       <ConfirmDialog
         open={!!deleteTarget}
         title="Delete setlist?"
-        description={deleteTarget ? `"${deleteTarget.name}" will be removed.` : ''}
+        description={deleteTarget ? `This deletes “${deleteTarget.name}”. Its tracks stay in your library.` : ''}
         onCancel={() => setDeleteTarget(null)}
         onConfirm={confirmDelete}
       />

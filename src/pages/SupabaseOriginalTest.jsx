@@ -1,3 +1,4 @@
+import { userFacingError } from '@/lib/userFacingError';
 import React, { useState, useEffect, Suspense } from 'react';
 import { QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes, Navigate } from 'react-router-dom';
@@ -89,7 +90,7 @@ function OriginalInterface() {
         }
         if (passwordSetup) {
           setAuthMode('forgot');
-          setError('This link is missing a valid token. Request a fresh link.');
+          setError('This password link has expired or is incomplete. Ask for a new one.');
           return;
         }
         const stored = getStoredPreviewSession();
@@ -99,7 +100,7 @@ function OriginalInterface() {
         if (!cancelled) await adoptSession({ ...getStoredPreviewSession(), access_token: freshToken });
       } catch (err) {
         setPreviewSession(null);
-        if (!cancelled) setError('Session expired. Please sign in again.');
+        if (!cancelled) setError('Your session ended. Sign in again.');
       }
     })();
     return () => { cancelled = true; };
@@ -111,7 +112,7 @@ function OriginalInterface() {
       if (authMode === 'forgot') {
         await requestPasswordReset(email);
         setAuthMode('signin');
-        setAuthNotice('If your account exists, a password reset email has been requested.');
+        setAuthNotice('If there’s an account for that email, you’ll get a reset link. Check your inbox and spam folder.');
       } else if (authMode === 'reset') {
         if (!recoveryToken) throw new Error('The password setup link is missing or expired.');
         if (password.length < 6) throw new Error('Use a password with at least 6 characters.');
@@ -121,9 +122,20 @@ function OriginalInterface() {
         setAuthMode('signin');
         setAuthNotice('Password updated. Please sign in.');
       } else {
-        await adoptSession(await signIn(email,password));
+        const signedIn = await signIn(email, password).catch(error => {
+          setError(error.message);
+          return null;
+        });
+        if (signedIn) await adoptSession(signedIn);
       }
-    } catch(err) { setError(err.message || 'Authentication failed'); }
+    } catch (err) {
+      const message = {
+        forgot: 'Couldn’t send the reset link. Check your email address and try again.',
+        reset: 'Couldn’t save your password. Ask for a new reset link if this one has expired.',
+        signin: 'You signed in, but we couldn’t load your teams. Try signing in again.',
+      }[authMode];
+      setError(userFacingError(err, message));
+    }
     finally { setBusy(false); }
   }
 
@@ -165,7 +177,7 @@ function OriginalInterface() {
       const freshTeams = await getMyTeams(token, signedInUser);
       setTeams(freshTeams);
       const currentTeam = freshTeams.find(t => t.id === team.id);
-      if (!currentTeam) throw new Error('You no longer belong to this team.');
+      if (!currentTeam) throw new Error('You no longer have access to this team.');
       setSelectedTeamId(currentTeam.id);
       const [rawSongs, playlists] = await Promise.all([
         getTeamSongs(token, team.id),
@@ -190,7 +202,7 @@ function OriginalInterface() {
       queryClient.setQueryData(PLAYLISTS_KEY, playlists);
       setActiveTeam(currentTeam);
       setReady(true);
-    } catch(err) { setSelectedTeamId(''); setError(err.message || 'Unable to load team'); }
+    } catch(err) { setSelectedTeamId(''); setError(userFacingError(err, 'Couldn’t open this team. Choose it again or ask a team admin to check your access.')); }
     finally { setBusy(false); }
   }
 
@@ -206,7 +218,7 @@ function OriginalInterface() {
         if (!membership) {
           leaveTeam();
           setTeams(available);
-          setError('You no longer belong to that team.');
+          setError('You no longer have access to that team. Choose another team or ask a team admin.');
           return;
         }
         if (membership.role !== activeTeam.role) {
@@ -252,7 +264,7 @@ function OriginalInterface() {
 
     return (
       <AuthLayout title={heading} subtitle={session ? signedInUser?.email : authMode === 'forgot'
-        ? 'Enter the email address associated with your account.' : undefined}>
+        ? 'Enter your account email and we’ll send you a reset link.' : undefined}>
         {authNotice && <p role="status" className="mb-4 rounded-lg bg-primary/10 p-3 text-sm text-primary">{authNotice}</p>}
         {error && <p role="alert" className="mb-4 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
         {!session ? (
@@ -271,7 +283,7 @@ function OriginalInterface() {
             </label>}
             <Button type="submit" className="min-h-12 w-full gap-2 font-semibold" disabled={busy}>
               {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <ArrowRight className="h-4 w-4" aria-hidden="true" />}
-              {busy ? 'Working…' : submitLabel}
+              {busy ? { signin: 'Signing in…', forgot: 'Sending link…', reset: 'Saving password…' }[authMode] : submitLabel}
             </Button>
             <Button type="button" variant="ghost" className="min-h-11 w-full" disabled={busy}
               onClick={() => goTo(authMode === 'signin' ? 'forgot' : 'signin')}>
@@ -280,7 +292,7 @@ function OriginalInterface() {
           </form>
         ) : (
           <div className="space-y-2">
-            {!teams.length && <p className="text-sm text-muted-foreground">No teams are assigned to this account. Ask your team administrator for access.</p>}
+            {!teams.length && <p className="text-sm text-muted-foreground">You’re not on a team yet. Ask a team admin to add you.</p>}
             {teams.map(team => (
               <Button key={team.id} type="button" disabled={busy} variant="outline"
                 className="min-h-12 w-full justify-between gap-3 text-left" onClick={() => openTeam(team)}>

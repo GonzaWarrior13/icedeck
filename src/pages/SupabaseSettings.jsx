@@ -1,3 +1,4 @@
+import { userFacingError } from '@/lib/userFacingError';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, ShieldCheck } from 'lucide-react';
@@ -15,10 +16,12 @@ export default function SupabaseSettings({ user, team, onLogout, onTeamsChanged 
   const [accountBusy,setAccountBusy] = useState(false);
   const [accountMessage,setAccountMessage] = useState('');
   const [accountError,setAccountError] = useState('');
-  const runAccount = async (task, success) => {
+  const runAccount = async (task, success, failure) => {
     setAccountBusy(true); setAccountError(''); setAccountMessage('');
     try { await task(); setAccountMessage(success); }
-    catch (error) { setAccountError(error.message || 'Account action failed'); }
+    catch (error) {
+      setAccountError(userFacingError(error, typeof failure === 'function' ? failure(error) : failure));
+    }
     finally { setAccountBusy(false); }
   };
   const { data: playlists = [] } = usePlaylists();
@@ -34,7 +37,6 @@ export default function SupabaseSettings({ user, team, onLogout, onTeamsChanged 
     <div className="max-w-[760px] space-y-8 px-5 py-7 md:space-y-10 md:px-8 md:py-9 xl:px-10">
       <header>
         <h1 className="workspace-title">Settings</h1>
-        <p className="mt-1 text-[15px] text-muted-foreground">Your account, team and this device.</p>
       </header>
 
       <section className="space-y-4">
@@ -44,9 +46,8 @@ export default function SupabaseSettings({ user, team, onLogout, onTeamsChanged 
             {(user?.email || '?').charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0">
-            <p className="text-[17px] font-semibold">Supabase account</p>
             <p className="truncate text-sm text-muted-foreground flex items-center gap-1.5">
-              <Mail className="w-3.5 h-3.5" aria-hidden="true" /> {user?.email || 'Unknown user'}
+              <Mail className="w-3.5 h-3.5" aria-hidden="true" /> {user?.email || 'No email available'}
             </p>
           </div>
         </div>
@@ -59,7 +60,7 @@ export default function SupabaseSettings({ user, team, onLogout, onTeamsChanged 
           <span className="font-medium">{team?.name || 'No team selected'}</span>
           {team?.role && <span className="rounded bg-secondary px-2 py-1 text-xs capitalize">{team.role}</span>}
         </div>
-        <p className="text-sm text-muted-foreground">Use the Switch team button in the upper-right corner to choose another team.</p>
+        <p className="text-sm text-muted-foreground">Choose Switch team to work in another library.</p>
       </section>
 
       <section className="border-t border-border pt-8 space-y-4">
@@ -67,7 +68,7 @@ export default function SupabaseSettings({ user, team, onLogout, onTeamsChanged 
           <div className="min-w-0 space-y-1">
             <p className="section-label">Simple mode</p>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Game-day view with play/pause, the goal horn, and only the setlists you pick.
+              Show only playback controls, the goal horn, and the setlists you choose.
             </p>
           </div>
           <Switch
@@ -81,7 +82,7 @@ export default function SupabaseSettings({ user, team, onLogout, onTeamsChanged 
           <div className="space-y-2 pt-1">
             <p className="section-label">Setlists shown</p>
             {playlists.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-2">No setlists yet.</p>
+              <p className="text-sm text-muted-foreground py-2">Create a setlist before choosing which ones to show.</p>
             ) : (
               <div className="grid sm:grid-cols-2 gap-x-6">
                 {playlists.map((pl) => (
@@ -104,21 +105,21 @@ export default function SupabaseSettings({ user, team, onLogout, onTeamsChanged 
       <TeamManager team={team} user={user} onTeamsChanged={onTeamsChanged} />
 
       <section className="border-t border-border pt-8 space-y-4">
-        <p className="section-label">Account management</p>
+        <p className="section-label">Password and account</p>
         {accountError && <p role="alert" className="text-sm text-destructive">{accountError}</p>}
         {accountMessage && <p role="status" className="text-sm text-primary">{accountMessage}</p>}
         <button type="button" disabled={accountBusy} onClick={onLogout}
           className="rounded border border-border p-3 text-sm disabled:opacity-50">Sign out</button>
         <div className="space-y-2">
           <button type="button" disabled={accountBusy || !user?.email}
-            onClick={() => runAccount(() => requestPasswordReset(user.email), 'Password reset email requested.')}
-            className="rounded border border-border p-3 text-sm disabled:opacity-50">Email password reset link</button>
+            onClick={() => runAccount(() => requestPasswordReset(user.email), 'Check your inbox for a reset link.', 'Couldn’t send a reset link. Try again in a moment.')}
+            className="rounded border border-border p-3 text-sm disabled:opacity-50">Send reset link</button>
           <form onSubmit={event => {
             event.preventDefault();
             runAccount(async () => {
               await changePassword(await getFreshPreviewToken(), newPassword);
               setNewPassword('');
-            }, 'Password updated.');
+            }, 'Password changed.', 'Couldn’t change your password. Try a different password or use a reset link.');
           }} className="flex gap-2">
             <input className="min-w-0 flex-1 rounded border border-border bg-background p-2" type="password" autoComplete="new-password"
               minLength={6} placeholder="New password" value={newPassword} onChange={event => setNewPassword(event.target.value)} required />
@@ -127,14 +128,16 @@ export default function SupabaseSettings({ user, team, onLogout, onTeamsChanged 
         </div>
         <div className="space-y-2 border-t border-destructive/30 pt-4">
           <p className="text-sm text-destructive font-semibold">Delete account</p>
-          <p className="text-xs text-muted-foreground">Permanently removes your login and memberships. Transfer ownership of your teams first. Requires the secure delete-account Supabase Edge Function to be deployed.</p>
+          <p className="text-xs text-muted-foreground">This permanently deletes your account and removes you from your teams. Transfer any teams you own first.</p>
           <button type="button" disabled={accountBusy}
             onClick={() => {
-              if (window.prompt('Type DELETE to permanently remove your account') !== 'DELETE') return;
+              if (window.prompt('Type DELETE to confirm you want to permanently delete your account.') !== 'DELETE') return;
               runAccount(async () => {
                 await deleteMyAccount();
                 await onLogout?.();
-              }, 'Account deleted.');
+              }, 'Account deleted.', error => error.status === 409
+                ? 'Transfer ownership of your teams to another member before deleting your account.'
+                : 'Couldn’t delete your account. Try again or contact support.');
             }}
             className="rounded border border-destructive/50 text-destructive p-3 text-sm disabled:opacity-50">Delete my account</button>
         </div>

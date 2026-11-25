@@ -20,7 +20,7 @@ export default function ResetPassword() {
     e.preventDefault();
     setError("");
     if (newPassword !== confirmPassword) {
-      setError("Passwords do not match");
+      setError("The passwords don’t match. Enter the same password in both fields.");
       return;
     }
     setLoading(true);
@@ -28,7 +28,7 @@ export default function ResetPassword() {
       await base44.auth.resetPassword({ resetToken, newPassword });
       window.location.href = "/login";
     } catch (err) {
-      setError(err.message || "Failed to reset password");
+      setError(err?.status === 429 ? "Too many attempts. Wait a moment, then try again." : "Couldn’t save your password. Request a new reset link and try again.");
     } finally {
       setLoading(false);
     }
@@ -38,8 +38,8 @@ export default function ResetPassword() {
     return (
       <AuthLayout
         icon={AlertTriangle}
-        title="Invalid reset link"
-        subtitle="This password reset link is missing or invalid"
+        title="Reset link unavailable"
+        subtitle="This reset link is incomplete or expired. Request a new one."
         footer={
           <Link to="/forgot-password" className="text-primary font-medium hover:underline">
             Request a new link
@@ -57,7 +57,7 @@ export default function ResetPassword() {
     <AuthLayout
       icon={Lock}
       title="New password"
-      subtitle="Enter your new password below"
+      subtitle="Choose a new password for your account."
     >
       {error && (
         <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
