@@ -68,11 +68,11 @@ const AuthenticatedApp = () => {
 
 
 function App() {
-  // Hosting mode: RinkBeats opens directly in Supabase without Base44 auth.
+  // Hosting mode: DropDeck opens directly in Supabase without Base44 auth.
   if (import.meta.env.VITE_ICEDECK_STANDALONE === 'true') {
     if (!isSupabaseConfigured) return (
       <main className="mx-auto max-w-md px-6 py-16 text-foreground">
-        <h1 className="text-2xl font-semibold">RinkBeats sign-in is unavailable</h1>
+        <h1 className="text-2xl font-semibold">DropDeck sign-in is unavailable</h1>
         <p className="mt-3 text-muted-foreground">This site isn’t ready for sign-in yet. Ask the person who set it up to check its connection.</p>
       </main>
     );

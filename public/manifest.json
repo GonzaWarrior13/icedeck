@@ -1,6 +1,6 @@
 {
-  "name": "RinkBeats — Hockey Game Music Controller",
-  "short_name": "RinkBeats",
+  "name": "DropDeck — Hockey Game Music Controller",
+  "short_name": "DropDeck",
   "description": "Game-day DJ controller with setlists and goal horn",
   "start_url": "/",
   "display": "standalone",
@@ -8,7 +8,7 @@
   "theme_color": "#121212",
   "icons": [
     {
-      "src": "/rinkbeats-icon.png",
+      "src": "/dropdeck-icon.png",
       "type": "image/png",
       "sizes": "64x64",
       "purpose": "any"

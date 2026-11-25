@@ -42,7 +42,7 @@ export default function TeamManager({ team, user, onTeamsChanged }) {
       <div>
         <p className="section-label">Manage teams</p>
         <p className="text-sm text-muted-foreground mt-1">
-          To add a teammate, use the email on their RinkBeats account.
+          To add a teammate, use the email on their DropDeck account.
         </p>
       </div>
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}

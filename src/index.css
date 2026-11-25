@@ -6,7 +6,7 @@
 
 @layer base {
   :root {
-    /* RinkBeats: a rink-side broadcast console. Neutral charcoal surfaces, pure
+    /* DropDeck: a rink-side broadcast console. Neutral charcoal surfaces, pure
        white text, one mint accent for live states, orange for the goal trigger. */
     --background: 0 0% 7%;
     --foreground: 0 0% 100%;
@@ -14,7 +14,7 @@
     --card-foreground: 0 0% 100%;
     --popover: 0 0% 15%;
     --popover-foreground: 0 0% 100%;
-    --primary: 160 84% 39%;
+    --primary: 147 80% 59%;
     --primary-foreground: 0 0% 7%;
     --secondary: 240 4% 16%;
     --secondary-foreground: 0 0% 100%;
@@ -28,8 +28,8 @@
     --signal-foreground: 0 0% 7%;
     --border: 0 0% 18%;
     --input: 0 0% 18%;
-    --ring: 160 84% 39%;
-    --chart-1: 160 84% 39%;
+    --ring: 147 80% 59%;
+    --chart-1: 147 80% 59%;
     --chart-2: 174 45% 55%;
     --chart-3: 38 80% 62%;
     --chart-4: 6 100% 65%;
@@ -41,12 +41,12 @@
     --font-mono: "JetBrains Mono", "SF Mono", "Roboto Mono", ui-monospace, monospace;
     --sidebar-background: 0 0% 12%;
     --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 160 84% 39%;
+    --sidebar-primary: 147 80% 59%;
     --sidebar-primary-foreground: 0 0% 7%;
     --sidebar-accent: 0 0% 15%;
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 0 0% 18%;
-    --sidebar-ring: 160 84% 39%;
+    --sidebar-ring: 147 80% 59%;
     --tabbar-h: calc(3.25rem + env(safe-area-inset-bottom));
   }
 
@@ -57,7 +57,7 @@
     --card-foreground: 0 0% 100%;
     --popover: 0 0% 15%;
     --popover-foreground: 0 0% 100%;
-    --primary: 160 84% 39%;
+    --primary: 147 80% 59%;
     --primary-foreground: 0 0% 7%;
     --secondary: 240 4% 16%;
     --secondary-foreground: 0 0% 100%;
@@ -71,20 +71,20 @@
     --signal-foreground: 0 0% 7%;
     --border: 0 0% 18%;
     --input: 0 0% 18%;
-    --ring: 160 84% 39%;
-    --chart-1: 160 84% 39%;
+    --ring: 147 80% 59%;
+    --chart-1: 147 80% 59%;
     --chart-2: 174 45% 55%;
     --chart-3: 38 80% 62%;
     --chart-4: 6 100% 65%;
     --chart-5: 240 5% 65%;
     --sidebar-background: 0 0% 12%;
     --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 160 84% 39%;
+    --sidebar-primary: 147 80% 59%;
     --sidebar-primary-foreground: 0 0% 7%;
     --sidebar-accent: 0 0% 15%;
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 0 0% 18%;
-    --sidebar-ring: 160 84% 39%;
+    --sidebar-ring: 147 80% 59%;
   }
 }
 

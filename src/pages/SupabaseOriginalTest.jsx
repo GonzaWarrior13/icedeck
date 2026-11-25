@@ -18,7 +18,7 @@ import SupabaseSettings from '@/pages/SupabaseSettings';
 import { SONGS_KEY, PLAYLISTS_KEY, setMigrationData, setMigrationToken } from '@/hooks/useDjData';
 import { signIn, requestPasswordReset, verifyPasswordSetupToken, changePassword, signOut, getStoredPreviewSession, getFreshPreviewToken, getTeamSongs, getTeamPlaylists, createPrivateAudioUrl, setPreviewSession, getMyTeams, setSelectedTeamId, getSignedInUser } from '@/api/supabaseClient';
 
-// The original RinkBeats layout and pages, isolated from production Base44.
+// The original DropDeck layout and pages, isolated from production Base44.
 function SupabaseHome({ canEdit }) {
   const { enabled } = useSimpleMode();
   return enabled ? <SimpleConsole /> : <Library migrationReadOnly canEdit={canEdit} />;
@@ -302,7 +302,7 @@ function OriginalInterface() {
   }
 
   return <SharedImportQueue key={activeTeam.id} teamId={activeTeam.id}><MemoryRouter initialEntries={['/']}>
-    <Suspense fallback={<div className="p-6">Loading RinkBeats…</div>}>
+    <Suspense fallback={<div className="p-6">Loading DropDeck…</div>}>
       <Routes>
         <Route element={<DjLayout teamName={activeTeam?.name} teamRole={teamRole} onSwitchTeam={leaveTeam} />}>
           <Route path="/" element={<SupabaseHome canEdit={canEdit}/>}/>

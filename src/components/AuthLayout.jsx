@@ -1,5 +1,4 @@
 import React from "react";
-import { Disc3 } from "lucide-react";
 import BrandMark from "@/components/dj/BrandMark";
 
 export default function AuthLayout({ icon: Icon, title, subtitle, footer, children }) {
@@ -25,10 +24,6 @@ export default function AuthLayout({ icon: Icon, title, subtitle, footer, childr
             <p className="mt-6 text-sm text-muted-foreground">{footer}</p>
           )}
 
-          <div className="mt-8 flex items-center gap-2 text-[11px] uppercase tracking-[0.12em] text-muted-foreground/60">
-            <Disc3 className="w-3.5 h-3.5" strokeWidth={1.5} aria-hidden="true" />
-            Hockey game music controller
-          </div>
         </div>
       </div>
     </div>
