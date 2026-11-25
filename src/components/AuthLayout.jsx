@@ -5,7 +5,7 @@ export default function AuthLayout({ icon: Icon, title, subtitle, footer, childr
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background">
       <div className="px-5 md:px-10 pt-[calc(1.5rem+env(safe-area-inset-top))] md:pt-8">
-        <BrandMark size="lg" />
+        <BrandMark wordmark />
       </div>
 
       <div className="flex-1 flex items-center justify-center px-4 py-7 sm:px-6 sm:py-12">
