@@ -2,7 +2,7 @@ import React from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { useDj } from '@/lib/DjContext';
 import { formatTime } from '@/lib/audio';
-import { Trash2, GripVertical, Play, ListMusic } from 'lucide-react';
+import { Trash2, GripVertical, Play } from 'lucide-react';
 
 export default function Queue() {
   const dj = useDj();
@@ -20,7 +20,7 @@ export default function Queue() {
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between gap-3 px-3 h-12 md:px-4 md:h-14 border-b border-border shrink-0">
         <div className="flex items-center gap-2">
-          <h2 className="text-sm font-semibold tracking-tight">Queue</h2>
+          <span className="section-label">Queue</span>
           <span className="type-data rounded-[6px] bg-secondary px-1.5 py-0.5 text-[14px] text-muted-foreground md:text-[11px]">
             {dj.queue.length}
           </span>
@@ -36,12 +36,10 @@ export default function Queue() {
       </div>
 
       {dj.queue.length === 0 ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-8 text-center">
-          <span className="grid h-10 w-10 place-items-center rounded-lg border bg-background text-muted-foreground"><ListMusic className="h-4 w-4" aria-hidden="true" /></span>
-          <div>
-            <p className="text-sm font-medium">Queue is empty</p>
-            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Choose + next to any track in your library.</p>
-          </div>
+        <div className="flex-1 flex items-start justify-center px-6 pt-8 md:pt-12 text-center">
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Choose <span className="text-primary">+</span> next to any track in your library.
+          </p>
         </div>
       ) : (
         <DragDropContext onDragEnd={onDragEnd}>

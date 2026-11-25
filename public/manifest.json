@@ -4,8 +4,8 @@
   "description": "Game-day DJ controller with setlists and goal horn",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#121417",
-  "theme_color": "#121417",
+  "background_color": "#121212",
+  "theme_color": "#121212",
   "icons": [
     {
       "src": "/rinkbeats-icon.png",

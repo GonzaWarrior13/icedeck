@@ -53,7 +53,7 @@ export default function Settings() {
   return (
     <div className="px-5 md:px-10 py-6 md:py-10 space-y-10 max-w-[720px]">
       <header>
-        <h1 className="workspace-title">Settings</h1>
+        <h1 className="font-display text-[44px] md:text-[56px] font-semibold leading-[0.95] tracking-[-0.01em]">Settings</h1>
         <p className="mt-1 text-[15px] text-muted-foreground">Your account and this device.</p>
       </header>
 

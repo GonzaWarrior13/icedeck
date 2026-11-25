@@ -13,9 +13,9 @@ export default function SongCard({ song, isActive, onPlay, onAddQueue, onEdit, o
 
   return (
     <div
-      className={`group flex min-h-14 flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border px-3 py-2.5 transition-colors ${
+      className={`group flex min-h-14 flex-wrap items-center gap-x-3 gap-y-1 rounded-[8px] border px-3 py-2 transition-colors ${
         isActive
-          ? 'border-primary/40 bg-primary/10'
+          ? 'border-primary bg-primary/15'
           : 'border-border bg-card hover:bg-secondary'
       }`}
     >
@@ -25,7 +25,7 @@ export default function SongCard({ song, isActive, onPlay, onAddQueue, onEdit, o
         className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[8px] border transition-colors disabled:opacity-40 md:h-9 md:w-9 ${
           isActive
             ? 'border-primary bg-primary text-primary-foreground'
-            : 'border-border bg-background text-foreground hover:border-primary/60 hover:bg-primary/10 hover:text-primary'
+            : 'border-border text-primary hover:border-primary/60 hover:bg-primary/10'
         }`}
         title={playable ? 'Play track' : 'This track is missing its audio file'}
         aria-label={playable ? `Play ${song.title}` : `${song.title} has no audio available`}
@@ -61,7 +61,7 @@ export default function SongCard({ song, isActive, onPlay, onAddQueue, onEdit, o
         )}
       </div>
 
-      <div className="-mr-1 flex min-w-0 basis-full justify-end gap-0.5 sm:basis-auto sm:shrink-0 md:mr-0 md:opacity-70 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
+      <div className="-mr-1 flex min-w-0 basis-full justify-end gap-1 sm:basis-auto sm:shrink-0 md:mr-0 md:opacity-70 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
         {onToggleQuick && <button
           onClick={() => onToggleQuick(song)}
           title={isQuick ? 'Remove from Quick Access' : 'Add to Quick Access'}

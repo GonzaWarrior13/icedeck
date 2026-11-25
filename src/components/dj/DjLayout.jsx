@@ -33,8 +33,8 @@ export default function DjLayout({ teamName, teamRole, onSwitchTeam } = {}) {
         to={to}
         aria-label={label}
         aria-current={active ? 'page' : undefined}
-        className={`relative flex items-center gap-3 min-h-11 px-3 rounded-lg border text-[14px] font-medium no-select transition-colors ${
-          active ? 'border-primary/20 bg-primary/10 text-primary' : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-secondary'
+        className={`relative flex items-center gap-3 min-h-10 px-3 rounded-[10px] text-[14px] no-select transition-colors ${
+          active ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
         }`}
       >
         {active && (
@@ -49,8 +49,8 @@ export default function DjLayout({ teamName, teamRole, onSwitchTeam } = {}) {
   return (
     <DjProvider>
       <div className={`${simpleMode ? 'simple-shell' : 'app-shell-height'} bg-background text-foreground flex flex-col md:flex-row overflow-hidden`}>
-        <aside className="shrink-0 md:w-[192px] xl:w-[224px] md:h-full border-b md:border-b-0 md:border-r border-border bg-sidebar flex md:flex-col items-center md:items-stretch px-4 md:px-5 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-2.5 md:py-7 gap-3 md:gap-0">
-          <Link to="/" className="no-select md:mb-10" aria-label="RinkBeats home">
+        <aside className="shrink-0 md:w-[212px] md:h-full border-b md:border-b-0 md:border-r border-border bg-card flex md:flex-col items-center md:items-stretch px-4 md:px-5 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-2.5 md:py-7 gap-3 md:gap-0">
+          <Link to="/" className="no-select md:mb-8" aria-label="RinkBeats home">
             <BrandMark />
           </Link>
 
@@ -70,10 +70,10 @@ export default function DjLayout({ teamName, teamRole, onSwitchTeam } = {}) {
 
         <main className={`flex-1 min-h-0 min-w-0 flex flex-col overflow-y-auto scroll-area ${pathname === '/settings' ? '' : 'md:overflow-visible'}`}>
           {teamName && (
-            <div className="flex min-h-12 shrink-0 items-center justify-between gap-3 border-b border-border bg-background px-4 md:min-h-16 md:px-8 xl:px-10">
-              <p className="min-w-0 truncate text-sm font-medium">{teamName}<span className="ml-2 hidden rounded-md border border-border px-1.5 py-0.5 text-xs font-normal capitalize text-muted-foreground sm:inline-block">{teamRole}</span></p>
+            <div className="flex min-h-11 shrink-0 items-center justify-between gap-3 border-b border-border px-4 md:px-8">
+              <p className="min-w-0 truncate text-sm font-medium">{teamName}<span className="ml-2 hidden capitalize text-muted-foreground sm:inline">{teamRole}</span></p>
               <button type="button" onClick={onSwitchTeam}
-                className="min-h-11 shrink-0 rounded-lg px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground">
+                className="min-h-11 shrink-0 rounded-md px-2 text-sm text-muted-foreground hover:text-foreground">
                 Switch team
               </button>
             </div>

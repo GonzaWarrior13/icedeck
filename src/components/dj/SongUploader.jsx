@@ -112,7 +112,7 @@ export default function SongUploader({ onUploaded, useSupabase = false, trackMet
 
   return (
     <div className="flex flex-col gap-1">
-    <label className="flex min-h-10 cursor-pointer items-center gap-1.5 rounded-lg bg-primary px-3 text-[13px] font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-within:ring-2 focus-within:ring-ring md:gap-2 md:px-4 md:text-sm">
+    <label className="flex items-center gap-1.5 min-h-9 px-2.5 rounded-[10px] bg-foreground text-background hover:bg-foreground/90 transition cursor-pointer text-[13px] font-semibold md:min-h-10 md:gap-2 md:px-4 md:text-sm">
       <UploadCloud className="w-3.5 h-3.5 md:w-4 md:h-4" />
       <span className="max-w-[132px] truncate md:max-w-none">
         {uploading ? (

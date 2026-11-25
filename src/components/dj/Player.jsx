@@ -4,7 +4,7 @@ import { usePlaylists, useSongs } from '@/hooks/useDjData';
 import { formatTime } from '@/lib/audio';
 import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Waves, Siren, ChevronDown } from 'lucide-react';
 
-// Keep transport controls anchored below the scrollable workspace.
+// Persistent bottom player bar: 72px tall on desktop, hairline top border, no shadow.
 export default function Player() {
   const dj = useDj();
   const { data: playlists = [] } = usePlaylists();
@@ -31,7 +31,7 @@ export default function Player() {
   const pct = dj.duration ? (dj.currentTime / dj.duration) * 100 : 0;
 
   return (
-    <div className="shrink-0 border-t border-border bg-card px-4 md:px-8 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] md:min-h-[80px] md:pt-0 md:pb-0 md:flex md:flex-col md:justify-center">
+    <div className="shrink-0 border-t border-border bg-card px-4 md:px-8 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] md:min-h-[72px] md:pt-0 md:pb-0 md:flex md:flex-col md:justify-center">
       {playbackError && <p role="alert" className="text-xs text-destructive py-1">{playbackError}</p>}
       <div
         className="relative -mx-4 mb-2 h-1 cursor-pointer bg-border lg:hidden"
@@ -53,7 +53,7 @@ export default function Player() {
       {song && <p className="mb-1 truncate text-sm font-medium sm:hidden">{song.title}</p>}
       <div className="flex w-full min-w-0 items-center justify-between gap-1.5 md:gap-4">
         <div className="hidden sm:block min-w-0 w-36 lg:w-52 shrink-0">
-          <p className="truncate text-[15px] font-semibold leading-tight">{song?.title || 'No track loaded'}</p>
+          <p className="truncate text-[15px] font-semibold leading-tight">{song?.title || 'Nothing loaded'}</p>
           <p className="truncate type-meta">{song && (song.artist || 'Unknown')}</p>
         </div>
 
@@ -71,7 +71,7 @@ export default function Player() {
             onClick={dj.isPlaying ? dj.pause : dj.play}
             disabled={!song}
             aria-label={dj.isPlaying ? 'Pause' : 'Play'}
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-colors enabled:hover:bg-primary/90 enabled:active:scale-[0.96] disabled:bg-secondary disabled:text-muted-foreground md:h-11 md:w-11"
+            className="w-12 h-12 md:w-11 md:h-11 shrink-0 rounded-[10px] bg-primary text-primary-foreground flex items-center justify-center transition-transform active:scale-[0.96] hover:bg-primary/90"
           >
             {dj.isPlaying ? <Pause className="w-5 h-5 fill-current" aria-hidden="true" /> : <Play className="w-5 h-5 fill-current" aria-hidden="true" />}
           </button>
@@ -157,7 +157,7 @@ export default function Player() {
             {goalMenuOpen && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setGoalMenuOpen(false)} aria-hidden="true" />
-                <div className="absolute bottom-full mb-2 right-0 w-[min(280px,calc(100vw_-_5rem))] max-h-[min(20rem,55dvh)] overflow-y-auto bg-popover border border-border rounded-xl shadow-sm py-1 z-50">
+                <div className="absolute bottom-full mb-2 right-0 w-[min(280px,calc(100vw_-_5rem))] max-h-[min(20rem,55dvh)] overflow-y-auto bg-popover border border-border rounded-[10px] shadow-[0_16px_40px_rgba(0,0,0,0.5)] py-1 z-50">
                   <button
                     onClick={goalOnly}
                     className="w-full text-left min-h-11 px-3 py-2 text-sm text-popover-foreground hover:bg-secondary transition-colors"
