@@ -105,7 +105,7 @@ export default function SupabaseSettings({ user, team, onLogout, onTeamsChanged 
 
       <TeamManager team={team} user={user} onTeamsChanged={onTeamsChanged} />
 
-      {user?.id && <BillingPreview key={user.id} userId={user.id} />}
+      {team?.id && <BillingPreview key={team.id} teamId={team.id} />}
 
       <section className="border-t border-border pt-8 space-y-4">
         <p className="section-label">Password and account</p>

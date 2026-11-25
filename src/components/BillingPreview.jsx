@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { FREE_SHARED_TRACK_LIMIT, readBillingDemoPlan, writeBillingDemoPlan } from '@/lib/billingDemo';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const plans = {
@@ -7,43 +8,31 @@ const plans = {
   annual: { name: 'Plus annual', price: 'CA$99', period: 'year' },
 };
 
-export default function BillingPreview({ userId }) {
-  const storageKey = `rinkbeats-billing-demo:${userId}`;
-  const [activePlan, setActivePlan] = useState(() => {
-    try {
-      const saved = sessionStorage.getItem(storageKey);
-      return saved === 'monthly' || saved === 'annual' ? saved : null;
-    } catch {
-      return null;
-    }
-  });
+export default function BillingPreview({ teamId, onPlanChange }) {
+  const [activePlan, setActivePlan] = useState(() => readBillingDemoPlan(teamId));
   const [selection, setSelection] = useState(null);
   const [message, setMessage] = useState('');
   const pending = selection && plans[selection];
 
   function savePlan(plan) {
-    try {
-      if (plan) sessionStorage.setItem(storageKey, plan);
-      else sessionStorage.removeItem(storageKey);
-    } catch {
-      // The demo still works in memory if browser storage is unavailable.
-    }
+    writeBillingDemoPlan(teamId, plan);
     setActivePlan(plan);
     setSelection(null);
     setMessage(plan ? `Payment simulated. ${plans[plan].name} is active in this demo.` : 'Demo reset to Free.');
+    onPlanChange?.(plan);
   }
 
   return (
     <section className="space-y-4 border-t border-border pt-8" aria-labelledby="billing-preview-heading">
       <div className="space-y-1">
         <h2 id="billing-preview-heading" className="section-label">Billing preview</h2>
-        <p className="text-sm text-muted-foreground">Try a plan with a simulated payment. No money is charged and your account access won’t change.</p>
+        <p className="text-sm text-muted-foreground">Try unlocking more shared tracks with a simulated payment. No money is charged.</p>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-card p-3 text-sm">
         <p>Demo plan <strong className="ml-1">{activePlan ? plans[activePlan].name : 'Free'}</strong></p>
         {activePlan && <Button type="button" variant="ghost" onClick={() => savePlan(null)}>Reset demo</Button>}
       </div>
-      <p className="text-sm text-muted-foreground">Free includes your team’s library and setlists. Plus is a placeholder for the full shared catalog and curated setlists.</p>
+      <p className="text-sm text-muted-foreground">Free includes up to {FREE_SHARED_TRACK_LIMIT} tracks from the shared library. Plus removes that limit in this demo.</p>
       <div className="grid gap-3 sm:grid-cols-2">
         {Object.entries(plans).map(([id, plan]) => (
           <div key={id} className="space-y-3 rounded-lg border bg-card p-4">
