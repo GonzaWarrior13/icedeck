@@ -290,7 +290,8 @@ export async function uploadTeamMp3(accessToken, file, metadata = {}) {
     title: (metadata.title?.trim() || file.name.replace(/\.[^.]+$/i, '')).slice(0, 250),
     artist: (metadata.artist?.trim() || 'Unknown').slice(0, 250), source: 'local', storage_path: storagePath,
     duration: Math.max(0, Math.round(metadata.duration || 0)),
-    start_point: 0, volume: metadata.volume ?? 100, tags: [],
+    start_point: metadata.start_point ?? 0, volume: metadata.volume ?? 100, tags: [],
+    ...(metadata.end_point != null ? { end_point: metadata.end_point } : {}),
     ...(Number.isFinite(metadata.loudness_db) ? { loudness_db: metadata.loudness_db } : {}),
     ...(metadata.shared_source_song_id ? { shared_source_song_id: metadata.shared_source_song_id } : {}),
   };
@@ -332,6 +333,19 @@ export async function uploadTeamMp3(accessToken, file, metadata = {}) {
 
 export async function getSharedTeamSongs() {
   return request('/rest/v1/rpc/list_shared_team_songs', await getFreshPreviewToken());
+}
+
+export async function getSharedLibraryBundle() {
+  return request('/rest/v1/rpc/get_shared_library_bundle', await getFreshPreviewToken());
+}
+
+export async function copySharedLibrarySetlists(teamId) {
+  const token = await getFreshPreviewToken();
+  if (teamId !== getSelectedTeamId()) throw new Error('Your active team changed.');
+  return request('/rest/v1/rpc/copy_shared_library_setlists', token, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ p_team_id: teamId }),
+  });
 }
 
 export async function copySharedTeamSong(song) {

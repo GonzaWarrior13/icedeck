@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Download } from 'lucide-react';
-import { getSelectedTeamId, getSharedTeamSongs } from '@/api/supabaseClient';
+import { getSelectedTeamId, getSharedLibraryBundle, getSharedTeamSongs } from '@/api/supabaseClient';
 import { FREE_SHARED_TRACK_LIMIT, readBillingDemoPlan } from '@/lib/billingDemo';
 import BillingPreview from '@/components/BillingPreview';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,8 @@ export default function SharedTeamLibrary({ canEdit, teamSongs }) {
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState('');
   const [selectedIds, setSelectedIds] = useState([]);
+  const [loadingBundle, setLoadingBundle] = useState(false);
+  const [bundleError, setBundleError] = useState('');
   const imports = useSharedImports();
   const teamId = getSelectedTeamId();
   const [demoPlan, setDemoPlan] = useState(() => readBillingDemoPlan(teamId));
@@ -36,11 +38,26 @@ export default function SharedTeamLibrary({ canEdit, teamSongs }) {
   const editor = canEdit && imports;
   const plannedCount = sharedCount + pending.size + selected.length;
   const selectionFull = capped && plannedCount >= FREE_SHARED_TRACK_LIMIT;
+  const canDownloadBundle = editor && demoPlan && sourceTeamId && sourceTeamId !== teamId;
 
   function download() {
     if (!editor || !selected.length) return;
     imports.enqueue(selected, capped ? FREE_SHARED_TRACK_LIMIT : Infinity);
     setSelectedIds([]);
+  }
+
+  async function downloadBundle() {
+    if (!canDownloadBundle || loadingBundle || imports.bundle?.running) return;
+    setLoadingBundle(true);
+    setBundleError('');
+    try {
+      imports.enqueue(await getSharedLibraryBundle(), Infinity, true);
+      setSelectedIds([]);
+    } catch {
+      setBundleError('Couldn’t load the full library. Close this window and try again.');
+    } finally {
+      setLoadingBundle(false);
+    }
   }
 
   return (
@@ -52,8 +69,16 @@ export default function SharedTeamLibrary({ canEdit, teamSongs }) {
       <DialogContent className="flex flex-col overflow-hidden">
         <DialogTitle className="pr-10">Shared library</DialogTitle>
         <DialogDescription>Select tracks from IceDeck-Main to download to your team’s library.</DialogDescription>
-        {editor && demoPlan && sourceTeamId !== teamId && (
-          <p role="status" className="text-sm text-primary">Demo Plus is active. You can add more shared tracks.</p>
+        {canDownloadBundle && (
+          <div className="space-y-2 rounded-lg border bg-card p-3">
+            <p role="status" className="text-sm text-primary">Demo Plus is active. You can add more shared tracks.</p>
+            <p className="text-xs text-muted-foreground">Copy all shared tracks with saved cue points and setlists.</p>
+            <Button type="button" variant="outline" onClick={downloadBundle} disabled={loadingBundle || imports.bundle?.running}>
+              <Download aria-hidden="true" />
+              {loadingBundle ? 'Getting the library…' : imports.bundle?.running ? 'Full library queued' : 'Download full library'}
+            </Button>
+            {bundleError && <p role="alert" className="text-xs text-destructive">{bundleError}</p>}
+          </div>
         )}
         <input aria-label="Search shared library" placeholder="Search title or artist" value={filter}
           onChange={event => setFilter(event.target.value)}
