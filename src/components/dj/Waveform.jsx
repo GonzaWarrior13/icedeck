@@ -22,32 +22,30 @@ export default function Waveform({
     if (!peaks || !peaks.length) {
       ctx.fillStyle = '#2E2E2E';
       ctx.fillRect(0, mid - 1, cw, 2);
-      return;
-    }
-    const n = peaks.length;
-    const barW = cw / n;
-    const playedX = duration ? (currentTime / duration) * cw : 0;
-    for (let i = 0; i < n; i++) {
-      const p = peaks[i];
-      const bh = Math.max(1, p * (height * 0.92));
-      const x = i * barW;
-      ctx.fillStyle = x <= playedX ? color : '#2E2E2E';
-      ctx.fillRect(x, mid - bh / 2, Math.max(1, barW - 0.5), bh);
+    } else {
+      const barW = cw / peaks.length;
+      const playedX = duration ? (currentTime / duration) * cw : 0;
+      for (let i = 0; i < peaks.length; i++) {
+        const bh = Math.max(1, peaks[i] * (height * 0.92));
+        const x = i * barW;
+        ctx.fillStyle = x <= playedX ? color : '#2E2E2E';
+        ctx.fillRect(x, mid - bh / 2, Math.max(1, barW - 0.5), bh);
+      }
     }
     if (duration && currentTime != null) {
       const px = (currentTime / duration) * cw;
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fillRect(px - 1, 0, 2, height);
+      ctx.fillStyle = 'rgba(255,255,255,0.65)';
+      ctx.fillRect(px - 0.5, mid - 9, 1, 18);
     }
     if (start != null && duration) {
       const sx = (start / duration) * cw;
       ctx.fillStyle = '#10B981';
-      ctx.fillRect(sx - 2, 0, 4, height);
+      ctx.fillRect(Math.max(0, sx - 1), 2, 2, 13);
     }
     if (end != null && duration) {
       const ex = (end / duration) * cw;
       ctx.fillStyle = '#A1A1AA';
-      ctx.fillRect(ex - 2, 0, 4, height);
+      ctx.fillRect(Math.min(cw - 2, ex - 1), height - 15, 2, 13);
     }
   }, [peaks, duration, start, end, currentTime, height, color]);
 
@@ -65,31 +63,41 @@ export default function Waveform({
   };
 
   const onPointerDown = (e) => {
-    const rect = canvasRef.current.getBoundingClientRect();
+    if (!duration || e.button !== 0 || draggingRef.current) return;
+    const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
-    const cw = rect.width;
-    const startPx = duration ? ((start || 0) / duration) * cw : -10;
-    const endPx = duration && end != null ? (end / duration) * cw : -10;
-    if (Math.abs(x - startPx) < 8) { draggingRef.current = 'start'; return; }
-    if (end != null && Math.abs(x - endPx) < 8) { draggingRef.current = 'end'; return; }
-    onSeek?.(posToTime(e.clientX));
+    const y = e.clientY - rect.top;
+    const startDistance = Math.abs(x - start / duration * rect.width);
+    const endDistance = end != null ? Math.abs(x - end / duration * rect.width) : Infinity;
+    const handle = startDistance <= 14 && y < height / 2 ? 'start'
+      : endDistance <= 14 && y >= height / 2 ? 'end' : 'playhead';
+    draggingRef.current = { handle, pointerId: e.pointerId };
+    e.currentTarget.setPointerCapture(e.pointerId);
+    if (handle === 'playhead') onSeek?.(posToTime(e.clientX));
   };
   const onPointerMove = (e) => {
-    if (!draggingRef.current) return;
+    const drag = draggingRef.current;
+    if (drag?.pointerId !== e.pointerId) return;
     const t = posToTime(e.clientX);
-    if (draggingRef.current === 'start') onStartChange?.(t);
-    if (draggingRef.current === 'end') onEndChange?.(t);
+    if (drag.handle === 'start') onStartChange?.(Math.min(t, Math.max(0, (end ?? duration) - 0.01)));
+    if (drag.handle === 'end') onEndChange?.(Math.max(t, Math.min(duration, start + 0.01)));
+    if (drag.handle === 'playhead') onSeek?.(t);
   };
-  const onPointerUp = () => { draggingRef.current = null; };
+  const onPointerEnd = (e) => {
+    if (draggingRef.current?.pointerId === e.pointerId) draggingRef.current = null;
+  };
 
   return (
     <canvas
       ref={canvasRef}
-      style={{ width: '100%', height, touchAction: 'none', cursor: 'pointer' }}
+      aria-label="Audio waveform"
+      className="block w-full touch-none cursor-grab active:cursor-grabbing"
+      style={{ height }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerLeave={onPointerUp}
+      onPointerUp={onPointerEnd}
+      onPointerCancel={onPointerEnd}
+      onLostPointerCapture={onPointerEnd}
     />
   );
 }

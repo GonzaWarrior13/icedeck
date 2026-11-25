@@ -4,6 +4,47 @@ import { usePlaylists, useSongs } from '@/hooks/useDjData';
 import { formatTime } from '@/lib/audio';
 import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Waves, Siren, ChevronDown } from 'lucide-react';
 
+function SeekBar({ time, duration, start, onSeek, className }) {
+  const progress = duration > 0 ? Math.min(100, Math.max(0, time / duration * 100)) : 0;
+  const seekAtPointer = (event) => {
+    const { left, width } = event.currentTarget.getBoundingClientRect();
+    if (width > 0) onSeek(Math.min(1, Math.max(0, (event.clientX - left) / width)) * duration);
+  };
+
+  return (
+    <div className={`group relative flex h-7 items-center ${className}`}>
+      <div aria-hidden="true" className="pointer-events-none relative h-0.5 w-full rounded-full bg-border group-focus-within:ring-1 group-focus-within:ring-ring">
+        <div className="absolute inset-y-0 left-0 rounded-full bg-primary/80" style={{ width: `${progress}%` }} />
+        {start > 0 && start < duration && (
+          <span className="absolute -top-px h-1 w-px bg-muted-foreground" style={{ left: `${start / duration * 100}%` }} />
+        )}
+        {duration > 0 && (
+          <span className="absolute top-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary transition-[width,height] group-hover:h-2 group-hover:w-2 group-focus-within:h-2 group-focus-within:w-2"
+            style={{ left: `${progress}%` }} />
+        )}
+      </div>
+      <input
+        type="range" min={0} max={duration || 0} step="any" value={duration > 0 ? progress / 100 * duration : 0}
+        onChange={event => onSeek(Number(event.target.value))}
+        onPointerDown={event => {
+          if (!duration || event.button !== 0 || !event.isPrimary) return;
+          event.preventDefault();
+          event.currentTarget.focus();
+          event.currentTarget.setPointerCapture(event.pointerId);
+          seekAtPointer(event);
+        }}
+        onPointerMove={event => {
+          if (event.currentTarget.hasPointerCapture(event.pointerId)) seekAtPointer(event);
+        }}
+        disabled={!duration}
+        aria-label="Playback position"
+        aria-valuetext={formatTime(time)}
+        className="absolute inset-0 m-0 w-full touch-none cursor-grab opacity-0 active:cursor-grabbing disabled:cursor-default"
+      />
+    </div>
+  );
+}
+
 // Persistent bottom player bar: 72px tall on desktop, hairline top border, no shadow.
 export default function Player() {
   const dj = useDj();
@@ -28,27 +69,12 @@ export default function Player() {
   const playbackError = dj.playbackError;
 
   const remaining = dj.duration ? Math.max(0, dj.duration - dj.currentTime) : 0;
-  const pct = dj.duration ? (dj.currentTime / dj.duration) * 100 : 0;
 
   return (
     <div className="shrink-0 border-t border-border bg-card px-4 md:px-8 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] md:min-h-[72px] md:pt-0 md:pb-0 md:flex md:flex-col md:justify-center">
       {playbackError && <p role="alert" className="text-xs text-destructive py-1">{playbackError}</p>}
-      <div
-        className="relative -mx-4 mb-2 h-1 cursor-pointer bg-border lg:hidden"
-        onClick={(e) => {
-          if (!song) return;
-          const rect = e.currentTarget.getBoundingClientRect();
-          const frac = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
-          dj.seek(frac * (dj.duration || 0));
-        }}
-        role="slider"
-        aria-label="Seek"
-        aria-valuemin={0}
-        aria-valuemax={Math.round(dj.duration || 0)}
-        aria-valuenow={Math.round(dj.currentTime || 0)}
-      >
-        <div className="absolute inset-y-0 left-0 bg-primary" style={{ width: `${pct}%` }} />
-      </div>
+      <SeekBar className="-mt-2 lg:hidden" time={dj.currentTime} duration={song ? dj.duration : 0}
+        start={song?.start_point} onSeek={dj.seek} />
 
       {song && <p className="mb-1 truncate text-sm font-medium sm:hidden">{song.title}</p>}
       <div className="flex w-full min-w-0 items-center justify-between gap-1.5 md:gap-4">
@@ -90,29 +116,8 @@ export default function Player() {
           <span className="type-data w-11 shrink-0 text-right text-foreground">
             {formatTime(dj.currentTime)}
           </span>
-          <div
-            className="relative flex-1 h-1 rounded-full bg-border cursor-pointer transition-all hover:h-1.5"
-            onClick={(e) => {
-              if (!song) return;
-              const rect = e.currentTarget.getBoundingClientRect();
-              const frac = (e.clientX - rect.left) / rect.width;
-              dj.seek(frac * (dj.duration || 0));
-            }}
-            role="slider"
-            aria-label="Seek"
-            aria-valuemin={0}
-            aria-valuemax={Math.round(dj.duration || 0)}
-            aria-valuenow={Math.round(dj.currentTime || 0)}
-            tabIndex={0}
-          >
-            <div className="absolute inset-y-0 left-0 rounded-full bg-primary" style={{ width: `${pct}%` }} />
-            {song?.start_point > 0 && (
-              <div
-                className="absolute -top-1.5 w-0.5 h-4 bg-primary"
-                style={{ left: `${(song.start_point / (dj.duration || 1)) * 100}%` }}
-              />
-            )}
-          </div>
+          <SeekBar className="min-w-0 flex-1" time={dj.currentTime} duration={song ? dj.duration : 0}
+            start={song?.start_point} onSeek={dj.seek} />
           <span className="type-data w-12 shrink-0 text-muted-foreground">
             -{formatTime(remaining)}
           </span>

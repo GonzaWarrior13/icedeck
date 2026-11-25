@@ -29,7 +29,7 @@ export default function StartPointEditor({ song, onClose, onSave, useSupabase = 
   const [analyzing, setAnalyzing] = useState(false);
   const [suggestion, setSuggestion] = useState(null);
   const [previewing, setPreviewing] = useState(false);
-  const [previewTime, setPreviewTime] = useState(0);
+  const [previewTime, setPreviewTime] = useState(null);
   const [saving, setSaving] = useState(false);
   const [volume, setVolume] = useState(song?.volume != null ? song.volume : 100);
   const [error, setError] = useState('');
@@ -67,7 +67,7 @@ export default function StartPointEditor({ song, onClose, onSave, useSupabase = 
   const stopPreview = () => {
     if (previewRef.current) { previewRef.current.pause(); }
     setPreviewing(false);
-    setPreviewTime(0);
+    setPreviewTime(null);
   };
 
   const togglePreview = () => {
@@ -76,7 +76,9 @@ export default function StartPointEditor({ song, onClose, onSave, useSupabase = 
     if (!previewRef.current) previewRef.current = new Audio();
     const a = previewRef.current;
     if (a.src !== audioUrl) a.src = audioUrl;
-    a.currentTime = start;
+    a.currentTime = previewTime != null && previewTime < (end ?? duration)
+      ? previewTime
+      : start;
     a.volume = (volume / 100);
     setPreviewing(true);
     a.play().catch(() => {
@@ -84,7 +86,7 @@ export default function StartPointEditor({ song, onClose, onSave, useSupabase = 
       stopPreview();
       setError('Couldn’t preview this audio. Try playing the track from your library.');
     });
-    a.onended = () => { setPreviewing(false); setPreviewTime(0); };
+    a.onended = stopPreview;
     a.ontimeupdate = () => {
       if (end !== null && a.currentTime >= end) stopPreview();
       else setPreviewTime(a.currentTime);
@@ -147,7 +149,7 @@ export default function StartPointEditor({ song, onClose, onSave, useSupabase = 
     }
   };
 
-  const displayTime = previewing ? previewTime : start;
+  const displayTime = previewTime ?? start;
 
   return (
     <Dialog open={!!song} onOpenChange={(o) => !o && onClose?.()}>
@@ -162,7 +164,7 @@ export default function StartPointEditor({ song, onClose, onSave, useSupabase = 
             <DialogTitle className="flex items-center gap-2">
               <Scissors className="w-4 h-4 text-primary" aria-hidden="true" /> <span className="min-w-0 break-words pr-8">{song?.title}</span>
             </DialogTitle>
-            <DialogDescription>Set where this track starts and stops.</DialogDescription>
+            <DialogDescription>Drag the top marker to set the start, or drag across the waveform to preview.</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
@@ -181,8 +183,15 @@ export default function StartPointEditor({ song, onClose, onSave, useSupabase = 
                     start={start}
                     end={end}
                     currentTime={displayTime}
-                    onSeek={(t) => { if (previewRef.current) previewRef.current.currentTime = t; }}
-                    onStartChange={(t) => { setStart(t); setStartInput(formatTime(t)); }}
+                    onSeek={(t) => {
+                      if (previewing && previewRef.current) previewRef.current.currentTime = t;
+                      setPreviewTime(t);
+                    }}
+                    onStartChange={(t) => {
+                      setStart(t);
+                      setStartInput(formatTime(t));
+                      if (!previewing) setPreviewTime(null);
+                    }}
                     onEndChange={(t) => { setEnd(t); setEndInput(formatTime(t)); }}
                     height={84}
                   />

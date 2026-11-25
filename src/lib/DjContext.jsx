@@ -512,7 +512,7 @@ export function DjProvider({ children }) {
     const onTime = () => {
       setCurrentTime(audio.currentTime);
       const song = queueRef.current[indexRef.current];
-      if (song && song.end_point && audio.currentTime >= song.end_point) next();
+      if (!audio.paused && song?.end_point && audio.currentTime >= song.end_point) next();
     };
     const onDur = () => setDuration(audio.duration || 0);
     const onPlay = () => setIsPlaying(true);
