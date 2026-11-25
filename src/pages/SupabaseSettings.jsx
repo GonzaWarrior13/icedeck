@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, ShieldCheck } from 'lucide-react';
 import TeamManager from '@/components/dj/TeamManager';
+import BillingPreview from '@/components/BillingPreview';
 import { requestPasswordReset, changePassword, deleteMyAccount, getFreshPreviewToken } from '@/api/supabaseClient';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
@@ -103,6 +104,8 @@ export default function SupabaseSettings({ user, team, onLogout, onTeamsChanged 
       </section>
 
       <TeamManager team={team} user={user} onTeamsChanged={onTeamsChanged} />
+
+      {user?.id && <BillingPreview key={user.id} userId={user.id} />}
 
       <section className="border-t border-border pt-8 space-y-4">
         <p className="section-label">Password and account</p>
