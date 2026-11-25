@@ -121,15 +121,27 @@ export default function GameDayCheck() {
           <Button variant="outline" size="sm" disabled={checking} type="button"
             onClick={checkLibrary}>Check again</Button>
         </section>
+        <section className="space-y-1 rounded-lg border bg-card p-3">
+          <h3 className="text-sm font-semibold">Goal setlist</h3>
+          <p className="break-words text-sm font-medium">
+            {!dj.goalSetlistId ? 'No setlist selected'
+              : goal ? goal.name
+                : setlists.isError ? 'Couldn’t check the selection'
+                  : setlists.isSuccess && !setlists.isFetching ? 'Selected setlist is missing' : 'Checking selection…'}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {!dj.goalSetlistId ? 'Goal horn only. Choose a goal setlist in Setlists.'
+              : goal ? 'After the horn, DropDeck shuffles this setlist.'
+                : setlists.isError ? 'Choose Check again to retry.'
+                  : setlists.isSuccess && !setlists.isFetching ? 'Choose another goal setlist in Setlists.' : ''}
+          </p>
+        </section>
         <section className="space-y-2 rounded-lg border bg-card p-3">
-          <h3 className="text-sm font-semibold">Hotkeys and goal horn</h3>
+          <h3 className="text-sm font-semibold">Hotkeys</h3>
           <p className="text-sm text-muted-foreground">
             <kbd className="mr-2 rounded border px-1.5 py-0.5 text-xs text-foreground">G</kbd>
-            {goal ? `Goal horn, then shuffle ${goal.name}` : 'Goal horn only'}
+            Goal horn
           </p>
-          {ready && dj.goalSetlistId && !goal && (
-            <p className="text-xs text-destructive">The goal setlist is missing. Choose another in Setlists.</p>
-          )}
           {ready && keys.size === 0 && <p className="text-xs text-muted-foreground">No setlist hotkeys assigned. Add them in Setlists.</p>}
           <ul className="space-y-1">
             {[...keys].map(([key, names]) => (
