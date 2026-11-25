@@ -105,7 +105,7 @@ export default function SharedTeamLibrary({ canEdit, teamSongs }) {
             <div className="min-w-0 flex-1">
               <p role="status" className={`text-sm font-medium ${selectionFull ? 'text-destructive' : ''}`}>
                 {capped
-                  ? `${plannedCount}/${FREE_SHARED_TRACK_LIMIT}`
+                  ? `${plannedCount}/${FREE_SHARED_TRACK_LIMIT} tracks`
                   : `${selected.length} selected`}
               </p>
               {selectionFull && <p className="mt-1 text-xs text-muted-foreground">
